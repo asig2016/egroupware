@@ -87,7 +87,8 @@
 		"egroupware/tracker": "self.version",
 		"egroupware/z-push-dev": "self.version",
 		"egroupware/activesync": "self.version",
-		"egroupware/adodb-php": "self.version"
+		"egroupware/adodb-php": "self.version",
+		"vakata/jstree": "^3.3"
 	},
 	"require-dev": {
 	},

@@ -45,6 +45,12 @@
 	var start_time = (new Date).getTime();
 	if(typeof console != "undefined" && console.time) console.time("egw");
 
+	/* asig_fkar_patch ===> */
+	// fkar If hidemenus, remove opener so window can load
+    var urlParams = new URLSearchParams(window.location.search);
+    if ( urlParams.get('hidemenus') ) window.opener = null;
+	/* asig_fkar_patch <=== */
+
 	// set opener as early as possible for framework popups (not real popups)
 	if (!window.opener && window.parent !== window)
 	{

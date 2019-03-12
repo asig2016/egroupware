@@ -12,6 +12,19 @@
 	egw_inheritance.js;
 */
 
+/*fkar start */
+/* Define function needed for later */
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+/*fkar end */
+
 var fw_base = (function(){ "use strict"; return Class.extend(
 {
 	/**
@@ -175,6 +188,29 @@ var fw_base = (function(){ "use strict"; return Class.extend(
 		if (typeof _url == 'undefined' || _url == null)
 		{
 			_url = _app.indexUrl;
+			/**fkar start**/
+            // Issue #46
+            // When Loading Edit screen twice, the second time shows Index screen
+			// URL is sometimes missing and reverting to index instead of actual page
+			// Get URL from window.location and if it matches replace it
+
+			var menu1 = getParameterByName('menuaction', _url);
+			var menu2 = getParameterByName('menuaction', window.location.href );
+            if ( menu1 != null && menu2 != null) {
+                var parts1 = menu1.split('.');
+                var parts2 = menu2.split('.');
+                if ( parts1[0] == parts2[0] && parts1[1] == parts2[1] ) {
+                    var first = _url.split('?');
+                    _url = first[0] + window.location.search + '&ajax=true';
+                }
+            }
+
+            // If hidemenus is enabled, replace with actual URL
+            var hidemenus = getParameterByName('hidemenus',window.location.href);
+            if ( hidemenus )
+            	_url = window.location.href;
+
+			/**fkar end**/
 		}
 		// If there are query parameters and URL is the same, don't just refresh
 		// because the app's state may have changed since last time

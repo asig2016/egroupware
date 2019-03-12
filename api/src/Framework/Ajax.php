@@ -835,6 +835,12 @@ abstract class Ajax extends Api\Framework
 
 		// check if user called a specific url --> open it as active tab
 		$last_direct_url =& Api\Cache::getSession(__CLASS__, 'last_direct_url');
+		/* asig_fkar_patch ===> */
+		//fkara Stop redirects so hidemenus work:
+		if ($url !== $last_direct_url) {
+			$active_tab = $GLOBALS['egw_info']['user']['preferences']['common']['active_tab'];
+		}
+		/*
 		if ($last_direct_url)
 		{
 			$url = $last_direct_url;
@@ -852,7 +858,8 @@ abstract class Ajax extends Api\Framework
 			$active_tab = $GLOBALS['egw_info']['user']['preferences']['common']['active_tab'];
 			if (!$active_tab) $active_tab = $default_app;
 		}
-
+		*/
+		/* asig_fkar_patch <=== */
 		//self::app_from_url might return an application the user has no rights
 		//for or may return an application that simply does not exist. So check first
 		//whether the $active_tab really exists in the $apps array.

@@ -56,6 +56,7 @@
 		"ext-openssl":"*",
 		"ext-session":"*",
 		"fxp/composer-asset-plugin":"^1.2.2",
+		"html2text/html2text": "^4.0",
 		"pear-pear.horde.org/horde_imap_client": "^2.29.7",
 		"pear-pear.horde.org/horde_nls": "^2.0.3",
 		"pear-pear.horde.org/horde_mail": "^2.1.2",

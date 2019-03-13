@@ -73,6 +73,7 @@
 		"pear/log": "*",
 		"pear/text_diff": "^1.2.2",
 		"php-ews/php-ews": "dev-composer",
+		"php-mime-mail-parser/php-mime-mail-parser": "^2.11",
 		"bower-asset/jquery": "^1.12.4",
 		"bower-asset/fastclick":"1.0.*",
 		"bower-asset/jquery-touchswipe": "1.6.*",

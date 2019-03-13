@@ -197,7 +197,8 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_core_legacyJSFunctions.js",
 						"api/js/etemplate/etemplate2.js",
 						"api/js/etemplate/vfsSelectUI.js",
-						"api/js/etemplate/et2_widget_currency.js"
+						"api/js/etemplate/et2_widget_currency.js",
+						"api/js/etemplate/et2_widget_aclink.js"
 					]
 				}
 			},

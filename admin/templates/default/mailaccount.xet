@@ -53,16 +53,16 @@
 				<column/>
 			</columns>
 			<rows>
-				<row class="emailadmin_no_single">
+				<row > <!-- asig fkar patch Account type for ews ===>-->
 					<description for="acc_imap_logintype" value="Type"/>
 					<menulist>
 						<menupopup id="acc_imap_type"/>
 					</menulist>
-					<description for="acc_imap_logintype" value="Login" class="emailadmin_no_single"/>
+					<description for="acc_imap_logintype" value="Login" />
 					<menulist>
-						<menupopup class="emailadmin_no_single" statustext="How username get constructed" id="acc_imap_logintype"/>
+						<menupopup statustext="How username get constructed" id="acc_imap_logintype"/>
 					</menulist>
-				</row>
+				</row> <!-- asig fkar patch Account type for ews removed class="emailadmin_no_single" <===-->
 				<row class="@manual_class">
 					<description for="acc_imap_username" value="Username"/>
 					<textbox id="acc_imap_username" size="32" maxlength="128" autocomplete="off"/>
@@ -324,6 +324,34 @@
 			</rows>
 		</grid>
 	</template>
+	<!-- asig fkar patch ===> -->
+	<template id="admin.mailaccount.ews" template="" lang="" group="0" version="1.9.001">
+		<textbox type="hidden" id="clear_grid" />
+		<grid width="100%">
+			<columns>
+				<column width="115"/>
+				<column/>
+			</columns>
+			<rows>
+				<row>
+					<description value="Account Type"/>
+					<menulist>
+						<menupopup id="acc_ews_type" class="et2_fullWidth" onchange="app.admin.ews_switch_type" />
+					</menulist>
+				</row>
+                <row disabled="@isInbox">
+					<description value="Always Apply Custom Permissions"/>
+					<checkbox id="acc_ews_apply_permissions" />
+				</row>
+                <row disabled="@isInbox">
+					<button label="Edit Custom Permissions" onclick="window.open(egw::link('/index.php','menuaction=admin.admin_mail.ews_custom_permissions&amp;acc_id=$cont[acc_id]'),'roles','dependent=yes,width=900,height=600,scrollbars=no,status=yes'); return false;" />
+				</row>
+				<row>
+				</row>
+			</rows>
+		</grid>
+	</template>
+	<!-- asig fkar patch <=== -->
 	<template id="admin.mailaccount" template="" lang="" group="0" version="1.9.001">
 		<grid width="100%">
 			<columns>
@@ -357,12 +385,15 @@
 					<tabbox id="tabs" span="all" tab_height="420">
 						<tabs>
 							<tab id="admin.mailaccount.identity" label="Identity+Signature" statustext="Identity&amp;Signature"/>
-							<tab id="admin.mailaccount.imap" label="IMAP" statustext="incoming mail"/>
+							<tab id="admin.mailaccount.imap" label="Incomming Server" statustext="incoming mail"/>
 							<tab id="admin.mailaccount.folder" label="Folder" statustext="Folder"/>
 							<tab id="admin.mailaccount.sieve" label="Sieve" statustext="serverside filtering"/>
 							<tab id="admin.mailaccount.smtp" label="SMTP" statustext="outgoing mail"/>
 							<tab id="admin.mailaccount.aliases" label="Aliases+Forwards" statustext="Aliases, Forwarding, Quota, ..."/>
 							<tab id="admin.mailaccount.encryption" label="Encryption" statustext="Encryption settings"/>
+							<!-- asig fkar patch ===>-->
+							<tab id="admin.mailaccount.ews" label="EWS" statustext="Microsoft Exchange Settings" />
+							<!-- asig fkar patch <===-->
 						</tabs>
 						<tabpanels>
 							<template id="admin.mailaccount.identity"/>
@@ -372,6 +403,9 @@
 							<template id="admin.mailaccount.smtp"/>
 							<template id="admin.mailaccount.aliases"/>
 							<template id="admin.mailaccount.encryption"/>
+							<!-- asig fkar patch ===>-->
+							<template id="admin.mailaccount.ews"/>
+							<!-- asig fkar patch <===-->
 						</tabpanels>
 					</tabbox>
 				</row>

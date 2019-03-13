@@ -70,6 +70,7 @@
 		"pear/xml_feed_parser": "^1.0.5",
 		"pear/log": "*",
 		"pear/text_diff": "^1.2.2",
+		"php-ews/php-ews": "dev-composer",
 		"bower-asset/jquery": "^1.12.4",
 		"bower-asset/fastclick":"1.0.*",
 		"bower-asset/jquery-touchswipe": "1.6.*",

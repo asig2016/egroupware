@@ -632,7 +632,7 @@ class mail_compose
 				'get' => $_GET,
 				'replyID' => $replyID,
 				'content' => $content,
-				'sel_options' => $sel_options,
+				'sel_options' => array(),
 				'preserv' => $preserv,
 				'mail_bo' => $this->mail_bo,
 			));
@@ -642,7 +642,7 @@ class mail_compose
 				$preserv = array_merge( $preserv, $hook_preserve );
 			}
 		}
-		/* asig_fkar_patch <===
+		/* asig_fkar_patch <=== */
 		// user might have switched desired mimetype, so we should convert
 		if ($content['is_html'] && $content['mimeType']=='plain')
 		{

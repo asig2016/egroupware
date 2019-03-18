@@ -81,8 +81,10 @@ class Favorites
 			{
 				//error_log(__METHOD__.'Favorite filter "'.$name.'" in application "'.$app.'" is not supposed to be empty, it should be an array.  Skipping, more investigation needed. filter = '. array2string($filters[$name]));
 				error_log(__METHOD__.'Favorite filter "'.$name.'" in application "'.$app.'" is not supposed to be empty, it should be an array.  I will try to delete it. filter = '. array2string($filters[$name]));
-				$deleted = self::set_favorite($app, $name, 'delete', $GLOBALS['egw_info']['user']['account_id'] );
-				if ($deleted === true) error_log('Successfully deleted!');
+				if($app != 'actele'){
+					$deleted = self::set_favorite($app, $name, 'delete', $GLOBALS['egw_info']['user']['account_id'] );
+					if ($deleted === true) error_log('Successfully deleted!');
+				}
 				continue;
 			}
 			$li = "<li data-id='$name' data-group='{$filter['group']}' class='ui-menu-item' role='menuitem'>\n";

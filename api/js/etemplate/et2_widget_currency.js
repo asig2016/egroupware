@@ -13,6 +13,7 @@
 	et2_core_inputWidget;
 	/vendor/bower-asset/jquery/dist/jquery.js;
 	/api/js/jquery/inputmask/jquery.inputmask.bundle.js;
+	/api/js/jquery/inputmask/jquery.inputmask.bundle.min.js;
 */
 
 /**
@@ -112,15 +113,15 @@ var et2_currency = (function(){ "use strict"; return et2_inputWidget.extend([et2
 		this.input.addClass("et2_currency");
 		this.setDOMNode(this.input[0]);
 
-		if(this.options.size) 
+		if(this.options.size)
 		{
 			this.set_size(this.options.size);
 		}
-		if(this.options.blur) 
+		if(this.options.blur)
 		{
 			this.set_blur(this.options.blur);
 		}
-		if(this.options.readonly) 
+		if(this.options.readonly)
 		{
 			this.set_readonly(true);
 		}
@@ -143,8 +144,8 @@ var et2_currency = (function(){ "use strict"; return et2_inputWidget.extend([et2
 			radixPoint: this.options.decimal,
 			groupSeparator: this.options.thousands,
 			digits: this.options.digits,
-			prefix: this.options.prefix, 
-			suffix: this.options.suffix, 
+			prefix: this.options.prefix,
+			suffix: this.options.suffix,
 			min: this.options.min,
 			max: this.options.max,
 			rightAlign: true,

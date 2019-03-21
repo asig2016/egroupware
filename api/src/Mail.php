@@ -5666,7 +5666,6 @@ class Mail
 		}
 
 		$uidsToFetch->add($_uid);
-
 		try
 		{
 			$_fquery = new Horde_Imap_Client_Fetch_Query();

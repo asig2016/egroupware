@@ -3641,7 +3641,7 @@ class mail_compose
 				if (!is_null($cf_emails) && is_array($cf_emails) && is_null(array_values( (array) $cf_emails ))){
 					$cf_emails = (array) array_values(array_values( (array) $cf_emails )[0]);
 				}else{
-					$cf_emails = null;
+					$cf_emails = array();
 				}
 				foreach(array_merge(array($contact['email'],$contact['email_home']), $cf_emails) as $email) {
 					// avoid wrong addresses, if an rfc822 encoded address is in addressbook

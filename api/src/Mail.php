@@ -3864,7 +3864,7 @@ class Mail
 
 		// does the folder exist???
 		//error_log(__METHOD__."->Connected?".$this->icServer->_connected.", ".$_folder.", ".($forceCheck?' forceCheck activated':'dont check on server'));
-		if ( $forceCheck || empty($folderInfo) || !isset($folderInfo[$this->profileID]) || !isset($folderInfo[$this->profileID][$_folder])) {
+		if ( $forceCheck || empty($folderInfo) || (!is_object($folderInfo[$this->profileID]) && !isset($folderInfo[$this->profileID])) || !isset($folderInfo[$this->profileID][$_folder])) {
 			//error_log(__METHOD__."->NotConnected and forceCheck with profile:".$this->profileID);
 			//return false;
 			//try to connect

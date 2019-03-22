@@ -3848,7 +3848,7 @@ class Mail
 		//error_log(__METHOD__.' ('.__LINE__.') '.' Called with Folder:'.$_folder.function_backtrace());
 		if (is_null($folderInfo)) $folderInfo = Cache::getCache(Cache::INSTANCE,'email','icServerFolderExistsInfo'.trim($GLOBALS['egw_info']['user']['account_id']),null,array(),$expiration=60*60*5);
 		//error_log(__METHOD__.' ('.__LINE__.') '.'Cached Info on Folder:'.$_folder.' for Profile:'.$this->profileID.($forceCheck?'(forcedCheck)':'').':'.array2string($folderInfo));
-		if (!empty((array)$folderInfo) && isset(is_object($folderInfo[$this->profileID])) && isset(is_object($folderInfo[$this->profileID][$_folder])) && $forceCheck===false)
+		if (is_object($folderInfo[$this->profileID]) && !empty((array)$folderInfo) && isset($folderInfo[$this->profileID]) && isset($folderInfo[$this->profileID][$_folder]) && $forceCheck===false)
 		{
 			//error_log(__METHOD__.' ('.__LINE__.') '.' Using cached Info on Folder:'.$_folder.' for Profile:'.$this->profileID);
 			return $folderInfo[$this->profileID][$_folder];

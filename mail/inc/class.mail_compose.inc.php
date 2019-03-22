@@ -3638,7 +3638,7 @@ class mail_compose
 		if(is_array($contacts)) {
 			foreach($contacts as $contact) {
 				$cf_emails = $contacts_obj->read_customfields($contact['id'], $cfs_type_email);
-				if (!is_null($cf_emails) && is_array($cf_emails)){
+				if (!is_null($cf_emails) && is_array($cf_emails) && is_null(array_values( (array) $cf_emails ))){
 					$cf_emails = (array) array_values(array_values( (array) $cf_emails )[0]);
 				}else{
 					$cf_emails = null;

@@ -1907,7 +1907,7 @@ GROUP BY A.fs_id';
 				if (!isset($inst)) $inst = new self();
 				if (!($stat = $inst->url_stat($id,0)))
 				{
-					if (self::LOG_LEVEL) error_log(__METHOD__."(".array2string($path_ids).",$ns) path '$id' not found!");
+					if (self::LOG_LEVEL) error_log(__METHOD__.'LOG_LEVEL:'.self::LOG_LEVEL." (".array2string($path_ids).",$ns) path '$id' not found!").print_r(debug_backtrace(),true);
 					return false;
 				}
 				$id = $stat['ino'];

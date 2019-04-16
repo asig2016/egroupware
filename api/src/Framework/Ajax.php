@@ -466,7 +466,7 @@ abstract class Ajax extends Api\Framework
 		$sidebox = $this->get_sidebox($app);
 		$md5 = md5(json_encode($sidebox));
 
-		if ($md5_session[$app] !== $md5)
+		if ($md5_session[$app] !== $md5 || in_array($app, array('infolog','acemailstor','actpm','filemanager','acactivity2','acerp','acagreements','actele','aclaf','acmailprotocol','actmclients','acorders')))
 		{
 			//error_log(__METHOD__."() header changed md5_session[$app]!=='$md5' --> setting it on self::\$extra[setSidebox]");
 			$md5_session[$app] = $md5;	// update md5 in session

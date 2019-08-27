@@ -206,6 +206,28 @@ var et2_aclink = (function () {
 				}
 
 		},
+		set_value_ac: function (value){
+				
+				this.aclink.set_value({
+					id: value.toString(),
+					app: this.options.only_app.toString()
+				});
+
+				this.set_value({
+					id: value.toString(),
+					app: this.options.only_app.toString()
+				});
+
+				this.acentry.set_value({
+					id: value.toString(),
+					app: this.options.only_app.toString()
+				});
+
+				if (this.aclistbox) {
+					this.aclistbox.set_value(value.toString());
+				}
+
+		},
 		acentry_change: function () {
 			//alert('entry change');
 			if (this.acentry.get_value()) {
@@ -348,14 +370,14 @@ var et2_aclink = (function () {
 
 		},
 		should_hide_listbox: function () {
-			console.log('listbox_'+this.options.id.toString()+' check hide autohide:'+ this.options.listbox_autohide.toString() + 'length: ' + this.aclistbox.options.select_options.length);
+			//console.log('listbox_'+this.options.id.toString()+' check hide autohide:'+ this.options.listbox_autohide.toString() + 'length: ' + this.aclistbox.options.select_options.length);
 
 			if (this.options.listbox_autohide === true) {
 
 				//alert('in auto hide');
 
 				if (this.aclistbox.options.select_options.length < 2 || typeof this.aclistbox.options.select_options.length === 'undefined') {
-					console.log('I will hide listbox_'+this.options.id.toString())
+					//console.log('I will hide listbox_'+this.options.id.toString())
 					//alert ('i will hide');
 					//alert('listbox_'+this.options.id.toString()+' will be hidden');
 					return true;

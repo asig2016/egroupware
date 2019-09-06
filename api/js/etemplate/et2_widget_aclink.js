@@ -137,11 +137,7 @@ var et2_aclink = (function () {
 					this.doShowSearch();
 				}
 			} else {
-				// Hide controls if readonly
-				this.search.hide();
-				this.clear.remove();
-				//jQuery(this.acbutton_show.getDOMNode()).hide();
-				//jQuery(this.acbutton_edit.getDOMNode()).hide();
+				this.doShowLink();
 			}
 
 			return this._super.apply(this, arguments);
@@ -207,7 +203,7 @@ var et2_aclink = (function () {
 
 		},
 		set_value_ac: function (value){
-				
+
 				this.aclink.set_value({
 					id: value.toString(),
 					app: this.options.only_app.toString()

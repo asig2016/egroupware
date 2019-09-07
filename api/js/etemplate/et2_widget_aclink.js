@@ -137,7 +137,7 @@ var et2_aclink = (function () {
 					this.doShowSearch();
 				}
 			} else {
-				this.doShowLink();
+				this.doReadOnly();
 			}
 
 			return this._super.apply(this, arguments);
@@ -282,7 +282,12 @@ var et2_aclink = (function () {
 
 		},
 		doReadOnly: function () {
+			this.doShowLink();
+			//Show search button
+			jQuery(this.acbutton_search.getDOMNode()).hide();
 
+			//Hide select button
+			jQuery(this.acbutton_select.getDOMNode()).hide();
 		},
 		doShowSelect: function () {
 			//alert('show select');

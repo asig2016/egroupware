@@ -3849,7 +3849,7 @@ class Mail
 		//error_log(__METHOD__.' ('.__LINE__.') '.' Called with Folder:'.$_folder.function_backtrace());
 		if (is_null($folderInfo)) $folderInfo = Cache::getCache(Cache::INSTANCE,'email','icServerFolderExistsInfo'.trim($GLOBALS['egw_info']['user']['account_id']),null,array(),$expiration=60*60*5);
 		//error_log(__METHOD__.' ('.__LINE__.') '.'Cached Info on Folder:'.$_folder.' for Profile:'.$this->profileID.($forceCheck?'(forcedCheck)':'').':'.array2string($folderInfo));
-		if (!empty($folderInfo) && isset($folderInfo[$this->profileID]) && isset($folderInfo[$this->profileID][$_folder]) && $forceCheck===false)
+		if (is_object($folderInfo[$this->profileID]) && !empty((array)$folderInfo) && isset($folderInfo[$this->profileID]) && isset($folderInfo[$this->profileID][$_folder]) && $forceCheck===false)
 		{
 			//error_log(__METHOD__.' ('.__LINE__.') '.' Using cached Info on Folder:'.$_folder.' for Profile:'.$this->profileID);
 			return $folderInfo[$this->profileID][$_folder];
@@ -3865,7 +3865,7 @@ class Mail
 
 		// does the folder exist???
 		//error_log(__METHOD__."->Connected?".$this->icServer->_connected.", ".$_folder.", ".($forceCheck?' forceCheck activated':'dont check on server'));
-		if ( $forceCheck || empty($folderInfo) || !isset($folderInfo[$this->profileID]) || !isset($folderInfo[$this->profileID][$_folder])) {
+		if ( $forceCheck || empty($folderInfo) || (!is_object($folderInfo[$this->profileID]) && !isset($folderInfo[$this->profileID])) || !isset($folderInfo[$this->profileID][$_folder])) {
 			//error_log(__METHOD__."->NotConnected and forceCheck with profile:".$this->profileID);
 			//return false;
 			//try to connect

@@ -55,7 +55,10 @@ class mail_ui
 		'importMessageFromVFS2DraftAndDisplay'=>True,
 		'subscription'	=> True,
 		'folderManagement' => true,
-		'smimeExportCert' => true
+		'smimeExportCert' => true,
+		/* asig_fkar_patch ===> */
+		'moveEWS' => true,
+		/* asig_fkar_patch <=== */
 	);
 
 	/**
@@ -1241,6 +1244,20 @@ class mail_ui
 		} else {
 			$group++;
 		}
+		/* asig_fkar_patch ===> */
+		// Move in Exchange
+		$actions['exchange_move'] = array(
+			'caption' => 'Move to EWS folder',
+			'icon' => 'move',
+			'group' => 2,
+			'allowOnMultiple' => true,
+			'nm_action' => 'popup',
+			'popup' => '500x600',
+			'url' => 'menuaction=mail.mail_ui.moveEWS&id=$row_id',
+			'enableClass' => 'is_ews',
+			'hideOnDisabled' => true,
+		);
+		/* asig_fkar_patch <=== */
 		$spam_actions = $this->getSpamActions();
 		$group++;
 		foreach ($spam_actions as &$action)
@@ -1472,7 +1489,7 @@ class mail_ui
 				//'onExecute' => 'javaScript:app.mail.mail_dragStart',
 			)
 		);
-		//error_log(__METHOD__.__LINE__.array2string(array_keys($actions)));
+			//error_log(__METHOD__.__LINE__.array2string(array_keys($actions)));
 		// save as tracker, save as infolog, as this are actions that are either available for all, or not, we do that for all and not via css-class disabling
 		if (!isset($GLOBALS['egw_info']['user']['apps']['infolog']))
 		{
@@ -1950,7 +1967,12 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 			if ($header['label5']) {
 				$css_styles[] = 'labelfive';
 			}
-
+			/* asig_fkar_patch ===> */
+			$account = Mail\Account::read($this->mail_bo->profileID);
+			if ( $account->is_ews() ){
+				$css_styles[] = 'is_ews';
+			}
+			/* asig_fkar_patch <=== */
 			//error_log(__METHOD__.array2string($css_styles));
 
 			if (in_array("subject", $cols))
@@ -2371,6 +2393,48 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 		return array_reverse($actions2,true);
 	}
 
+	/* asig_fkar_patch ===> */
+	/**
+	 * Move mails between EWS folders
+	 */
+	function moveEWS (array $content = null)
+	{
+		$dtmpl = new Etemplate('mail.move_ews');
+		$ids = $_GET['id']? $_GET['id']: $content['id'];
+		$content['id'] = $ids;
+		$ids = explode(',', $ids );
+		list($app, $user, $profile, $folder64, $message_uid ) = explode('::', $ids[0]);
+		$folderName = base64_decode( $folder64 );
+		$folderID = $this->mail_bo->getFolderId( $folderName );
+		$sel_options['folder'] = Mail\EWS\Lib::getWriteFolders( $profile, $folderID );
+
+		if ( !$content['folder'] )
+			$content['msg'] = lang('No Folder Selected');
+
+		if ( $content['folder'] && ($content['move'] || $content['copy'] ) ) {
+			$move = ( $content['move'] ? true : false );
+			$messageUIDs = array();
+			foreach( $ids as $uid ) {
+				list($app, $user, $profile, $folder64, $message_uid ) = explode('::', $uid);
+				$messageUIDs[] = $message_uid;
+			}
+			$res = $this->mail_bo->moveMessages( $content['folder'], $messageUIDs, $move, $folderName );
+			if ( $res ) {
+				$msg = 'Operation Successful';
+				if ( $move )
+					Framework::refresh_opener( $msg, 'mail', $ids, 'delete' );
+				Framework::window_close();
+			}
+		}
+
+		$readonlys = array();
+		// Preserv
+		$preserv = array(
+			'id' => $content['id']
+		);
+		$dtmpl->exec('mail.mail_ui.moveEWS', $content,$sel_options,$readonlys,$preserv);
+	}
+	/* asig_fkar_patch <=== */
 	/**
 	 * helper function to create the attachment block/table
 	 *
@@ -3961,22 +4025,37 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 		try
 		{
 			$messageUid = $this->importMessageToFolder($formData,$draftFolder,$importID);
-			$linkData = array
-			(
-		        'menuaction'    => ($mode=='display'?'mail.mail_ui.displayMessage':'mail.mail_compose.composeFromDraft'),
-				'id'		=> $this->createRowID($draftFolder,$messageUid,true),
-				'deleteDraftOnClose' => 1,
-			);
-			if ($mode!='display')
-			{
-				unset($linkData['deleteDraftOnClose']);
-				$linkData['method']	='importMessageToMergeAndSend';
+			/* asig_fkar_patch ===> */
+			if ( $messageUid ) {
+			/* asig_fkar_patch <=== */
+				$linkData = array
+				(
+					'menuaction'    => ($mode=='display'?'mail.mail_ui.displayMessage':'mail.mail_compose.composeFromDraft'),
+					'id'		=> $this->createRowID($draftFolder,$messageUid,true),
+					'deleteDraftOnClose' => 1,
+				);
+				if ($mode!='display')
+				{
+					unset($linkData['deleteDraftOnClose']);
+					$linkData['method']	='importMessageToMergeAndSend';
+				}
+				else
+				{
+					$linkData['mode']=$mode;
+				}
+				Egw::redirect_link('/index.php',$linkData);
+			/* asig_fkar_patch ===> */
 			}
-			else
-			{
-				$linkData['mode']=$mode;
+			else {
+				// fkara: If mail cannot be imported to drafts, then save it
+				Header('MIME-Version: 1.0');
+				Header('Content-type: text/plain; charset=UTF-8');
+				Header('charset: UTF-8');
+				/* Header('Content-disposition: attachment; filename=attached.msg'); */
+				echo Link::get_data( $formData['data'] );
+				die();
 			}
-			Egw::redirect_link('/index.php',$linkData);
+		/* asig_fkar_patch <=== */
 		}
 		catch (Api\Exception\WrongUserinput $e)
 		{
@@ -5586,4 +5665,29 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 			$response->data($res);
 		}
 	}
+
+	/* asig_fkar_patch ===> */
+	/**
+	 * Check whether capability is enabled
+	 *
+	 * @param string $profile
+	 * @return boolean
+	 */
+	function ajax_checkCapability( $capability )
+	{
+		$res = $this->mail_bo->icServer->hasCapability( $capability );
+		Api\Json\Response::get()->data( $res );
+	}
+	/**
+	 * Function check whether profile is ews
+	 *
+	 * @param string $profile
+	 * @return boolean
+	 */
+	function ajax_isEws( $profile )
+	{
+		$account = Mail\Account::read( $profile );
+		Api\Json\Response::get()->data( $account->is_ews() );
+	}
+	/* asig_fkar_patch <=== */
 }

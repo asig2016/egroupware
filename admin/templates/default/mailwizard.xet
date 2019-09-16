@@ -25,8 +25,16 @@
 					<description value="Password" for="acc_imap_password"/>
 					<passwd id="acc_imap_password" needed="1"  size="32" maxlength="128" autocomplete="off"/>
 				</row>
+				<!-- asig fkar patch Account type for ews ===>-->
 				<row class="@manual_class">
-					<description value="IMAP server" for="acc_imap_host"/>
+					<description value="Account Type" for="acc_imap_type"/>
+					<menulist>
+						<menupopup id="acc_imap_type" />
+					</menulist>
+				</row>
+				<!-- asig fkar patch Account type for ews <===-->
+				<row class="@manual_class">
+					<description value="Server" for="acc_imap_host"/>
 					<textbox blur="Hostname or IP" id="acc_imap_host" size="32" maxlength="128"/>
 				</row>
 				<row class="@manual_class">

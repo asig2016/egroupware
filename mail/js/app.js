@@ -379,6 +379,13 @@ app.classes.mail = AppJS.extend(
 	{
 		switch(_app)
 		{
+			/* asig_fkar_patch ===> */
+			//fkara
+			case 'infolog':
+				// If new infolog is created, store its id. It will be fetched by popup windows
+				this.latest_infolog = _id;
+				break;
+			/* asig_fkar_patch <=== */
 			case 'mail':
 				if (_id === 'sieve')
 				{
@@ -1681,7 +1688,29 @@ app.classes.mail = AppJS.extend(
 
 		return node && node.data && node.data.sieve;
 	},
-
+	/* asig_fkar_patch ===> */
+	/**
+	 * Check if capability is enabled on that account
+	 *
+	 * @param {object} _action
+	 * @param {object} _senders the representation of the tree leaf to be manipulated
+	 * @param {object} _currentNode
+	 */
+	capability_enabled: function( _action, _senders, _currentNode )
+	{
+		var capability;
+		switch ( _action.id ) {
+			case 'setLabel':
+				capability = 'SUPPORTS_KEYWORDS';
+				break;
+			case 'flagged':
+				capability = 'SUPPORTS_FLAGS';
+				break;
+		}
+		var req = egw.json('mail.mail_ui.ajax_checkCapability',[ capability ],null,this,false).sendRequest();
+		return req.responseJSON.response[0].data;
+	},
+	/* asig_fkar_patch <=== */
 	/**
 	 * Check if ACL is enabled on that account
 	 *
@@ -3821,7 +3850,18 @@ app.classes.mail = AppJS.extend(
 			this.egw.message('Could not saved the message. Because, the response from server failed.', 'error');
 			return false;
 		}
-
+		/* asig_fkar_patch ===> */
+		//fkara set lastDrafted even upon failure
+		if ( _responseData.draftedId ) {
+			var content = this.et2.getArrayMgr('content');
+			var lastDrafted = this.et2.getWidgetById('lastDrafted');
+			var prevDraftedId = content.data.lastDrafted;
+			content.data.lastDrafted = _responseData.draftedId;
+			this.et2.setArrayMgr('content', content);
+			lastDrafted.set_value(_responseData.draftedId);
+		}
+		//fkara end
+		/* asig_fkar_patch <=== */
 		if (_responseData.success)
 		{
 			var content = this.et2.getArrayMgr('content');

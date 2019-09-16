@@ -98,6 +98,7 @@
 		"pear/pear": "*",
 		"pear/xml_feed_parser": "^1.0.5",
 		"pragmarx/google2fa-qrcode": "^1.0",
+                "php-ews/php-ews": "dev-composer",
 		"tinymce/tinymce": "^5.0"
 	},
 	"require-dev": {

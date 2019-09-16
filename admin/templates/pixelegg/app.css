@@ -246,7 +246,21 @@ Admin command
     filter: initial;
     /* IE 6-9 */
   }
+
   #admin-account-delete .dialogFooterToolbar .et2_button_delete {
     margin-left: 0;
   }
+
+/* asig_fkar_patch ===> */
+
+#admin-mailaccount-permissions_ews_tabs .th {
+  border-bottom: none;
 }
+#admin-mailaccount-permissions_ews_tabs .et2_tabheader {
+  display: none;
+}
+#admin-mailaccount-permissions_ews_tabs #admin-mailaccount-permissions_ews_permissions .th {
+  visibility: collapse;
+}
+
+/* asig_fkar_patch <=== */

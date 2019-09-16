@@ -193,3 +193,17 @@ Admin command
   border-bottom: 0;
   background: white;
 }
+
+/* asig_fkar_patch ===> */
+
+#admin-mailaccount-permissions_ews_tabs .th {
+	border-bottom: none;
+}
+#admin-mailaccount-permissions_ews_tabs  .et2_tabheader {
+	display:none;
+}
+#admin-mailaccount-permissions_ews_tabs  #admin-mailaccount-permissions_ews_permissions .th {
+	visibility: collapse;
+}
+
+/* asig_fkar_patch <=== */

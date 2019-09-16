@@ -79,7 +79,10 @@ class admin_mail
 	public $public_functions = array(
 		'add' => true,
 		'edit' => true,
-		'ajax_activeAccounts' => true
+		'ajax_activeAccounts' => true,
+		/* asig_fkar_patch ===> */
+		'ews_custom_permissions' => true
+		/* asig_fkar_patch <=== */
 	);
 
 	/**
@@ -192,6 +195,13 @@ class admin_mail
 			'acc_imap_port' => 993,
 			'manual_class' => 'emailadmin_manual',
 		);
+		/* asig_fkar_patch ===> */
+		// Select Options
+		$sel_options['acc_imap_ssl'] = self::$ssl_types;
+		// Not listing other server types, since this could be single account
+		// EGroupware only allows different types for multiple accounts
+		$sel_options['acc_imap_type'] = Mail\Types::getIMAPServerTypes(false);
+		/* asig_fkar_patch <=== */		
 		Framework::message($msg ? $msg : (string)$_GET['msg'], $msg_type);
 
 		if (!empty($content['acc_imap_host']) || !empty($content['acc_imap_username']))
@@ -199,9 +209,14 @@ class admin_mail
 			$readonlys['button[manual]'] = true;
 			unset($content['manual_class']);
 		}
+		/* asig_fkar_patch ===> */
+		/*
 		$tpl->exec(static::APP_CLASS.'autoconfig', $content, array(
 			'acc_imap_ssl' => self::$ssl_types,
 		), $readonlys, $content, 2);
+		*/
+		$tpl->exec(static::APP_CLASS.'autoconfig', $content, $sel_options, $readonlys, $content, 2);
+		/* asig_fkar_patch <=== */
 	}
 
 	/**
@@ -327,8 +342,18 @@ class admin_mail
 		if ($connected)	// continue with next wizard step: define folders
 		{
 			unset($content['button']);
-			return $this->folder($content, lang('Successful connected to %1 server%2.', 'IMAP', ' '.lang('and logged in')).
+			/* asig_fkar_patch ===> */
+			//EWS: skip steps
+			if (Mail\Account::is_ews_type($content['acc_imap_type'])){
+				return $this->smtp($content, lang('Successful connected to %1 server%2.', 'EWS', ' ' . lang('and logged in')) .
+					($imap->isSecureConnection() ? '' : "\n" . lang('Connection is NOT secure! Everyone can read eg. your credentials.')));
+			}else{
+			/* asig_fkar_patch <=== */
+				return $this->folder($content, lang('Successful connected to %1 server%2.', 'IMAP', ' '.lang('and logged in')).
 				($imap->isSecureConnection() ? '' : "\n".lang('Connection is NOT secure! Everyone can read eg. your credentials.')));
+			/* asig_fkar_patch ===> */
+			}		
+			/* asig_fkar_patch <=== */
 		}
 		// add validation error, if we can identify a field
 		if (!$connected && $e instanceof Horde_Imap_Client_Exception)
@@ -348,6 +373,11 @@ class admin_mail
 		$readonlys['button[manual]'] = true;
 		unset($content['manual_class']);
 		$sel_options['acc_imap_ssl'] = self::$ssl_types;
+		/* asig_fkar_patch ===> */
+		// Not listing other server types, since this could be single account
+		// EGroupware only allows different types for multiple accounts
+		$sel_options['acc_imap_type'] = Mail\Types::getIMAPServerTypes(false);
+		/* asig_fkar_patch <=== */
 		$tpl = new Etemplate('admin.mailwizard');
 		$tpl->exec(static::APP_CLASS.'autoconfig', $content, $sel_options, $readonlys, $content, 2);
 	}
@@ -626,7 +656,17 @@ class admin_mail
 			switch($button)
 			{
 				case 'back':
-					return $this->sieve($content);
+					/* asig_fkar_patch ===> */
+					if (Mail\Account::is_ews_type($content['acc_imap_type'])){
+						return $this->add($content);
+					}
+					else
+					{
+					/* asig_fkar_patch <=== */
+						return $this->sieve($content);
+					/* asig_fkar_patch ===> */
+					}
+					/* asig_fkar_patch <=== */
 			}
 		}
 		// first try: hide manual config
@@ -930,7 +970,10 @@ class admin_mail
 			);
 		}
 		// ensure correct values for single user mail accounts (we only hide them client-side)
-		if (!($is_multiple = Mail\Account::is_multiple($content)))
+		/* asig_fkar_patch ===> */
+		//if (!($is_multiple = Mail\Account::is_multiple($content)))
+		if (!($is_multiple = Mail\Account::is_multiple($content)) && $content['acc_imap_type'] != 'EGroupware\Api\Mail\Imap' && !Mail\Account::is_ews_type( $content['acc_imap_type'] ) )
+		/* asig_fkar_patch <=== */
 		{
 			$content['acc_imap_type'] = 'EGroupware\\Api\\Mail\\Imap';
 			unset($content['acc_imap_login_type']);
@@ -1059,6 +1102,17 @@ class admin_mail
 								}
 								$content['accounts'][$content['acc_id']] = Mail\Account::identity_name($content, false);
 							}
+							/* asig_fkar_patch ===> */
+							if ($content['acc_imap_type'] && Mail\Account::is_ews_type($content['acc_imap_type']))
+							{
+								if ($content['clear_grid'])
+								{
+									$content['ews_permissions'] = array();
+									$content['clear_grid'] = false;
+									Api\Mail_EWS::storeFolderPermissions($content['ews_permissions'], $content['acc_id']);
+								}
+							}
+							/* asig_fkar_patch <=== */
 						}
 						else
 						{
@@ -1204,6 +1258,26 @@ class admin_mail
 				$tpl->setElementAttribute($folder, 'allowFreeEntries', true);
 			}
 		}
+		/* asig_fkar_patch ===> */
+		elseif (Mail\Account::is_ews_type($content['acc_imap_type']))
+		{
+			try {
+
+				$sel_options['acc_folder_sent'] = $sel_options['acc_folder_trash'] =
+					$sel_options['acc_folder_draft'] = $sel_options['acc_folder_template'] =
+					$sel_options['acc_folder_junk'] = $sel_options['acc_folder_archive'] =
+					$sel_options['notify_folders'] = $sel_options['acc_folder_ham'] =
+						Api\Mail\EWS\Lib::getFoldersSelOptions($content['acc_id'], true);
+			}
+			catch (Exception $e)
+			{
+				if (self::$debug) _egw_log_exception($e);
+				// let user know what the problem is and that he can fix it using wizard or deleting
+				$msg = lang($e->getMessage()) . "\n\n" . lang('You can use wizard to fix account settings or delete account.');
+				$msg_type = 'error';
+			}
+		}
+		/* asig_fkar_patch <=== */
 		else
 		{
 			try {
@@ -1237,7 +1311,15 @@ class admin_mail
 		$sel_options['ident_id'] = $content['identities'];
 		$sel_options['acc_id'] = $content['accounts'];
 		$sel_options['acc_further_identities'] = self::$further_identities;
+		/* asig_fkar_patch ===> */
+		$sel_options['acc_ews_type'] = array(
+			'inbox' => 'Inbox',
+			'public_folders' => 'Public Folders'
+		);
 
+		// Disable permissions if inbox
+		$content['isInbox'] = ( $content['acc_ews_type'] == 'inbox' );
+		/* asig_fkar_patch <=== */
 		// user is allowed to create or edit further identities
 		if ($edit_access || $content['acc_further_identities'])
 		{
@@ -1317,6 +1399,13 @@ class admin_mail
 				$readonlys['deliveryMode'] = true;
 			}
 		}
+		/* asig_fkar_patch ===> */
+		// Disable EWS tab for other types
+		if ($content['acc_imap_type'] && !Mail\Account::is_ews_type($content['acc_imap_type']))
+			{
+			$readonlys['tabs']['admin.mailaccount.ews'] = true;
+		}
+		/* asig_fkar_patch <=== */
 
 		// account allows users to change forwards
 		if (!$edit_access && !$readonlys['tabs']['admin.mailaccount.aliases'] && $content['acc_user_forward'])
@@ -1354,6 +1443,24 @@ class admin_mail
 			if ($admin_actions) $tpl->setElementAttribute('admin_actions', 'actions', $admin_actions);
 		}
 		$content['admin_actions'] = (bool)$admin_actions;
+		/* asig_fkar_patch ===> */
+		if ($content['acc_imap_type'] && Mail\Account::is_ews_type($content['acc_imap_type']))
+			{
+			try
+			{
+				$content['acc_ews_apply_permissions'] = (int) $content['acc_ews_apply_permissions'];
+			} catch (Exception $e)
+			{
+				if (self::$debug)
+				{
+					_egw_log_exception($e);
+				}
+				// let user know what the problem is and that he can fix it using wizard or deleting
+				$msg = lang($e->getMessage()) . "\n\n" . lang('You can use wizard to fix account settings or delete account.');
+				$msg_type = 'error';
+			}
+		}
+		/* asig_fkar_patch <=== */
 
 		//try to fix identities with no domain part set e.g. alias as identity
 		if (!strpos($content['ident_email'], '@'))
@@ -1363,6 +1470,32 @@ class admin_mail
 
 		$tpl->exec(static::APP_CLASS.'edit', $content, $sel_options, $readonlys, $content, 2);
 	}
+	/* asig_fkar_patch ===> */
+	public function ews_custom_permissions( $content = array() )
+	{
+		$dtmpl = new Etemplate('admin.mailaccount.permissions');
+		$acc_id = $_GET['acc_id']? $_GET['acc_id']: $content['acc_id'];
+		$content['acc_id'] = $acc_id;
+
+		$sel_options['ews_permissions'] = Api\Mail_EWS::getFolderPermissionsSelOptions( $content['acc_id'] );
+		$names = array_values( $sel_options['ews_permissions'][1]['ews_move_to'] );
+		$sel_options['mailbox'] = array_combine( $names, $names );
+
+		if ( $content['save'] || $content['apply'] ) {
+			$res = Api\Mail_EWS::storeFolderPermissions( $content['ews_permissions'], $content['acc_id'] );
+			$msg = lang('Operation Successful');
+			if ( $res && $content['save'] ) {
+				Framework::message( $msg );
+				Framework::window_close();
+			}
+			$content['msg'] = $msg;
+		}
+
+		$content['ews_permissions'] = Api\Mail_EWS::getFolderPermissions( $content['acc_id'] );
+		$readonlys = array();
+		$dtmpl->exec('admin.admin_mail.ews_custom_permissions', $content,$sel_options,$readonlys,$content,2);
+	}
+	/* asig_fkar_patch <=== */
 
 	/**
 	 * Saves the smime key
@@ -1424,6 +1557,16 @@ class admin_mail
 	 */
 	protected static function imap_client(array $content, $timeout=null)
 	{
+		/* asig_fkar_patch ===> */
+		//EWS: Instantiate different object
+		if (Mail\Account::is_ews_type($content['acc_imap_type']))
+		{
+			$class = $content['acc_imap_type'];
+			return new $class($content);
+		}
+		else
+		{
+		/* asig_fkar_patch <=== */
 		return new Horde_Imap_Client_Socket(array(
 			'username' => $content['acc_imap_username'],
 			'password' => $content['acc_imap_password'],
@@ -1433,6 +1576,9 @@ class admin_mail
 			'timeout' => $timeout > 0 ? $timeout : Mail\Imap::getTimeOut(),
 			'debug' => self::DEBUG_LOG,
 		));
+		/* asig_fkar_patch ===> */
+		}
+		/* asig_fkar_patch <=== */
 	}
 
 	/**

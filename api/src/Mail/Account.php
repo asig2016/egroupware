@@ -392,6 +392,32 @@ class Account implements \ArrayAccess
 		return $this->imapServer;
 	}
 
+	/* asig_fkar_patch ===> */
+	/**
+	 * Check if account is an ews account
+	 *
+	 * @return boolean
+	 */
+	public function is_ews()
+	{
+		if (empty($this->acc_imap_host) || ( empty($this->acc_imap_username) && empty($this->acc_imap_password) ) )
+		{
+			return false;	// no host or credentials
+		}
+
+		if ( strpos( $this->acc_imap_type, __NAMESPACE__.'\EWS' ) !== FALSE )
+			return true;
+
+		return false;
+	}
+	static function is_ews_type( $type )
+	{
+		$full = (strpos( $type, __NAMESPACE__.'\EWS' ) !== FALSE );
+		$short = (substr( $type, 0, 3 ) == 'EWS' );
+		return $full || $short;
+	}
+	/* asig_fkar_patch <=== */
+
 	/**
 	 * Check if account is an imap account
 	 *
@@ -1068,7 +1094,10 @@ class Account implements \ArrayAccess
 		// convert old plugin names and readd namespace
 		if ($data['acc_imap_type'])
 		{
-			if (substr($data['acc_imap_type'], 0, 4) == 'Imap')
+			/* asig_fkar_patch ===> */
+			// original was if (substr($data['acc_imap_type'], 0, 4) == 'Imap')
+			if (substr($data['acc_imap_type'], 0, 4) == 'Imap' || substr($data['acc_imap_type'], 0, 3) == 'EWS' )
+			/* asig_fkar_patch <=== */
 			{
 				$data['acc_imap_type'] = __NAMESPACE__.'\\'.$data['acc_imap_type'];
 			}

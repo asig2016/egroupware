@@ -613,8 +613,7 @@ class mail_compose
 			{
 				$_content['mimeType'] = $content['mimeType']='plain';
 			}
-
-		}
+        }
 		// user might have switched desired mimetype, so we should convert
 		if ($content['is_html'] && $content['mimeType']=='plain')
 		{

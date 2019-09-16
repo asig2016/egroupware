@@ -1922,8 +1922,13 @@ GROUP BY A.fs_id';
 				if (!isset($inst)) $inst = new self();
 				if (!($stat = $inst->url_stat($id,0)))
 				{
-					if (self::LOG_LEVEL) error_log(__METHOD__."(".array2string($path_ids).",$ns) path '$id' not found!");
-					return false;
+					if (self::LOG_LEVEL) error_log(" ( path '$id' not found! try url decode:");
+					$id =  urldecode ( $id );
+					if (!($stat = $inst->url_stat($id,0)))
+					{
+						if (self::LOG_LEVEL) error_log(__METHOD__.'LOG_LEVEL:'.self::LOG_LEVEL." ( path '$id' not found! ".array2string($path_ids).",$ns)").print_r(debug_backtrace(),true);
+						return false;
+					}
 				}
 				$id = $stat['ino'];
 			}

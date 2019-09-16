@@ -102,6 +102,7 @@
                 "vakata/jstree": "^3.3",
                 "html2text/html2text": "^4.0",
                 "chillerlan/php-qrcode": "^2.0",
+                "asika/pdf2text": "1.*",
 		"tinymce/tinymce": "^5.0"
 	},
 	"require-dev": {

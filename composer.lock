@@ -293,7 +293,7 @@
                     "homepage": "https://github.com/kazuhikoarase"
                 },
                 {
-                    "name": "smiley",
+                    "name": "Smiley",
                     "email": "smiley@chillerlan.net",
                     "homepage": "https://github.com/codemasher"
                 }
@@ -355,16 +355,16 @@
         },
         {
             "name": "components/bootstrap",
-            "version": "4.1.1",
+            "version": "4.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/components/bootstrap.git",
-                "reference": "6c183f17f5d8fbfb38af412c5e0a52135f7d01c9"
+                "reference": "9487105b1b8c1db5bd1879429103deedd6982462"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/components/bootstrap/zipball/6c183f17f5d8fbfb38af412c5e0a52135f7d01c9",
-                "reference": "6c183f17f5d8fbfb38af412c5e0a52135f7d01c9",
+                "url": "https://api.github.com/repos/components/bootstrap/zipball/9487105b1b8c1db5bd1879429103deedd6982462",
+                "reference": "9487105b1b8c1db5bd1879429103deedd6982462",
                 "shasum": ""
             },
             "require": {
@@ -413,7 +413,7 @@
                 "sass",
                 "web"
             ],
-            "time": "2018-05-06T21:06:16+00:00"
+            "time": "2019-06-19T16:37:43+00:00"
         },
         {
             "name": "components/jquery",
@@ -459,16 +459,16 @@
         },
         {
             "name": "composer/installers",
-            "version": "v1.6.0",
+            "version": "v1.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/installers.git",
-                "reference": "cfcca6b1b60bc4974324efb5783c13dca6932b5b"
+                "reference": "141b272484481432cda342727a427dc1e206bfa0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/installers/zipball/cfcca6b1b60bc4974324efb5783c13dca6932b5b",
-                "reference": "cfcca6b1b60bc4974324efb5783c13dca6932b5b",
+                "url": "https://api.github.com/repos/composer/installers/zipball/141b272484481432cda342727a427dc1e206bfa0",
+                "reference": "141b272484481432cda342727a427dc1e206bfa0",
                 "shasum": ""
             },
             "require": {
@@ -524,6 +524,7 @@
                 "RadPHP",
                 "SMF",
                 "Thelia",
+                "Whmcs",
                 "WolfCMS",
                 "agl",
                 "aimeos",
@@ -546,6 +547,7 @@
                 "installer",
                 "itop",
                 "joomla",
+                "known",
                 "kohana",
                 "laravel",
                 "lavalite",
@@ -575,7 +577,7 @@
                 "zend",
                 "zikula"
             ],
-            "time": "2018-08-27T06:10:37+00:00"
+            "time": "2019-08-12T15:00:31+00:00"
         },
         {
             "name": "egroupware/activesync",
@@ -712,12 +714,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/EGroupware/collabora.git",
-                "reference": "39f0b29da18708ae743dd1b2451a55a977cd811f"
+                "reference": "f4a64e8a21ac6a8f0ae5d129c2c613430ca5aabe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/EGroupware/collabora/zipball/39f0b29da18708ae743dd1b2451a55a977cd811f",
-                "reference": "39f0b29da18708ae743dd1b2451a55a977cd811f",
+                "url": "https://api.github.com/repos/EGroupware/collabora/zipball/f4a64e8a21ac6a8f0ae5d129c2c613430ca5aabe",
+                "reference": "f4a64e8a21ac6a8f0ae5d129c2c613430ca5aabe",
                 "shasum": ""
             },
             "require": {
@@ -744,7 +746,7 @@
             ],
             "description": "EGroupware integration for Collabora Online Office",
             "homepage": "https://www.egroupware.org/",
-            "time": "2019-02-14T09:07:46+00:00"
+            "time": "2019-06-03T15:25:44+00:00"
         },
         {
             "name": "egroupware/icalendar",
@@ -850,12 +852,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/EGroupware/projectmanager.git",
-                "reference": "0cef63a49e70247cc8fde176ec6c4ecbce4b73a0"
+                "reference": "023b26425902921e7a10089477ace5a24458147f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/EGroupware/projectmanager/zipball/0cef63a49e70247cc8fde176ec6c4ecbce4b73a0",
-                "reference": "0cef63a49e70247cc8fde176ec6c4ecbce4b73a0",
+                "url": "https://api.github.com/repos/EGroupware/projectmanager/zipball/023b26425902921e7a10089477ace5a24458147f",
+                "reference": "023b26425902921e7a10089477ace5a24458147f",
                 "shasum": ""
             },
             "require": {
@@ -882,7 +884,7 @@
             ],
             "description": "EGroupware project-management application",
             "homepage": "https://www.egroupware.org/",
-            "time": "2019-02-14T09:06:18+00:00"
+            "time": "2019-07-30T16:09:35+00:00"
         },
         {
             "name": "egroupware/tracker",
@@ -890,12 +892,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/EGroupware/tracker.git",
-                "reference": "dc79be1673e8671d3bf14fe66a393888dccd3376"
+                "reference": "5f97cab8ca80927fe18017ff1ea26662949c7a4d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/EGroupware/tracker/zipball/dc79be1673e8671d3bf14fe66a393888dccd3376",
-                "reference": "dc79be1673e8671d3bf14fe66a393888dccd3376",
+                "url": "https://api.github.com/repos/EGroupware/tracker/zipball/5f97cab8ca80927fe18017ff1ea26662949c7a4d",
+                "reference": "5f97cab8ca80927fe18017ff1ea26662949c7a4d",
                 "shasum": ""
             },
             "require": {
@@ -922,7 +924,7 @@
             ],
             "description": "EGroupware bug-tracker and helpdesk application",
             "homepage": "https://www.egroupware.org/",
-            "time": "2019-03-09T10:51:56+00:00"
+            "time": "2019-07-17T19:43:53+00:00"
         },
         {
             "name": "egroupware/z-push-dev",
@@ -952,16 +954,16 @@
         },
         {
             "name": "fxp/composer-asset-plugin",
-            "version": "v1.4.4",
+            "version": "v1.4.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fxpio/composer-asset-plugin.git",
-                "reference": "0d07328eef6e6f3753aa835fd2faef7fed1717bf"
+                "reference": "886ece037849d3935c5a34cdcd984e46f2de5fae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fxpio/composer-asset-plugin/zipball/0d07328eef6e6f3753aa835fd2faef7fed1717bf",
-                "reference": "0d07328eef6e6f3753aa835fd2faef7fed1717bf",
+                "url": "https://api.github.com/repos/fxpio/composer-asset-plugin/zipball/886ece037849d3935c5a34cdcd984e46f2de5fae",
+                "reference": "886ece037849d3935c5a34cdcd984e46f2de5fae",
                 "shasum": ""
             },
             "require": {
@@ -1007,7 +1009,7 @@
                 "npm",
                 "package"
             ],
-            "time": "2018-07-02T11:37:17+00:00"
+            "time": "2019-08-08T18:36:07+00:00"
         },
         {
             "name": "html2text/html2text",
@@ -1433,10 +1435,10 @@
         },
         {
             "name": "pear-pear.horde.org/Horde_Imap_Client",
-            "version": "2.29.17",
+            "version": "2.29.18",
             "dist": {
                 "type": "file",
-                "url": "https://pear.horde.org/get/Horde_Imap_Client-2.29.17.tgz",
+                "url": "https://pear.horde.org/get/Horde_Imap_Client-2.29.18.tgz",
                 "reference": null,
                 "shasum": null
             },
@@ -1455,7 +1457,7 @@
                 "php": "<8.0.0.0"
             },
             "replace": {
-                "pear-horde/horde_imap_client": "== 2.29.17.0"
+                "pear-horde/horde_imap_client": "== 2.29.18.0"
             },
             "type": "pear-library",
             "autoload": {
@@ -1469,7 +1471,7 @@
             "license": [
                 "LGPL-2.1"
             ],
-            "description": "Interface to access IMAP4rev1 (RFC 3501) mail servers. Also supports connections to POP3 (STD 53/RFC 1939)."
+            "description": "A library to access IMAP4rev1 (RFC 3501) mail servers. Also supports connections to POP3 (STD 53/RFC 1939)."
         },
         {
             "name": "pear-pear.horde.org/Horde_ListHeaders",
@@ -2010,16 +2012,16 @@
         },
         {
             "name": "pear/archive_tar",
-            "version": "1.4.6",
+            "version": "1.4.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pear/Archive_Tar.git",
-                "reference": "b8e33f9063a7cd1d20f079014f8382b3a7aee47e"
+                "reference": "7e48add6f8edc3027dd98ad15964b1a28fd0c845"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pear/Archive_Tar/zipball/b8e33f9063a7cd1d20f079014f8382b3a7aee47e",
-                "reference": "b8e33f9063a7cd1d20f079014f8382b3a7aee47e",
+                "url": "https://api.github.com/repos/pear/Archive_Tar/zipball/7e48add6f8edc3027dd98ad15964b1a28fd0c845",
+                "reference": "7e48add6f8edc3027dd98ad15964b1a28fd0c845",
                 "shasum": ""
             },
             "require": {
@@ -2072,7 +2074,7 @@
                 "archive",
                 "tar"
             ],
-            "time": "2019-02-01T11:10:38+00:00"
+            "time": "2019-04-08T13:15:55+00:00"
         },
         {
             "name": "pear/auth_sasl",
@@ -2672,16 +2674,16 @@
         },
         {
             "name": "vakata/jstree",
-            "version": "3.3.7",
+            "version": "3.3.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vakata/jstree.git",
-                "reference": "bc5187e5826244dee5ebdc0e9db2e2652fefe928"
+                "reference": "c9d7c1425f2272c5400536fa631eba8657522ecf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vakata/jstree/zipball/bc5187e5826244dee5ebdc0e9db2e2652fefe928",
-                "reference": "bc5187e5826244dee5ebdc0e9db2e2652fefe928",
+                "url": "https://api.github.com/repos/vakata/jstree/zipball/c9d7c1425f2272c5400536fa631eba8657522ecf",
+                "reference": "c9d7c1425f2272c5400536fa631eba8657522ecf",
                 "shasum": ""
             },
             "require": {
@@ -2725,7 +2727,7 @@
             ],
             "description": "jsTree is jquery plugin, that provides interactive trees.",
             "homepage": "http://jstree.com",
-            "time": "2018-11-06T21:15:47+00:00"
+            "time": "2019-04-28T21:22:05+00:00"
         }
     ],
     "packages-dev": [],

@@ -3839,7 +3839,7 @@ class Mail
 		if (empty($_folder))
 		{
 			// this error is more or less without significance, unless we force the check
-			if ($_forceCheck===true) error_log(__METHOD__.' ('.__LINE__.') '.' Called with empty Folder:'.$_folder.function_backtrace());
+			// if ($_forceCheck===true) error_log(__METHOD__.' ('.__LINE__.') '.' Called with empty Folder:'.$_folder.function_backtrace());
 			return false;
 		}
 		// when check is not enforced , we assume a folder represented as Horde_Imap_Client_Mailbox as existing folder

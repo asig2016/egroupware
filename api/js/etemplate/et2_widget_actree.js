@@ -3,7 +3,6 @@
 	/vendor/bower-asset/jquery/dist/jquery.js;
 	/vendor/bower-asset/jquery/dist/jquery-ui.js;
     /vendor/vakata/jstree/dist/jstree.js;
-    /vendor/vakata/jstree/dist/jstree.js;
 */
 
 /**
@@ -104,27 +103,130 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 		// Create 'Open' Button
         this.acbutton = et2_createWidget('button', {label: this.egw().lang( this.options.button_label ), onclick: this.modalOpen.bind(this)}, this);
 
-		// Create Tree Modal
-		this.acbox = et2_createWidget('box', {class: 'hidden'}, this);
+		// // Create Tree Modal
+		// this.acbox = et2_createWidget('box', {class: 'hidden'}, this);
 
-		if (this.options.show_controls) {
-			et2_createWidget('button', {onclick: this.treeExpand.bind(this), label: '+' }, this.acbox);
-			et2_createWidget('button', {onclick: this.treeCollapse.bind(this), label: '-'}, this.acbox);
-		}
-		if (this.options.show_search) {
-			this.acsearch = et2_createWidget('textbox', { onchange: this.treeSearch.bind(this) }, this.acbox );
-		}
+		// if (this.options.show_controls) {
+		// 	et2_createWidget('button', {onclick: this.treeExpand.bind(this), label: '+' }, this.acbox);
+		// 	et2_createWidget('button', {onclick: this.treeCollapse.bind(this), label: '-'}, this.acbox);
+		// }
+		// if (this.options.show_search) {
+		// 	this.acsearch = et2_createWidget('textbox', { onchange: this.treeSearch.bind(this) }, this.acbox );
+		// }
 
-        this.acbox1 = et2_createWidget('box', { class:'tree tree-default' }, this.acbox );
-        this.acbox2 = et2_createWidget('box', { id: `${this.options.id}_tree`}, this.acbox1 );
-        if (!this.options.readonly) {
-            et2_createWidget('button', { onclick: this.treeSelectClose.bind(this), label: this.egw().lang('Ok') }, this.acbox);
-        }
+        // this.acbox1 = et2_createWidget('box', { class:'tree tree-default' }, this.acbox );
+        // this.acbox2 = et2_createWidget('box', { id: `${this.options.id}_tree`}, this.acbox1 );
+        // if (!this.options.readonly) {
+        //     et2_createWidget('button', { onclick: this.treeSelectClose.bind(this), label: this.egw().lang('Ok') }, this.acbox);
+        // }
         
-        et2_createWidget('button', {onclick: this.modalClose.bind(this), label: this.egw().lang('Cancel')}, this.acbox );
+        // et2_createWidget('button', {onclick: this.modalClose.bind(this), label: this.egw().lang('Cancel')}, this.acbox );
+
+        // this.jstreeConfig.height = this.options.dialog_height;
+        // this.jstreeConfig.width = this.options.dialog_width;
+
+        // if (this.options.show_search) {
+        //     this.jstreeConfig.plugins.push('search');
+        //     this.jstreeConfig.search = {
+        //         show_only_matches : true
+        //     };
+        // }
+
+        // if (this.options.contextCallback) {
+        //     let evalContextCallback = eval(this.options.contextCallback);
+        //     if (typeof(evalContextCallback) === 'function') {
+        //         this.jstreeConfig.core.check_callback = true;
+        //         this.jstreeConfig.plugins.push('contextmenu');
+        //         this.jstreeConfig.contextmenu = {
+        //             items : evalContextCallback
+        //         };
+        //     }
+        // }
+
+        // let that = this;
+
+        // this.jstreeConfig.core.data = function(node, callback) {
+        //     // no need to recall the same nodes more than once
+        //     if (that.actree != null && that.actree.is_parent(node) && node.children.length > 0) {
+        //         return;
+        //     }
+
+        //     egw.json(that.options.nodeCallback, [node.id, that.options.value], function(response) {
+        //         callback.call(this, response.nodes);
+        //         that.createJsTree();
+        //         that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
+        //     }).sendRequest(true);
+        // };
+    },
+    
+    modal : null,
+    tree  : null,
+
+    jQueryWidget: function()
+    {
+        if (this.modal != null) {
+            return;
+        }
 
         let that = this;
+
+        this.modal = jQuery('<div />', {id : 'treeModal', 'class' : 'hidden'});
+        let controls = jQuery('<div />', {'class':'display-block'});
+        let buttonExpand  = jQuery('<button />', {'class':'primary'}).html('+').off('click').on('click', function() {
+            that.actree.open_all();
+        });
+        let buttonCollapse = jQuery('<button />', {'class':'primary'}).html('-').off('click').on('click', function() {
+            that.actree.close_all();
+        });
         
+        controls.append(buttonExpand).append(buttonCollapse);
+        if (this.options.show_search) {
+            let searchInput = jQuery('<input />', {type: 'text'}).off('keyup').on('keyup', this.treeSearch);
+            controls.append(searchInput);
+        }
+        
+        this.tree = jQuery('<div />', {'class': 'tree tree-default display-block'});
+
+        // this.node = jQuery('<div />', {id : `${that.options.id}_tree`})
+        // tree.append(this.node);
+        
+        let footer = jQuery('<div />', {'class':'display-block'});
+        if (!this.options.readonly) {
+            let buttonOk = jQuery('<button />', {'class':'primary'}).html(this.egw().lang('Ok')).off('click').on('click', function() {
+                that.actree.get_selected(true).forEach((v) => that.set_value(v.id));
+                that.modal.dialog('close');
+            });
+            footer.append(buttonOk);
+        }
+        let buttonCancel = jQuery('<button />', {'class':'primary'}).html(this.egw().lang('Cancel')).off('click').on('click', function() {
+            that.modal.dialog('close');
+        });
+        footer.append(buttonCancel);
+
+        this.modal.append(controls).append(this.tree).append(footer);
+        jQuery('body').append(this.modal);
+
+        this.jstreeConfig.height = this.options.dialog_height;
+        this.jstreeConfig.width = this.options.dialog_width;
+
+        if (this.options.show_search) {
+            this.jstreeConfig.plugins.push('search');
+            this.jstreeConfig.search = {
+                show_only_matches : true
+            };
+        }
+
+        if (this.options.contextCallback) {
+            let evalContextCallback = eval(this.options.contextCallback);
+            if (typeof(evalContextCallback) === 'function') {
+                this.jstreeConfig.core.check_callback = true;
+                this.jstreeConfig.plugins.push('contextmenu');
+                this.jstreeConfig.contextmenu = {
+                    items : evalContextCallback
+                };
+            }
+        }
+
         this.jstreeConfig.core.data = function(node, callback) {
             // no need to recall the same nodes more than once
             if (that.actree != null && that.actree.is_parent(node) && node.children.length > 0) {
@@ -133,31 +235,14 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value], function(response) {
                 callback.call(this, response.nodes);
+                that.createJsTree();
                 that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
             }).sendRequest(true);
         };
 
-        this.jstreeConfig.height = this.options.dialog_height;
-        this.jstreeConfig.width = this.options.dialog_width;
-
-        if (this.options.search) {
-            this.jstreeConfig.plugins.push('search');
-            this.jstreeConfig.search = {
-                'show_only_matches' : true
-            };
-        }
-
-		if (this.options.contextCallback) {
-            let evalContextCallback = eval(this.options.contextCallback);
-            if (typeof(evalContextCallback) === 'function') {
-                this.jstreeConfig.plugins.push('contextmenu');
-                this.jstreeConfig.contextmenu = {
-                    'items'         : evalContextCallback
-                };
-            }
-        }
+        this.createJsTree();
     },
-    
+
     /**
      * Remove Events Or Nodes
      *
@@ -170,7 +255,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
 	destroy: function() {
         let domNodes = this.getDOMNode();
-		jQuery(document).off("dblclick", `#${domNodes.id}_tree li a`);
+		jQuery(document).off("dblclick", `#${domNodes.id}_tree li a, #${domNodes.id}_tree li span.edit_link`);
         this._super.apply(this, arguments);
     },
     
@@ -187,13 +272,14 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 	doLoadingFinished: function() {
         let domNodes = this.getDOMNode();
         let gotValue = this.get_value();
-
+    
         if (!this.options.readonly) {
 			if (gotValue) {
 				this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
 				this.aclink.set_value({ id: gotValue, app: this.options.only_app, title: `#${gotValue}` });
 			}
-			jQuery(document).on("dblclick", `#${domNodes.id}_tree li a`, jQuery.proxy(this.treeSelectClose, this));
+			jQuery(document).on("dblclick", `#${domNodes.id}_tree li a, #${domNodes.id}_tree li span.edit_link`, jQuery.proxy(this.treeSelectClose, this));
+			// jQuery(document).on("dblclick", `#${domNodes.id}_tree li span.edit_link`, jQuery.proxy(this.treeSelectClose, this));
 		} else {
 			// Show link-entry_ro if readonly
 			et2_createWidget('link', {id: this.options.id, only_app: this.options.only_app, readonly: this.options.readonly}, this);
@@ -206,6 +292,26 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
     },
     
     /**
+     * Create JSTree Object
+     *
+     * Creates the object used for the widget.
+     *
+     * @version 0.0.1
+     * @access  public
+     * @return  void
+     */
+    createJsTree: function()
+    {
+        if (this.actree != null) {
+            return;
+        }
+
+        // this.actree = jQuery(this.acbox2.getDOMNode()).jstree(this.jstreeConfig);
+        this.actree = this.tree.jstree(this.jstreeConfig);
+        this.actree = this.tree.jstree(true);
+    },
+
+    /**
      * Modal Event
      *
      * Set up an event within the modal that will generate required jstree. Moreover once done with with the loading
@@ -216,25 +322,46 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
 	modalOpen: function() {
-        let that = this;
-        jQuery(this.acbox.getDOMNode()).dialog({
-            open: function(event, ui) {
-                if (that.actree != null && typeof(that.actree) === 'object') {
-                    return;
-                }
+        this.jQueryWidget();
 
-                that.actree = jQuery(that.acbox2.getDOMNode()).jstree(that.jstreeConfig);
-                that.actree = that.actree.jstree();
+        let that = this;
+
+        // jQuery(this.acbox.getDOMNode()).dialog({
+        this.modal.dialog({
+            open: function(event, ui) {
+                jQuery(this).removeClass('hidden');
+            },
+            close: function(event, ui) {
+                that.actree = null;
+                that.tree   = null;
+                that.modal  = null;
             }
         });
-	},
-	modalClose: function() {
-		jQuery(this.acbox.getDOMNode()).dialog('close');
-	},
-	treeCollapse: function() {
-		this.actree.close_all();
-	},
-	treeExpand: function() {
+    },
+    
+    /**
+     * Close and destroy
+     *
+     * Remove all the previous element nodes. That will make sure that the content will be reloaded once again when
+     * and whenever is needed.
+     *
+     * @version 0.0.2
+     * @access  public
+     * @return  void
+     */
+    modalClose: function() {
+        this.modal.dialog('close', function() {
+            this.actree = null;
+            this.tree   = null;
+            this.modal  = null;
+        });
+    },
+
+    treeCollapse: function() {
+        this.actree.close_all();
+    },
+    
+    treeExpand: function() {
         this.actree.open_all();
     },
     
@@ -251,10 +378,10 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @todo    Replace this with all related fields. Do not amend or setup the search, just provide the content
      *          directly from the ajax callback.
      */
-	treeSearch: function(element, widget) {
-		this.actree.jstree("deselect_all");
-		let text = widget.getValue().toUpperCase();
-		this.actree.search(text);
+    treeSearch: function(element, widget) {
+        // this.actree.jstree("deselect_all");
+        let text = widget.getValue().toUpperCase();
+        this.actree.search(text);
     },
 
     /**
@@ -268,8 +395,8 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
     treeSelectClose: function() {
         this.actree.get_selected(true).forEach((v) => this.set_value(v.id));
-
-        jQuery(this.acbox.getDOMNode()).dialog('close');
+        this.modal.dialog('close');
+        // jQuery(this.acbox.getDOMNode()).dialog('close');
     },
 
     /**

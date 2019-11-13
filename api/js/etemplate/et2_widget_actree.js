@@ -3,7 +3,6 @@
 	/vendor/bower-asset/jquery/dist/jquery.js;
 	/vendor/bower-asset/jquery/dist/jquery-ui.js;
     /vendor/vakata/jstree/dist/jstree.js;
-    /vendor/vakata/jstree/dist/jstree.js;
 */
 
 /**
@@ -19,23 +18,29 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 			"default": "...",
 			"description": "Label for button"
 		},
-		"dialog_width": {
+		"dialog_title": {
 			"name": "Dialog Width",
 			"type": "string",
-			"default": "200",
+			"default": "Actions Modal",
+			"description": "Dialog Title"
+		},
+		"dialog_width": {
+			"name": "Dialog Width",
+			"type": "integer",
+			"default": 200,
 			"description": "Width for Dialog"
 		},
 		"dialog_height": {
 			"name": "Dialog Height",
-			"type": "string",
-			"default": "200",
+			"type": "integer",
+			"default": 200,
 			"description": "Height for Dialog"
 		},
 		"show_search": {
 			"name": "Show Search",
 			"type": "boolean",
 			"default": "1",
-			"description": "Show Search"
+			"description": "Show Search, you can set a callback instead."
 		},
 		"show_controls": {
 			"name": "Show Controls",
@@ -54,17 +59,38 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 			"type": "string",
 			"default": "",
 			"description": "JS function that must return an array of item objects. Documentation here https://www.jstree.com/api/#/?q=$.jstree.defaults.contextmenu&f=$.jstree.defaults.contextmenu.items"
-
 		}
 	},
 
     /**
-     * Shorthand Property
+     * Modal Element
      *
-     * Holds jstree methods and functions. This is generated right after the modal is opened
+     * Place the modal element on this node. The content here will be a jQuery DOM node
      *
      * @access  public
-     * @var     function actree
+     * @var     {object} modal
+     */
+    modal : null,
+
+    /**
+     * Tree Element
+     *
+     * After creating the modal place the tree element space within it. This node will hold the tree and it will be
+     * yet another jQuery DOM node
+     *
+     * @access  public
+     * @var     {object} tree
+     */
+    tree  : null,
+
+    /**
+     * Shorthand Property
+     *
+     * Holds jstree methods and functions. Is generated right after the modal is opened and we do assign the `this.tree`
+     * properties via the jstree method.
+     *
+     * @access  public
+     * @var     {object} actree
      */
     actree       : null,
 
@@ -74,7 +100,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * The object initialized here will provide how the given tree will be displayed and behave.
      *
      * @access  public
-     * @var     function jsTreeConfig
+     * @var     {object} jsTreeConfig
      */
     jstreeConfig : {
         'core'      : {
@@ -82,8 +108,6 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             'multiple'  : false,
             'worker'    : false
         },
-        'height'    : 0,
-        'width'     : 0,
         'plugins'   : [],
     },
 
@@ -99,32 +123,86 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
     createInputWidget: function() {
-		this._super.apply( this, arguments );
+        // this._super.apply( this, arguments );
 
-		// Create 'Open' Button
+        // Create 'Open' Button
         this.acbutton = et2_createWidget('button', {label: this.egw().lang( this.options.button_label ), onclick: this.modalOpen.bind(this)}, this);
-
-		// Create Tree Modal
-		this.acbox = et2_createWidget('box', {class: 'hidden'}, this);
-
-		if (this.options.show_controls) {
-			et2_createWidget('button', {onclick: this.treeExpand.bind(this), label: '+' }, this.acbox);
-			et2_createWidget('button', {onclick: this.treeCollapse.bind(this), label: '-'}, this.acbox);
-		}
-		if (this.options.show_search) {
-			this.acsearch = et2_createWidget('textbox', { onchange: this.treeSearch.bind(this) }, this.acbox );
-		}
-
-        this.acbox1 = et2_createWidget('box', { class:'tree tree-default' }, this.acbox );
-        this.acbox2 = et2_createWidget('box', { id: `${this.options.id}_tree`}, this.acbox1 );
-        if (!this.options.readonly) {
-            et2_createWidget('button', { onclick: this.treeSelectClose.bind(this), label: this.egw().lang('Ok') }, this.acbox);
+        return this._super.apply(this,arguments);
+    },
+    
+    /**
+     * Tree Widget
+     *
+     * Creates via javascript all the elements for the modal content. After that it sets all those required binds on
+     * the elements and generates the tree node.
+     *
+     * @version 0.0.1
+     * @access  public
+     * @return  void
+     */
+    jQueryWidget: function()
+    {
+        if (this.modal != null) {
+            return;
         }
-        
-        et2_createWidget('button', {onclick: this.modalClose.bind(this), label: this.egw().lang('Cancel')}, this.acbox );
 
         let that = this;
+
+        this.modal      = jQuery('<div />', {'class' : 'hidden'});
+        let controls    = jQuery('<div />', {'class':'display-block'});
         
+        let buttonExpand  = jQuery('<button />', {'class':'primary'}).html('+').off('click').on('click', function() {
+            that.actree.open_all();
+        });
+        let buttonCollapse = jQuery('<button />', {'class':'primary'}).html('-').off('click').on('click', function() {
+            that.actree.close_all();
+        });
+        
+        controls.append(buttonExpand, buttonCollapse);
+        
+        this.tree = jQuery('<div />', {'class': 'tree tree-default display-block'});
+
+        this.modal.append(controls, this.tree);
+        jQuery('body').append(this.modal);
+
+        if (this.options.show_search) {
+            let showSearch = function(event) {
+                that.tree.jstree('deselect_all');
+                that.actree.search(jQuery(this).val());
+            };
+
+            let evalShowSearch;
+
+            try {
+                evalShowSearch = eval(this.options.show_search);
+
+                if (typeof(evalShowSearch) !== 'function') {
+                    evalShowSearch = showSearch;
+                }
+            } catch (x) {
+                evalShowSearch = showSearch;
+            }
+
+            let searchInput = jQuery('<input />', {type: 'text'}).off('keyup').on('keyup', evalShowSearch);
+            controls.append(searchInput);
+
+            this.jstreeConfig.plugins.push('search');
+            this.jstreeConfig.search = {
+                show_only_matches : true
+            };
+        }
+
+        if (this.options.contextCallback) {
+            let evalContextCallback = eval(this.options.contextCallback);
+            if (typeof(evalContextCallback) === 'function') {
+                this.jstreeConfig.core.check_callback = true;
+                this.jstreeConfig.plugins.push('contextmenu');
+                this.jstreeConfig.contextmenu = {
+                    items : evalContextCallback
+                };
+            }
+        }
+
         this.jstreeConfig.core.data = function(node, callback) {
             // no need to recall the same nodes more than once
             if (that.actree != null && that.actree.is_parent(node) && node.children.length > 0) {
@@ -133,31 +211,14 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value], function(response) {
                 callback.call(this, response.nodes);
+                that.createJsTree();
                 that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
             }).sendRequest(true);
         };
 
-        this.jstreeConfig.height = this.options.dialog_height;
-        this.jstreeConfig.width = this.options.dialog_width;
-
-        if (this.options.search) {
-            this.jstreeConfig.plugins.push('search');
-            this.jstreeConfig.search = {
-                'show_only_matches' : true
-            };
-        }
-
-		if (this.options.contextCallback) {
-            let evalContextCallback = eval(this.options.contextCallback);
-            if (typeof(evalContextCallback) === 'function') {
-                this.jstreeConfig.plugins.push('contextmenu');
-                this.jstreeConfig.contextmenu = {
-                    'items'         : evalContextCallback
-                };
-            }
-        }
+        this.createJsTree();
     },
-    
+
     /**
      * Remove Events Or Nodes
      *
@@ -169,42 +230,60 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
 	destroy: function() {
-        let domNodes = this.getDOMNode();
-		jQuery(document).off("dblclick", `#${domNodes.id}_tree li a`);
+        this.tree.off('dblclick', '.jstree-anchor');
         this._super.apply(this, arguments);
     },
     
     /**
-     * Generate Template
+     * Generate Link
      *
-     * Generates those events required for setting up the template into related positions. It does not initaliaze the
-     * construction of the tree. The tree is created only and when you open the modal.
+     * Generate the outer link in case that there is a parent.
      *
-     * @version 0.0.2
+     * @version 0.0.3
+     * @access  public
+     * @return  void
+     * @todo    Note that there is no way to set a null node right now. Need to figure a way to fix this. Probably,
+     *          additional button? Probably null node on the tree?
+     */
+	doLoadingFinished: function() {
+        let gotValue = this.get_value();
+    
+        if (!this.options.readonly) {
+            this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
+            if (gotValue) {
+                this.aclink.set_value({ id: gotValue, app: this.options.only_app, title: `#${gotValue}` });
+            }
+        } else {
+            // Show link-entry_ro if readonly
+            et2_createWidget('link', {id: this.options.id, only_app: this.options.only_app, readonly: this.options.readonly}, this);
+            // Hide actual link
+            this.search.hide();
+            this.clear.remove();
+        }
+
+        return this._super.apply(this,arguments);
+    },
+    
+    /**
+     * Create JSTree Object
+     *
+     * Creates the object used for the widget.
+     *
+     * @version 0.0.1
      * @access  public
      * @return  void
      */
-	doLoadingFinished: function() {
-        let domNodes = this.getDOMNode();
-        let gotValue = this.get_value();
+    createJsTree: function()
+    {
+        if (this.actree != null) {
+            return;
+        }
 
-        if (!this.options.readonly) {
-			if (gotValue) {
-				this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
-				this.aclink.set_value({ id: gotValue, app: this.options.only_app, title: `#${gotValue}` });
-			}
-			jQuery(document).on("dblclick", `#${domNodes.id}_tree li a`, jQuery.proxy(this.treeSelectClose, this));
-		} else {
-			// Show link-entry_ro if readonly
-			et2_createWidget('link', {id: this.options.id, only_app: this.options.only_app, readonly: this.options.readonly}, this);
-			// Hide actual link
-			this.search.hide();
-			this.clear.remove();
-		}
-
-		return this._super.apply(this,arguments);
+        // this.actree = jQuery(this.acbox2.getDOMNode()).jstree(this.jstreeConfig);
+        this.actree = this.tree.jstree(this.jstreeConfig);
+        this.actree = this.tree.jstree(true);
     },
-    
+
     /**
      * Modal Event
      *
@@ -216,62 +295,50 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
 	modalOpen: function() {
-        let that = this;
-        jQuery(this.acbox.getDOMNode()).dialog({
-            open: function(event, ui) {
-                if (that.actree != null && typeof(that.actree) === 'object') {
-                    return;
-                }
+        this.jQueryWidget();
 
-                that.actree = jQuery(that.acbox2.getDOMNode()).jstree(that.jstreeConfig);
-                that.actree = that.actree.jstree();
+        let that = this;
+        let buttons = [];
+
+        if (!this.options.readonly) {
+            buttons.push({
+                text    : this.egw().lang('Ok'),
+                icon    : 'ui-icon-heart',
+                click   : function() {
+                    that.actree.get_selected(true).forEach((v) => that.set_value(v.id));
+                    let newValue = that.get_value();
+                    that.aclink.set_value({ id: newValue, app: that.options.only_app, title: `#${newValue}` });
+                    that.modal.dialog('close');
+                }
+            });
+        }
+
+        buttons.push({
+            text    : this.egw().lang('Cancel'),
+            icon    : 'ui-icon-cancel',
+            click   : function() {
+                that.modal.dialog('close');
             }
         });
-	},
-	modalClose: function() {
-		jQuery(this.acbox.getDOMNode()).dialog('close');
-	},
-	treeCollapse: function() {
-		this.actree.close_all();
-	},
-	treeExpand: function() {
-        this.actree.open_all();
-    },
-    
-    /**
-     * Performs Words Search
-     *
-     * It searches for matches of words, keywords or anything else within the innerHTML of all nested DOM objects right
-     * after they have been rendered.
-     *
-     * @version 0.0.1
-     * @param   {object} element
-     * @param   {object} widget
-     * @return  void
-     * @todo    Replace this with all related fields. Do not amend or setup the search, just provide the content
-     *          directly from the ajax callback.
-     */
-	treeSearch: function(element, widget) {
-		this.actree.jstree("deselect_all");
-		let text = widget.getValue().toUpperCase();
-		this.actree.search(text);
-    },
 
-    /**
-     * Ok Event
-     *
-     * Captures selected node and closes the dialog. This event is also triggered if you double click.
-     *
-     * @version 0.0.2
-     * @access  public
-     * @return  void
-     */
-    treeSelectClose: function() {
-        this.actree.get_selected(true).forEach((v) => this.set_value(v.id));
+        this.modal.dialog({
+            title   : this.options.dialog_title,
+            width   : this.options.dialog_width,
+            height  : this.options.dialog_height,
+            open    : function(event, ui) {
+                jQuery(this).removeClass('hidden');
+            },
+            buttons : buttons
+        });
 
-        jQuery(this.acbox.getDOMNode()).dialog('close');
+        if (!this.options.readonly) {
+            this.tree.on(
+                'dblclick', 
+                '.jstree-anchor',
+                this.modal.dialog('option', 'buttons')[0].click
+            );
+        }
     },
-
     /**
      * Tree Click Event
      *

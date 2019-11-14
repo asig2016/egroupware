@@ -8,13 +8,11 @@ use EGroupware\Api\Framework;
 
 class Aclink extends Etemplate\Widget\Link
 {
-	function __construct($xml='') {
+    public function __construct($xml='') {
 
-		parent::__construct($xml);
+        parent::__construct($xml);
 
-		$css_file = '/achelper/templates/default/widget_aclink.css';
-		Framework::includeCSS($css_file);
-
-	}
-
+        Framework::includeCSS('/achelper/templates/default/widget_aclink.css');
+        Framework::includeCSS('/achelper/templates/default/widget_ac.css');
+    }
 }

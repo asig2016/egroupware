@@ -48,6 +48,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 			"default": "1",
 			"description": "Show Collapse and Expand buttons"
 		},
+        "paramsCallback": {
+            "name": "Parameters Callback for the nodeCallback",
+            "type": "string",
+            "default": "null",
+            "description": "Additional request parameters needed to form the result from the nodeCallback. Use comma separated fields."
+        },
 		"nodeCallback": {
 			"name": "Node Callback",
 			"type": "string",
@@ -92,7 +98,14 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @access  public
      * @var     {object} actree
      */
-    actree       : null,
+    actree : null,
+
+    /**
+     * Additional parameters for the ajax callback
+     *
+     * Since there might be many more variables for the requested 
+     */
+    params : [],
 
     /**
      * jstree Configuration Parameters
@@ -192,6 +205,11 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             };
         }
 
+        if (typeof(this.options.paramsCallback) === 'string') {
+            let evalParams = eval(this.options.paramsCallback);
+            this.params = typeof(evalParams) === 'function' ? evalParams() : [];
+        }
+
         if (this.options.contextCallback) {
             let evalContextCallback = eval(this.options.contextCallback);
             if (typeof(evalContextCallback) === 'function') {
@@ -203,20 +221,48 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
         }
 
+        /**
+         * Get Response
+         *
+         * This is bit tricky as it needs to verify, before sending a request and send that request once, that;
+         * - the tree is generated,
+         * - the node to fetch is a parent and
+         * - the parent is not an array, meaning that all its children have already been added.
+         *
+         * It gets more tricky when the data to fetch does not rely on the default structure the jstree relies upon.
+         * For that reason `this.options.paramsCallback` has been introduced. Make sure that the callback returns an
+         * array and has no arguments.
+         * The parameters if defined are properly set up into an aforementioned conditional statement that converts the
+         * string to array and replaces all those key names with the actual required values.
+         *
+         * @version 0.0.3
+         * @access  public
+         * @param   {object} node
+         * @param   {function} callback
+         * @return  void
+         */
         this.jstreeConfig.core.data = function(node, callback) {
             // no need to recall the same nodes more than once
             if (that.actree != null && that.actree.is_parent(node) && node.children.length > 0) {
                 return;
             }
 
-            egw.json(that.options.nodeCallback, [node.id, that.options.value], function(response) {
+            egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
+                console.info(response);
+
+                if (typeof(response.nodes) === undefined) {
+                    return;
+                }
+
                 callback.call(this, response.nodes);
-                that.createJsTree();
                 that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
             }).sendRequest(true);
         };
 
-        this.createJsTree();
+        // generate jstree
+        this.actree = this.tree.jstree(this.jstreeConfig);
+        // get the jstree object
+        this.actree = this.tree.jstree(true);
     },
 
     /**
@@ -264,26 +310,6 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         return this._super.apply(this,arguments);
     },
     
-    /**
-     * Create JSTree Object
-     *
-     * Creates the object used for the widget.
-     *
-     * @version 0.0.1
-     * @access  public
-     * @return  void
-     */
-    createJsTree: function()
-    {
-        if (this.actree != null) {
-            return;
-        }
-
-        // this.actree = jQuery(this.acbox2.getDOMNode()).jstree(this.jstreeConfig);
-        this.actree = this.tree.jstree(this.jstreeConfig);
-        this.actree = this.tree.jstree(true);
-    },
-
     /**
      * Modal Event
      *
@@ -339,6 +365,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             );
         }
     },
+
     /**
      * Tree Click Event
      *

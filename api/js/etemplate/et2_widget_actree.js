@@ -248,12 +248,6 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
-                console.info(response);
-
-                if (typeof(response.nodes) === undefined) {
-                    return;
-                }
-
                 callback.call(this, response.nodes);
                 that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
             }).sendRequest(true);
@@ -292,10 +286,10 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      *          additional button? Probably null node on the tree?
      */
 	doLoadingFinished: function() {
-        let gotValue = this.get_value();
-    
         if (!this.options.readonly) {
             this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
+
+            let gotValue = this.get_value();
             if (gotValue) {
                 this.aclink.set_value({ id: gotValue, app: this.options.only_app, title: `#${gotValue}` });
             }
@@ -316,7 +310,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * Set up an event within the modal that will generate required jstree. Moreover once done with with the loading
      * make public object property {@see et2_actree.actree} as jstree shorthand.
      *
-     * @version 0.0.2
+     * > **Note**:  map will capture all those values that can be added for the tree node. Nodes that can be added
+     *              **MUST** be formated as `\d+_anchor`. With that it assures, when having multiple structures
+     *              folded the one within the other, to get the ones related to the data set you need and not any of
+     *              the constructed parents.
+     *
+     * @version 0.0.3
      * @access  public
      * @return  void
      */
@@ -331,7 +330,20 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 text    : this.egw().lang('Ok'),
                 icon    : 'ui-icon-heart',
                 click   : function() {
-                    that.actree.get_selected(true).forEach((v) => that.set_value(v.id));
+                    // IMPORTANT SEE NOTE ON TOP
+                    let map = [];
+                    that.actree.get_selected(true).forEach((v) => {
+                        if (/^\d+$/.test(v.id)) {
+                            map.push(v.id);
+                        }
+                    });
+
+                    if (map.length === 0) {
+                        return;
+                    }
+
+                    // this will capture only the last node, multiple selection is not set yet.
+                    map.forEach((v) => that.set_value(v));
                     let newValue = that.get_value();
                     that.aclink.set_value({ id: newValue, app: that.options.only_app, title: `#${newValue}` });
                     that.modal.dialog('close');

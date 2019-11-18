@@ -376,12 +376,44 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 this.modal.dialog('option', 'buttons')[0].click
             );
         }
+
+        this.treeSelectedNodes();
     },
 
     /**
-     * Tree Click Event
+     * Selected Nodes Event Behaviours
      *
-     * Sets the selected node into DOM's data container.
+     * This will activate during the `changed` event. It will relate to the data that will be loaded per node as long
+     * as it is allowed to be used/edited per registered this user.
+     *
+     * > **Note**:  Make sure that the isAllowed flag will be appropriately set via the permissions
+     *
+     * @version 0.0.1
+     * @access  public
+     * @return  void
+     * @todo    Multiple selections are not implemented thus, this will return null for the momement.
+     * @todo    Complete this part as it will provide all the data which will be passed per after a node selection.
+     */
+    treeSelectedNodes : function() {
+        let that = this;
+        this.tree.off('changed.jstree').on('changed.jstree', function(e, data) {
+            let selected = data.selected;
+
+            if (selected.length === 0) {
+                return;
+            }
+
+            selected.forEach ((v) => {
+                console.info(data.instance.get_node(v));
+            });
+        });
+    },
+
+    /**
+     * Tree Open Selected Node
+     *
+     * Once the modal is open, get the value from the et2_link and use it to provide the selection. There is a high
+     * probability that the node will not exist into the structure as we do structure the trees per level.
      *
      * @version 0.0.2
      * @access  public

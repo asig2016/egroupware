@@ -332,6 +332,11 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 click   : function() {
                     // IMPORTANT SEE NOTE ON TOP
                     let map = [];
+
+                    if (!that.tree.data('okButton')) {
+                        return;
+                    }
+
                     that.actree.get_selected(true).forEach((v) => {
                         if (/^\d+$/.test(v.id)) {
                             map.push(v.id);
@@ -396,16 +401,40 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
     treeSelectedNodes : function() {
         let that = this;
+
         this.tree.off('changed.jstree').on('changed.jstree', function(e, data) {
             let selected = data.selected;
+            let allow = true;
 
+            // get the first button from the given dialog, that is the "Ok" button
+            let button = that.tree.closest('.ui-dialog-content').next('.ui-dialog-buttonpane.ui-widget-content').find('button:eq(0)');
+            
             if (selected.length === 0) {
                 return;
             }
 
             selected.forEach ((v) => {
-                console.info(data.instance.get_node(v));
+                // current data
+                let n = data.instance.get_node(v);
+                let c = n.data;
+                
+                // to break the loop use return false, to iterate to the next node just return
+                if (typeof(c.isAllowed) === 'undefined') {
+                    return;
+                }
+
+                allow &= (c.isAllowed == '1' ? true : false);
             });
+            
+            that.tree.data({okButton : allow});
+
+            if (allow) {
+                button.removeClass('ui-state-disabled');
+                button.removeAttr('disabled');
+            } else {
+                button.addClass('ui-state-disabled');
+                button.attr('disabled', 'disabled');
+            }
         });
     },
 

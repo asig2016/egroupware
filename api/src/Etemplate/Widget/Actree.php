@@ -11,7 +11,7 @@ class Actree extends Etemplate\Widget\Link
     public function __construct($xml='')
     {
         parent::__construct($xml);
-        Framework::includeJS('.', '/achelper/vendor/vakata/jstree/dist/jstree.js', 'achelper');
+        Framework::includeJS('.', '/achelper/vendor/vakata/jstree/dist/jstree.min.js', 'achelper');
         Framework::includeCSS('/achelper/vendor/vakata/jstree/dist/themes/default/style.css');
         Framework::includeCSS('/achelper/templates/default/widget_actree.css');
         Framework::includeCSS('/achelper/templates/default/widget_ac.css');

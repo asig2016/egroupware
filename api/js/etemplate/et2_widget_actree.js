@@ -248,6 +248,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
+                console.info(response);
                 callback.call(this, response.nodes);
                 that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
             }).sendRequest(true);
@@ -419,7 +420,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 let c = n.data;
                 
                 // to break the loop use return false, to iterate to the next node just return
-                if (typeof(c.isAllowed) === 'undefined') {
+                if (c == undefined || typeof(c.isAllowed) === 'undefined') {
                     return;
                 }
 

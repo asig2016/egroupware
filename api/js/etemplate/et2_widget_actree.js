@@ -101,6 +101,20 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
     actree : null,
 
     /**
+     * JsTree Search Results Node
+     *
+     * This node will be added at the top of the tree. It will always be hidden unless a search is performed. There
+     * will be some extra methods to clean up the results. Its main purpose is to work when the search is performed via
+     * json.
+     *
+     * > **Note**:  Documentation and role of this node might change in future versions
+     *
+     * @access  public
+     * @var     {@object} searchNode node within the tree captured as jQuery object
+     */
+    searchNode : null,
+
+    /**
      * Additional parameters for the ajax callback
      *
      * Since there might be many more variables for the requested 
@@ -248,9 +262,31 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
-                console.info(response);
                 callback.call(this, response.nodes);
-                that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
+                
+                if (response.parents) {
+                    that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
+                }
+
+                if (that.searchNode != null || !that.options.show_search) {
+                    return;
+                }
+
+                let searchId = ['actree-search-node', (new Date().getTime()).toString(16)].join('-');
+
+                // create the search node, place it on top and then disable it. This will have to be enabled via the
+                // search keyup event and/or a related callback. All results will be in there instead.
+                that.actree.create_node(
+                    '#',
+                    { 
+                        id          : searchId,
+                        text        : that.egw().lang('search'),
+                    },
+                    'first'
+                );
+                
+                that.searchNode = that.actree.get_node(searchId);
+                that.actree.disable_node(that.searchNode);
             }).sendRequest(true);
         };
 

@@ -271,7 +271,6 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
 	destroy: function() {
-        this.tree.off('dblclick', '.jstree-anchor');
         this._super.apply(this, arguments);
     },
     
@@ -376,7 +375,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         });
 
         if (!this.options.readonly) {
-            this.tree.on(
+            this.tree..off('dblclick', '.jstree-anchor').on(
                 'dblclick', 
                 '.jstree-anchor',
                 this.modal.dialog('option', 'buttons')[0].click

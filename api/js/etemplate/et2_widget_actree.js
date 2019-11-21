@@ -118,8 +118,33 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * Additional parameters for the ajax callback
      *
      * Since there might be many more variables for the requested 
+     *
+     * @access  public
+     * @var     {@array} params
      */
     params : [],
+
+    /**
+     * Qtip Parameters
+     *
+     * Position and style for the qtip(tooltip) element
+     *
+     * @access  public
+     * @var     {@object} qtip
+     */
+    qtip : {
+        suppress    : false,
+        content     : {
+            attr        : 'data-help',
+        },
+        position    : {
+            my          : 'middle left',
+            at          : 'middle right',
+        },
+        style: {
+            classes     : 'qtip-green qtip-rounded qtip-shadow'
+        }
+    },
 
     /**
      * jstree Configuration Parameters
@@ -418,7 +443,43 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             );
         }
 
+        this.treeQtip();
         this.treeSelectedNodes();
+    },
+
+    /**
+     * Tooltip event
+     *
+     * Adds a tooltip on the tree for each of the rendered nodes. This will be binded for all those a tag nodes that
+     * do have css class `tooltip` and the content is encapsulated within `data-help` attribute,
+     *
+     * > **Note**:  for additional information how to setup qtip, css, position, events orientated please refer to the
+     *              documentation {@link http://qtip2.com/options}
+     *
+     * @version 0.0.1
+     * @access  public
+     * @return  void
+     */
+    treeQtip : function()
+    {
+        let that    = this;
+
+        this.tree.on('ready.jstree', function(e, data) {
+            jQuery(this).find('a.tooltip').qtip(that.qtip);
+        });
+
+        this.tree.on('after_open.jstree', function(e, data) {
+            let children = data.node.children;
+
+            if (children == null || children.length === 0) {
+                return;
+            }
+
+            children.reduce((a, i) => {
+                let el = that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip);
+                return a;
+            });
+        });
     },
 
     /**

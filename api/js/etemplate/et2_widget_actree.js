@@ -48,6 +48,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 			"default": "1",
 			"description": "Show Collapse and Expand buttons"
 		},
+        "onSubmitCallback": {
+            "name"          : "After Submit(Click Ok or Double Click) Callback",
+            "type"          : "string",
+            "default"       : null,
+            "description"   : "Use the data provided by the node and use it within the form that this widget is used."
+        },
         "paramsCallback": {
             "name": "Parameters Callback for the nodeCallback",
             "type": "string",
@@ -404,12 +410,17 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                         }
                     });
 
-                    if (map.length === 0) {
+                    let l = map.length;
+
+                    if (l === 0) {
                         return;
                     }
 
                     // this will capture only the last node, multiple selection is not set yet.
                     map.forEach((v) => that.set_value(v));
+                    
+                    that.onSubmitCallback(that.actree.get_node(map[--l]));
+
                     let newValue = that.get_value();
                     that.aclink.set_value({ id: newValue, app: that.options.only_app, title: `#${newValue}` });
                     that.modal.dialog('close');
@@ -445,6 +456,46 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
         this.treeQtip();
         this.treeSelectedNodes();
+    },
+
+    /**
+     * After Selecting A node
+     *
+     * When the selected node is to be used within the given application and it contains some data to be used allow it
+     * to use data contained already within the node. That would will prevent extra interaction with the database.
+     *
+     * > **Note**:  Uses the very same method from et2_widget_aclink for fetching the content from any defined
+     *              application.
+     *
+     * @version 0.0.1
+     * @access  public
+     * @param   {object} node Currently submitted node
+     * @return  void
+     * @see     https://stackoverflow.com/questions/359788/how-to-execute-a-javascript-function-when-i-have-its-name-as-a-string
+     * @todo    Once merged with the aclink remove the closure. It is already contained into the aclink
+     * @todo    Replace the given callback with something smaller and neater. You got plenty of examples for that
+     */
+    onSubmitCallback : function(node)
+    {
+        if (this.options.onSubmitCallback == null || typeof (node.data) === 'undefined') {
+            return;
+        }
+
+        const executeFunctionByName = function (functionName, context, args) {
+            var namespaces = functionName.split(".");
+            var func = namespaces.pop();
+            for (var i = 0; i < namespaces.length; i++) {
+                context = context[namespaces[i]];
+            }
+            return context[func].apply(context, args);
+        }
+
+        try {
+            // executeFunctionByName(this.options.onSubmitCallback, window, [node]);
+            executeFunctionByName(this.options.onSubmitCallback, window, [node]);
+        } catch (x) {
+            console.info(`"${this.options.onSubmitCallback}" is not a function`);
+        }
     },
 
     /**

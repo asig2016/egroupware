@@ -397,32 +397,22 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 text    : this.egw().lang('Ok'),
                 icon    : 'ui-icon-heart',
                 click   : function() {
-                    // IMPORTANT SEE NOTE ON TOP
-                    let map = [];
-
-                    if (!that.tree.data('okButton')) {
-                        return;
-                    }
-
-                    that.actree.get_selected(true).forEach((v) => {
-                        if (/^\d+$/.test(v.id)) {
-                            map.push(v.id);
-                        }
-                    });
-
-                    let l = map.length;
-
-                    if (l === 0) {
-                        return;
-                    }
-
-                    // this will capture only the last node, multiple selection is not set yet.
-                    map.forEach((v) => that.set_value(v));
+                    // get only the last of the selected nodes
+                    let map = that.actree.get_selected(true);
+                    let l = map.length-1;
+                    let c = map[l].data;
                     
-                    that.onSubmitCallback(that.actree.get_node(map[--l]));
-
-                    let newValue = that.get_value();
-                    that.aclink.set_value({ id: newValue, app: that.options.only_app, title: `#${newValue}` });
+                    // if the node is not allowed for usage, terminate here
+                    if (c == undefined || typeof(c.isAllowed) === 'undefined' || c.isAllowed != 1) {
+                        return;
+                    }
+                    
+                    let idNode = map[l].id.replace(/[^\d]+/g, '');
+                    
+                    that.onSubmitCallback(that.actree.get_node(map[l]));
+                    
+                    that.set_value(idNode);
+                    that.aclink.set_value({ id: idNode, app: that.options.only_app, title: `#${idNode}` });
                     that.modal.dialog('close');
                 }
             });
@@ -556,25 +546,21 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
             // get the first button from the given dialog, that is the "Ok" button
             let button = that.tree.closest('.ui-dialog-content').next('.ui-dialog-buttonpane.ui-widget-content').find('button:eq(0)');
-            
-            if (selected.length === 0) {
+            let l = selected.length;
+            if (l === 0) {
                 return;
             }
 
-            selected.forEach ((v) => {
-                // current data
-                let n = data.instance.get_node(v);
-                let c = n.data;
-                
-                // to break the loop use return false, to iterate to the next node just return
-                if (c == undefined || typeof(c.isAllowed) === 'undefined') {
-                    return;
-                }
-
-                allow &= (c.isAllowed == '1' ? true : false);
-            });
+            let v = selected[l-1];
+            let n = data.instance.get_node(v);
+            let c = n.data;
             
-            that.tree.data({okButton : allow});
+            // to break the loop use return false, to iterate to the next node just return
+            if (c == undefined || typeof(c.isAllowed) === 'undefined') {
+                allow = false;
+            } else {
+                allow &= (c.isAllowed == '1' ? true : false);
+            }
 
             if (allow) {
                 button.removeClass('ui-state-disabled');

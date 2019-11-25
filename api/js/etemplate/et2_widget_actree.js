@@ -293,7 +293,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
-                callback.call(that, response.nodes);
+                callback.call(that.actree, response.nodes);
                 
                 if (response.parents) {
                     that.actree.load_node(response.parents, that.treeSetSelected.bind(that));

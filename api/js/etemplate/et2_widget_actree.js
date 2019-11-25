@@ -299,6 +299,13 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                     that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
                 }
 
+                if (response.expand && response.expand != 0) {
+                    that.actree.open_all(response.expand);
+                    let activeNode = that.get_value();
+                    document.getElementById(activeNode).scrollIntoView();
+                    that.treeSetSelected();
+                }
+
                 if (that.searchNode != null || !that.options.show_search) {
                     return;
                 }

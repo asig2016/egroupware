@@ -2,7 +2,7 @@
 	et2_widget_link;
 	/vendor/bower-asset/jquery/dist/jquery.js;
 	/vendor/bower-asset/jquery/dist/jquery-ui.js;
-    /vendor/vakata/jstree/dist/jstree.js;
+    /achelper/vendor/vakata/jstree/dist/jstree.min.js;
 */
 
 /**
@@ -293,7 +293,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
-                callback.call(that.actree, response.nodes);
+                callback.call(this, response.nodes);
                 
                 if (response.parents) {
                     that.actree.load_node(response.parents, that.treeSetSelected.bind(that));

@@ -293,7 +293,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             }
 
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
-                callback.call(this, response.nodes);
+                callback.call(that, response.nodes);
                 
                 if (response.parents) {
                     that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
@@ -309,7 +309,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 // search keyup event and/or a related callback. All results will be in there instead.
                 that.actree.create_node(
                     '#',
-                    { 
+                    {
                         id          : searchId,
                         text        : that.egw().lang('search'),
                     },

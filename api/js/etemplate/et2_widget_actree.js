@@ -295,15 +295,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             egw.json(that.options.nodeCallback, [node.id, that.options.value].concat(that.params), function(response) {
                 callback.call(this, response.nodes);
                 
-                if (response.parents) {
-                    that.actree.load_node(response.parents, that.treeSetSelected.bind(that));
-                }
-
                 if (response.expand && response.expand != 0) {
                     that.actree.open_all(response.expand);
-                    let activeNode = that.get_value();
-                    document.getElementById(activeNode).scrollIntoView();
-                    that.treeSetSelected();
+                }
+
+                if (response.selected) {
+                    that.focusOnSelected(response.selected, that);
                 }
 
                 if (that.searchNode != null || !that.options.show_search) {
@@ -439,6 +436,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             height  : this.options.dialog_height,
             open    : function(event, ui) {
                 jQuery(this).removeClass('hidden');
+
+                try {
+                    that.focusOnSelected(that.actree.get_selected()[0], that);
+                } catch (x) {
+                    // dummy
+                }
             },
             buttons : buttons
         });
@@ -523,10 +526,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 return;
             }
 
-            children.reduce((a, i) => {
-                let el = that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip);
-                return a;
-            });
+            children.reduce((a, i) => that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip));
         });
     },
 
@@ -580,17 +580,21 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
     },
 
     /**
-     * Tree Open Selected Node
+     * Move to selected Node,
      *
-     * Once the modal is open, get the value from the et2_link and use it to provide the selection. There is a high
-     * probability that the node will not exist into the structure as we do structure the trees per level.
+     * Scrolls and focuses to the last selection. If you open the widget for the first time it will focus on the
+     * selected id.
      *
-     * @version 0.0.2
+     * > **Note**:  It will delay before setting focus on the given node.
+     *
+     * @version 0.0.1
      * @access  public
+     * @param   {string} idNode Node to focus on
      * @return  void
      */
-	treeSetSelected: function() {
-        this.actree.select_node(this.get_value());
-	},
+    focusOnSelected : (idNode, parent) => {
+        parent.actree.select_node(idNode);
+        setTimeout(() => document.getElementById(idNode).scrollIntoView(), 1000);
+    },
 });}).call(this);
 et2_register_widget(et2_actree, ["actree"]);

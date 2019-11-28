@@ -47,32 +47,50 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 			"type": "boolean",
 			"default": "1",
 			"description": "Show Collapse and Expand buttons"
-		},
-        "onSubmitCallback": {
-            "name"          : "After Submit(Click Ok or Double Click) Callback",
-            "type"          : "string",
-            "default"       : null,
-            "description"   : "Use the data provided by the node and use it within the form that this widget is used."
         },
-        "paramsCallback": {
-            "name": "Parameters Callback for the nodeCallback",
-            "type": "string",
-            "default": "null",
-            "description": "Additional request parameters needed to form the result from the nodeCallback. Use comma separated fields."
+        delayFocus          : {
+            name                : "Delay Selected Node Focus Display ",
+            type                : "integer",
+            "default"           : 400,
+            description         : `Focuses on a selected node after some time. The delay here allows the content to be
+                                  rendered first and then move scroll to the given location.`
         },
-		"nodeCallback": {
-			"name": "Node Callback",
-			"type": "string",
-			"default": "achelper.achelper_base.ajax_loadTreeNodes",
-			"description": "Ajax function. Loads one tree level at a time, based on node_id given. Copy from achelper and implement your own"
-		},
-		"contextCallback": {
-			"name": "Context Menu Callback",
-			"type": "string",
-			"default": "",
-			"description": "JS function that must return an array of item objects. Documentation here https://www.jstree.com/api/#/?q=$.jstree.defaults.contextmenu&f=$.jstree.defaults.contextmenu.items"
-		}
-	},
+        delaySearch         : {
+            name                : "Delay Key Input For fetching results",
+            type                : "integer",
+            "default"           : 400,
+            description         : `Usable by default search plugin or if you have an ajax call. On the latter you
+                                  shouldn't bombard your server with requests until something is ready to be sent.`
+        },
+        onSubmitCallback    : {
+            name                : "After Submit(Click Ok or Double Click) Callback",
+            type                : "string",
+            "default"           : null,
+            description         : `Provide means for setting up additional UI/UX on other DOM elements outside the tree.
+                                  It will use the data already existing on the given node.`
+        },
+        paramsCallback      : {
+            name                : "Parameters Callback for the nodeCallback",
+            type                : "string",
+            "default"           : null,
+            description         : `Additional request parameters needed to form the result from the nodeCallback. Use
+                                  comma separated fields.`
+        },
+        nodeCallback        : {
+            name                : "Node Callback",
+            type                : "string",
+            "default"           : "achelper.achelper_base.ajax_loadTreeNodes",
+            description         : `Ajax function. Loads one tree level at a time, based on node_id given. Copy from
+                                  achelper and implement your own`
+        },
+        contextCallback     : {
+            name                : "Context Menu Callback",
+            type                : "string",
+            "default"           : "",
+            description         : `JS function that must return an array of item objects. Documentation here
+                                  https://www.jstree.com/api/#/?q=$.jstree.defaults.contextmenu&f=$.jstree.defaults.contextmenu.items`
+        }
+    },
 
     /**
      * Modal Element
@@ -109,16 +127,26 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
     /**
      * JsTree Search Results Node
      *
-     * This node will be added at the top of the tree. It will always be hidden unless a search is performed. There
-     * will be some extra methods to clean up the results. Its main purpose is to work when the search is performed via
-     * json.
-     *
-     * > **Note**:  Documentation and role of this node might change in future versions
+     * This node will be added at the top of the tree. It will always be disabled unless a search is performed. The
+     * content of the node depends if the search module is enabled, thus we will use the custom event to add all results
+     * within it, or use a custom AJAX callback. The latter should fetch all missing results, in addition it should
+     * render all missing nodes from the tree, that means that it should build recursively all those parents that have
+     * not been opened yet.
      *
      * @access  public
-     * @var     {@object} searchNode node within the tree captured as jQuery object
+     * @var     {@object} searchNode Node within the tree captured as jsTree Node object
      */
     searchNode : null,
+
+    /**
+     * Search jQuery Dom Element
+     *
+     * The input element to which we will place the key up event if the search options are enabled and active
+     *
+     * @access  public
+     * @var     {@object} searchInput Text Input HTML tag
+     */
+    searchInput : null,
 
     /**
      * Additional parameters for the ajax callback
@@ -181,13 +209,64 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
     createInputWidget: function() {
-        // this._super.apply( this, arguments );
-
         // Create 'Open' Button
         this.acbutton = et2_createWidget('button', {label: this.egw().lang( this.options.button_label ), onclick: this.modalOpen.bind(this)}, this);
         return this._super.apply(this,arguments);
     },
     
+    /**
+     * Set a delay
+     *
+     * This method is used with a keyup triggered event on the input fields. Rather than displaying errors just
+     * as we type, it takes given miliseconds time, performs the check and then sends the error
+     *
+     * @version 0.0.1
+     * @access  public
+     * @param   {function} fn Callback to run after the delay
+     * @param   {integer} ms Miliseconds for the key up
+     * @param   {integer} timer **Defaults to `null`**, in case that we do need to clean up last time out
+     * @param   {array} ...args Variadic array for the arguments to bind on the selected function/method
+     * @return  int
+     */
+    delay : (fn, ms, timer = null, ...args) => {
+        if (timer) {
+            clearTimeout(timer);
+        }
+
+        return setTimeout(fn.bind(this, ...args), ms);
+    },
+
+    /**
+     * Run a callback
+     *
+     * Find the callback via its string name and run it from the parent object
+     *
+     * @version 0.0.1
+     * @access  public
+     * @param   {string} functionName Callback representation as a string
+     * @param   {object} context Object containing the callback
+     * @param   {array} args Arguments to use for the given callback
+     * @return  mixed
+     */
+    fnByName : (functionName, context, args = []) => {
+        // not tested
+        // const it = ([x, ...xs], o = {} ) => xs.length === 0 || typeof (x) === 'function' ? x : (o[x] = it(xs,o[x]), o);
+        // fn = it(name.split("."));
+        // return fn(...args);
+
+        var namespaces = functionName.split(".");
+        var func = namespaces.pop();
+        for (var i = 0; i < namespaces.length; i++) {
+            context = context[namespaces[i]];
+        }
+
+        try {
+            return context[func].apply(context, args);
+        } catch (x) {
+            console.info(`"${functionName}" is not a function`);
+        }
+    },
+
     /**
      * Tree Widget
      *
@@ -223,32 +302,9 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         this.modal.append(controls, this.tree);
         jQuery('body').append(this.modal);
 
-        if (this.options.show_search) {
-            let showSearch = function(event) {
-                that.tree.jstree('deselect_all');
-                that.actree.search(jQuery(this).val());
-            };
-
-            let evalShowSearch;
-
-            try {
-                evalShowSearch = eval(this.options.show_search);
-
-                if (typeof(evalShowSearch) !== 'function') {
-                    evalShowSearch = showSearch;
-                }
-            } catch (x) {
-                evalShowSearch = showSearch;
-            }
-
-            let searchInput = jQuery('<input />', {type: 'text'}).off('keyup').on('keyup', evalShowSearch);
-            controls.append(searchInput);
-
-            this.jstreeConfig.plugins.push('search');
-            this.jstreeConfig.search = {
-                show_only_matches : true
-            };
-        }
+        // couple of following lines provide the search tag and jstree search module
+        this.searchCallbacks(this, 'el', controls);
+        this.searchCallbacks(this, 'config');
 
         if (typeof(this.options.paramsCallback) === 'string') {
             let evalParams = eval(this.options.paramsCallback);
@@ -303,25 +359,8 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                     that.focusOnSelected(response.selected, that);
                 }
 
-                if (that.searchNode != null || !that.options.show_search) {
-                    return;
-                }
-
-                let searchId = ['actree-search-node', (new Date().getTime()).toString(16)].join('-');
-
-                // create the search node, place it on top and then disable it. This will have to be enabled via the
-                // search keyup event and/or a related callback. All results will be in there instead.
-                that.actree.create_node(
-                    '#',
-                    {
-                        id          : searchId,
-                        text        : that.egw().lang('search'),
-                    },
-                    'first'
-                );
-                
-                that.searchNode = that.actree.get_node(searchId);
-                that.actree.disable_node(that.searchNode);
+                // creates the search node.
+                that.searchCallbacks(that, 'node');
             }).sendRequest(true);
         };
 
@@ -437,11 +476,11 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             open    : function(event, ui) {
                 jQuery(this).removeClass('hidden');
 
-                try {
+                // try {
                     that.focusOnSelected(that.actree.get_selected()[0], that);
-                } catch (x) {
-                    // dummy
-                }
+                // } catch (x) {
+                //     // dummy
+                // }
             },
             buttons : buttons
         });
@@ -481,21 +520,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             return;
         }
 
-        const executeFunctionByName = function (functionName, context, args) {
-            var namespaces = functionName.split(".");
-            var func = namespaces.pop();
-            for (var i = 0; i < namespaces.length; i++) {
-                context = context[namespaces[i]];
-            }
-            return context[func].apply(context, args);
-        }
-
-        try {
-            // executeFunctionByName(this.options.onSubmitCallback, window, [node]);
-            executeFunctionByName(this.options.onSubmitCallback, window, [node]);
-        } catch (x) {
-            console.info(`"${this.options.onSubmitCallback}" is not a function`);
-        }
+        this.fnByName(this.options.onSubmitCallback, window, [node]);
     },
 
     /**
@@ -528,6 +553,155 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
             children.reduce((a, i) => that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip));
         });
+    },
+
+    /**
+     * Group All Search Methods
+     *
+     * Store all the methods that will define the search. All methods from the search tag to the search rendering
+     * are placed in a single place.
+     */
+    searchCallbacks : (that, fn, ...args) => {
+        if (!that.options.show_search) {
+            return;
+        }
+
+        const objectLiterals = {
+            // create the HTML search tag
+            el      : (controls) => {
+                that.searchInput = jQuery('<input />', {type: 'text'});
+                controls.append(that.searchInput);
+            },
+            // set up jstree modules
+            config  : () => {
+                if (that.options.show_search !== '1') {
+                    return;
+                }
+
+                that.jstreeConfig.plugins.push('search');
+                that.jstreeConfig.search = {
+                    show_only_matches : true
+                };
+
+                that.searchCallbacks(that, 'keyup');
+            },
+            // sets the keyup event for the HTML search tag
+            keyup   : () => {
+                that.searchInput.off('keyup').on('keyup', (event) => {
+                    const rec = (c, v, t) => {
+                        if (c == 27 || v == '') {
+                            t.clear_search();
+                            return;
+                        }
+
+                        t.search(v);
+                    };
+
+                    let timer = that.searchInput.data('timer');
+
+                    that.searchInput.data(
+                        'timer',
+                        that.delay(
+                            rec,
+                            that.delaySearch,
+                            timer,
+                            event.which,
+                            that.searchInput.val(),
+                            that.actree
+                        )
+                    );
+                });
+            },
+            // create the disabled search node on the tree
+            node    : () => {
+                if (that.searchNode != null) {
+                    return;
+                }
+
+                let searchId = ['actree-search-node', (new Date().getTime()).toString(16)].join('-');
+                that.actree.create_node(
+                    '#',
+                    {
+                        id          : searchId,
+                        text        : that.egw().lang('Search Results'),
+                    },
+                    'first'
+                );
+                
+                that.searchNode = that.actree.get_node(searchId);
+                that.actree.disable_node(that.searchNode);
+                
+                if (that.options.show_search !== '1') {
+                    return;
+                }
+
+                that.searchCallbacks(that, 'events', that.actree, that.searchNode);
+            },
+            // triggers the search event. It will place all the nodes within the Search folder and open it
+            events  : (t, sn) => {
+                if (sn == null) {
+                    return;
+                }
+                
+                // removes all children nodes from the previous search
+                const cleanUp = (t, sn) => sn.children.length > 0 ? t.delete_node(sn.children) : null;
+        
+                // for no search string or nothing to display
+                that.tree.off('clear_search.jstree').on('clear_search.jstree', (e, data) => {
+                    cleanUp(t, sn);
+                    
+                    data.instance.close_node(sn);
+                    data.instance.disable_node(sn);
+                });
+        
+                // for matching and not matched data
+                that.tree.off('search.jstree').on('search.jstree', (e, data) => {
+                    if (data.res === []) {
+                        jQuery.trigger('clear_search.jstree');
+                        return;
+                    }
+        
+                    cleanUp(t, sn);
+        
+                    data.res.forEach((v, i) => {
+                        if (v === sn.id) {
+                            return;
+                        }
+        
+                        let n = t.get_node(v);
+                        
+                        t.create_node(
+                            sn.id,
+                            {
+                                id          : ['search', v].join('-'),
+                                text        : n.text,
+                                li_attr     : n.li_attr,
+                                data        : n.data,
+                            }
+                        );
+                    });
+
+                    document.getElementById(sn.id).scrollIntoView();
+                    data.instance.enable_node(sn);
+                    data.instance.open_node(sn);
+                });
+            },
+            // overides default search, use your ajax callback instead
+            custom  : (...args) => {
+                if (that.options.show_search === '1') {
+                    return;
+                }
+
+                // let functionName = args[0];
+                // this.fnByName(args[0], window)
+            }
+        }
+
+        if (typeof (objectLiterals[fn]) !== 'function') {
+            return;
+        }
+
+        objectLiterals[fn](...args);
     },
 
     /**
@@ -590,11 +764,47 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @version 0.0.1
      * @access  public
      * @param   {string} idNode Node to focus on
+     * @param   {object} parent The whole object(widget)
+     * @param   {float} last The height for the given node
+     * @param   {float} delay How long will wait before selecting the element
      * @return  void
      */
-    focusOnSelected : (idNode, parent) => {
-        parent.actree.select_node(idNode);
-        setTimeout(() => document.getElementById(idNode).scrollIntoView(), 1000);
+    focusOnSelected : (idNode, parent, last = -1, delay = null) => {
+        if (idNode === undefined) {
+            return;
+        }
+
+        if (delay == null) {
+            delay = parent.delayFocus;
+        }
+
+        const rec = (id, p, last, delay) => {
+            let node = parent.actree.get_node(id);
+
+            if (node === false) {
+                parent.focusOnSelected(id, p, last, delay);
+                return;
+            }
+
+            if (!parent.actree.is_selected(id)) {
+                parent.actree.select_node(id);
+            }
+            
+            let el = document.getElementById(id);
+            let rect = el.getBoundingClientRect();
+            let top  = rect.top;
+
+            if (last == top) {
+                el.scrollIntoView();
+                return;
+            }
+
+            parent.focusOnSelected(id, p, top, delay/2);
+        };
+
+        // in order of appearence, method, delay, timer if we need to destroy the timeout, the rest are the method
+        // arguments
+        parent.delay(rec, delay, null, idNode, parent, last, delay);
     },
 });}).call(this);
 et2_register_widget(et2_actree, ["actree"]);

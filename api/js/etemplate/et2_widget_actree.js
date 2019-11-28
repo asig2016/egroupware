@@ -62,10 +62,17 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             description         : `Usable by default search plugin or if you have an ajax call. On the latter you
                                   shouldn't bombard your server with requests until something is ready to be sent.`
         },
+        searchCallback      : {
+            name                : "Search Url",
+            type                : "string",
+            default             : null,
+            description         : `Depends on show_search. If this is given then all the results should be fetched via
+                                  the server`
+        },
         onSubmitCallback    : {
             name                : "After Submit(Click Ok or Double Click) Callback",
             type                : "string",
-            "default"           : null,
+            default             : null,
             description         : `Provide means for setting up additional UI/UX on other DOM elements outside the tree.
                                   It will use the data already existing on the given node.`
         },
@@ -137,6 +144,23 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @var     {@object} searchNode Node within the tree captured as jsTree Node object
      */
     searchNode : null,
+
+    /**
+     * JsTree Ajax Results Node
+     *
+     * This node is used to store all the results via defined searchCallback. The node MUST and HAS to remain hidden.
+     * The reason behind this is;
+     * - Egroupware has to bind all types of callbacks with its own unique way
+     * - jstree performs jQuery ajax calls, providing the function but requires the structured jQuery formated object
+     *   to send the request.
+     *
+     * > **Note**:  if you ever find a better alternative and also have all the jstree search events customizations
+     *              work at the same time **σφύρα μου**!
+     *
+     * @access  public
+     * @var     {@object} ajaxNode ALWAYS hidden Node within the tree
+     */
+    ajaxNode : null,
 
     /**
      * Search jQuery Dom Element
@@ -361,6 +385,8 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
                 // creates the search node.
                 that.searchCallbacks(that, 'node');
+                // creates the ajax hidden node.
+                that.searchCallbacks(that, 'ajax');
             }).sendRequest(true);
         };
 
@@ -574,10 +600,6 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             },
             // set up jstree modules
             config  : () => {
-                if (that.options.show_search !== '1') {
-                    return;
-                }
-
                 that.jstreeConfig.plugins.push('search');
                 that.jstreeConfig.search = {
                     show_only_matches : true
@@ -588,14 +610,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             // sets the keyup event for the HTML search tag
             keyup   : () => {
                 that.searchInput.off('keyup').on('keyup', (event) => {
-                    const rec = (c, v, t) => {
-                        if (c == 27 || v == '') {
-                            t.clear_search();
-                            return;
-                        }
-
-                        t.search(v);
-                    };
+                    // ignore ctrl, alt key combinations
+                    if (event.ctrlKey || event.altKey) {
+                        return;
+                    }
+                    
+                    const rec = (c, v, t) => c == 27 || v == '' ? t.clear_search() : that.searchCallbacks(that, 'hack', t, v, that.ajaxNode);
 
                     let timer = that.searchInput.data('timer');
 
@@ -631,11 +651,19 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 that.searchNode = that.actree.get_node(searchId);
                 that.actree.disable_node(that.searchNode);
                 
-                if (that.options.show_search !== '1') {
+                that.searchCallbacks(that, 'events', that.actree, that.searchNode);
+            },
+            ajax    : ()  => {
+                if (that.ajaxNode != null || that.searchCallback == null) {
                     return;
                 }
 
-                that.searchCallbacks(that, 'events', that.actree, that.searchNode);
+                let ajaxId = ['actree-ajax-node', (new Date().getTime()).toString(16)].join('-');
+                
+                that.actree.create_node('#',{id : ajaxId, text : '[ajax]'}, 'last');
+                that.ajaxNode = that.actree.get_node(ajaxId);
+                that.actree.disable_node(that.ajaxNode);
+                that.actree.hide_node(that.ajaxNode);
             },
             // triggers the search event. It will place all the nodes within the Search folder and open it
             events  : (t, sn) => {
@@ -643,15 +671,19 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                     return;
                 }
                 
+                let nodeText = that.egw().lang('Search Results');
+
                 // removes all children nodes from the previous search
-                const cleanUp = (t, sn) => sn.children.length > 0 ? t.delete_node(sn.children) : null;
+                const cleanUp = (t, sn) => t.delete_node(sn.children);
         
                 // for no search string or nothing to display
                 that.tree.off('clear_search.jstree').on('clear_search.jstree', (e, data) => {
                     cleanUp(t, sn);
                     
+                    data.instance.rename_node(sn, nodeText);
                     data.instance.close_node(sn);
                     data.instance.disable_node(sn);
+                    that.searchInput.data('timer', null);
                 });
         
                 // for matching and not matched data
@@ -662,38 +694,44 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                     }
         
                     cleanUp(t, sn);
-        
+                    
                     data.res.forEach((v, i) => {
                         if (v === sn.id) {
                             return;
                         }
         
                         let n = t.get_node(v);
-                        
+                        delete n.a_attr.href;
+
                         t.create_node(
                             sn.id,
                             {
                                 id          : ['search', v].join('-'),
                                 text        : n.text,
                                 li_attr     : n.li_attr,
+                                a_attr      : n.a_attr,
                                 data        : n.data,
                             }
                         );
                     });
 
                     document.getElementById(sn.id).scrollIntoView();
+                    data.instance.rename_node(sn, [nodeText, `(${data.res.length})`].join(''));
                     data.instance.enable_node(sn);
                     data.instance.open_node(sn);
                 });
             },
-            // overides default search, use your ajax callback instead
-            custom  : (...args) => {
-                if (that.options.show_search === '1') {
+            // encapsulates an ajax search, that will be caused before triggering search, it will add the nodes into
+            // a hidden ajax node, then retrieve them and place them into search. Nope, there are no alternatives
+            // as the jQuery ajax from the library is an object and of course here we do need to bound everything
+            // via already registered calls.... my opinion over the matter is @#$@#$^%#@#$$%#$%.
+            hack  : (t, v, an) => {
+                if (an == null) {
+                    t.search(v);
                     return;
                 }
 
-                // let functionName = args[0];
-                // this.fnByName(args[0], window)
+                that.fnByName(that.options.searchCallback, window, [t, v, an]);
             }
         }
 

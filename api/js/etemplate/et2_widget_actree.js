@@ -586,6 +586,14 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      *
      * Store all the methods that will define the search. All methods from the search tag to the search rendering
      * are placed in a single place.
+     *
+     * @version 0.0.1
+     * @access  public
+     * @param   {object} that This widget
+     * @param   {string} fn Name of the inner callback to call from the object literals
+     * @param   {array} args Variadic array with all remaining arguments that the inner callback located in the object
+     *          literals will bind
+     * @return  void
      */
     searchCallbacks : (that, fn, ...args) => {
         if (!that.options.show_search) {
@@ -595,7 +603,10 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         const objectLiterals = {
             // create the HTML search tag
             el      : (controls) => {
-                that.searchInput = jQuery('<input />', {type: 'text'});
+                that.searchInput = jQuery('<input />', {
+                    type        : 'text',
+                    placeholder : that.egw().lang('Press Enter/Return to Search!')
+                });
                 controls.append(that.searchInput);
             },
             // set up jstree modules
@@ -611,7 +622,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             keyup   : () => {
                 that.searchInput.off('keyup').on('keyup', (event) => {
                     // ignore ctrl, alt key combinations
-                    if (event.ctrlKey || event.altKey) {
+                    if (event.ctrlKey || event.altKey || event.which != 13) {
                         return;
                     }
                     
@@ -707,6 +718,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                             sn.id,
                             {
                                 id          : ['search', v].join('-'),
+                                icon        : n.icon,
                                 text        : n.text,
                                 li_attr     : n.li_attr,
                                 a_attr      : n.a_attr,

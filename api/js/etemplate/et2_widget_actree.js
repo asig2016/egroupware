@@ -1,7 +1,7 @@
 /*egw:uses
-	et2_widget_link;
-	/vendor/bower-asset/jquery/dist/jquery.js;
-	/vendor/bower-asset/jquery/dist/jquery-ui.js;
+    et2_widget_link;
+    /vendor/bower-asset/jquery/dist/jquery.js;
+    /vendor/bower-asset/jquery/dist/jquery-ui.js;
     /achelper/vendor/vakata/jstree/dist/jstree.min.js;
 */
 
@@ -11,54 +11,54 @@
  * @augments et2_link_entry
  */
 var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
-	attributes: {
-		"button_label": {
-			"name": "Label",
-			"type": "string",
-			"default": "...",
-			"description": "Label for button"
-		},
-		"dialog_title": {
-			"name": "Dialog Width",
-			"type": "string",
-			"default": "Actions Modal",
-			"description": "Dialog Title"
-		},
-		"dialog_width": {
-			"name": "Dialog Width",
-			"type": "integer",
-			"default": 200,
-			"description": "Width for Dialog"
-		},
-		"dialog_height": {
-			"name": "Dialog Height",
-			"type": "integer",
-			"default": 200,
-			"description": "Height for Dialog"
-		},
-		"show_search": {
-			"name": "Show Search",
-			"type": "boolean",
-			"default": "1",
-			"description": "Show Search, you can set a callback instead."
-		},
-		"show_controls": {
-			"name": "Show Controls",
-			"type": "boolean",
-			"default": "1",
-			"description": "Show Collapse and Expand buttons"
+    attributes: {
+        button_label        : {
+            name                : "Label",
+            type                : "string",
+            default             : "...",
+            description         : "Label for button"
+        },
+        dialog_title        : {
+            name                : "Dialog Title",
+            type                : "string",
+            default             : "Actions Modal",
+            description         : "Modal Title, appears on top of the opened modal."
+        },
+        dialog_width: {
+            name                : "Dialog Width",
+            type                : "integer",
+            default             : 200,
+            description         : "Width of the Modal Dialog"
+        },
+        dialog_height       : {
+            name                : "Dialog Height",
+            type                : "integer",
+            default             : 200,
+            description         : "Height for Dialog"
+        },
+        show_search         : {
+            name                : "Show Search",
+            type                : "boolean",
+            default             : true,
+            description         : "Show Search, this is either true or false, defaults to true."
+        },
+        show_controls       : {
+            name                : "Show Controls",
+            type                : "boolean",
+            default             : true,
+            description         : "Show Collapse and Expand buttons"
         },
         delayFocus          : {
             name                : "Delay Selected Node Focus Display ",
             type                : "integer",
-            "default"           : 400,
+            default             : 400,
             description         : `Focuses on a selected node after some time. The delay here allows the content to be
                                   rendered first and then move scroll to the given location.`
         },
         delaySearch         : {
             name                : "Delay Key Input For fetching results",
             type                : "integer",
-            "default"           : 400,
+            default             : 400,
             description         : `Usable by default search plugin or if you have an ajax call. On the latter you
                                   shouldn't bombard your server with requests until something is ready to be sent.`
         },
@@ -79,21 +79,21 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         paramsCallback      : {
             name                : "Parameters Callback for the nodeCallback",
             type                : "string",
-            "default"           : null,
+            default             : null,
             description         : `Additional request parameters needed to form the result from the nodeCallback. Use
                                   comma separated fields.`
         },
         nodeCallback        : {
             name                : "Node Callback",
             type                : "string",
-            "default"           : "achelper.achelper_base.ajax_loadTreeNodes",
+            default             : "achelper.achelper_base.ajax_loadTreeNodes",
             description         : `Ajax function. Loads one tree level at a time, based on node_id given. Copy from
                                   achelper and implement your own`
         },
         contextCallback     : {
             name                : "Context Menu Callback",
             type                : "string",
-            "default"           : "",
+            default             : "",
             description         : `JS function that must return an array of item objects. Documentation here
                                   https://www.jstree.com/api/#/?q=$.jstree.defaults.contextmenu&f=$.jstree.defaults.contextmenu.items`
         }
@@ -234,7 +234,11 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
     createInputWidget: function() {
         // Create 'Open' Button
-        this.acbutton = et2_createWidget('button', {label: this.egw().lang( this.options.button_label ), onclick: this.modalOpen.bind(this)}, this);
+        this.acbutton = et2_createWidget('button', {
+            label   : this.egw().lang(this.options.button_label),
+            onclick : this.modalOpen.bind(this)
+        }, this);
+
         return this._super.apply(this,arguments);
     },
     
@@ -423,6 +427,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
 	doLoadingFinished: function() {
         if (!this.options.readonly) {
+            // I need to focus on this part to set up the freaking event for performing the proper data load
             this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
 
             let gotValue = this.get_value();

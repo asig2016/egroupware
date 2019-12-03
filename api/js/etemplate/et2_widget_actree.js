@@ -425,18 +425,31 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @todo    Note that there is no way to set a null node right now. Need to figure a way to fix this. Probably,
      *          additional button? Probably null node on the tree?
      */
-	doLoadingFinished: function() {
+    doLoadingFinished: function() {
         if (!this.options.readonly) {
-            // I need to focus on this part to set up the freaking event for performing the proper data load
-            this.aclink = et2_createWidget('link', {id: this.options.id,  readonly: this.options.readonly}, this);
+            let v = this.get_value();
+            
+            this.aclink = et2_createWidget('link', {
+                id: this.options.id,
+                readonly: this.options.readonly,
+                onchange: this.options.onchange,
+            }, this);
 
-            let gotValue = this.get_value();
-            if (gotValue) {
-                this.aclink.set_value({ id: gotValue, app: this.options.only_app, title: `#${gotValue}` });
+            if (v) {
+                this.aclink.set_value({
+                    id: v,
+                    app: this.options.only_app,
+                    title: `#${v}`
+                });
             }
         } else {
             // Show link-entry_ro if readonly
-            et2_createWidget('link', {id: this.options.id, only_app: this.options.only_app, readonly: this.options.readonly}, this);
+            et2_createWidget('link', {
+                id: this.options.id,
+                only_app: this.options.only_app,
+                readonly: this.options.readonly,
+                onchange: this.options.onchange,
+            }, this);
             // Hide actual link
             this.search.hide();
             this.clear.remove();

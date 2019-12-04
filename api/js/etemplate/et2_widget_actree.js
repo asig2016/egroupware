@@ -69,6 +69,15 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             description         : `Depends on show_search. If this is given then all the results should be fetched via
                                   the server`
         },
+        searchGroupsPattern : {
+            name                : "Search Pattern",
+            type                : "string",
+            default             : null,
+            description         : `Allows only those id entries that match the pattern to pass, i.e. 
+                                  "(?:clients|orders)" (this will return both clients and orders matches) or "orders"
+                                  (this will return only order matches). NOTE, DO NOT use backslashes, to define pattern
+                                  limits.`
+        },
         onSubmitCallback    : {
             name                : "After Submit(Click Ok or Double Click) Callback",
             type                : "string",
@@ -724,13 +733,26 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         
                     cleanUp(t, sn);
                     
-                    data.res.forEach((v, i) => {
+                    let p = that.options.searchGroupsPattern;
+                    let counter = 0;
+                    
+                    if (p != null) {
+                        p = new RegExp(p);
+                    }
+
+                    data.res.forEach((v) => {
                         if (v === sn.id) {
                             return;
                         }
         
                         let n = t.get_node(v);
                         delete n.a_attr.href;
+
+                        // set options pattern to return the set of results based on application preference without the
+                        // 'ac' prefixes
+                        if (p == null || p.test(n.id) === false) {
+                            return;
+                        }
 
                         t.create_node(
                             sn.id,
@@ -743,10 +765,12 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                                 data        : n.data,
                             }
                         );
+
+                        ++counter;
                     });
 
                     document.getElementById(sn.id).scrollIntoView();
-                    data.instance.rename_node(sn, [nodeText, `(${data.res.length})`].join(''));
+                    data.instance.rename_node(sn, [nodeText, `(${counter})`].join(''));
                     data.instance.enable_node(sn);
                     data.instance.open_node(sn);
                 });

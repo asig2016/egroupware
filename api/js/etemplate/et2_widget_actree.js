@@ -750,7 +750,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
 
                         // set options pattern to return the set of results based on application preference without the
                         // 'ac' prefixes
-                        if (p == null || p.test(n.id) === false) {
+                        if (p != null && p.test(n.id) === false) {
                             return;
                         }
 

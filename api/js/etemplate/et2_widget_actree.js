@@ -595,7 +595,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                 return;
             }
 
-            children.reduce((a, i) => that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip));
+            children.forEach((i) => that.tree.find(`a#${i}_anchor.tooltip`).qtip(that.qtip));
         });
     },
 

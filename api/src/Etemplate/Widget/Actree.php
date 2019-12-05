@@ -6,7 +6,7 @@ use EGroupware\Api;
 use EGroupware\Api\Etemplate;
 use EGroupware\Api\Framework;
 
-class Actree extends Etemplate\Widget\Link
+class Actree extends Link
 {
     public function __construct($xml='')
     {

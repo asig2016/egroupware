@@ -6,7 +6,7 @@ use EGroupware\Api;
 use EGroupware\Api\Etemplate;
 use EGroupware\Api\Framework;
 
-class Aclink extends Etemplate\Widget\Link
+class Aclink extends Link
 {
     public function __construct($xml='') {
 

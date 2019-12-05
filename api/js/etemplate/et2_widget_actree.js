@@ -591,6 +591,11 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      */
     treeQtip : function()
     {
+        if (typeof(jQuery.qtip) !== 'function') {
+            console.info('You need to include qtip within the application if you do plan to use it');
+            return;
+        }
+
         let that    = this;
 
         this.tree.on('ready.jstree', function(e, data) {
@@ -862,7 +867,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
     focusOnSelected : (idNode, parent, last = -1, delay = null) => {
-        if (idNode === undefined) {
+        if (idNode === undefined || idNode === '#') {
             return;
         }
 

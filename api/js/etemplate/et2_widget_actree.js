@@ -2,7 +2,7 @@
     et2_widget_link;
     /vendor/bower-asset/jquery/dist/jquery.js;
     /vendor/bower-asset/jquery/dist/jquery-ui.js;
-    /achelper/vendor/vakata/jstree/dist/jstree.min.js;
+    /vendor/vakata/jstree/dist/jstree.js;
 */
 
 /**
@@ -281,27 +281,23 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @version 0.0.1
      * @access  public
      * @param   {string} functionName Callback representation as a string
-     * @param   {object} context Object containing the callback
      * @param   {array} args Arguments to use for the given callback
      * @return  mixed
      */
-    fnByName : (functionName, context, args = []) => {
-        // not tested
-        // const it = ([x, ...xs], o = {} ) => xs.length === 0 || typeof (x) === 'function' ? x : (o[x] = it(xs,o[x]), o);
-        // fn = it(name.split("."));
-        // return fn(...args);
+    fnByName : (functionName, args = []) => {
+        let fn;
+        
+        functionName.split(".").forEach((v, i) => {
+            fn = i === 0 ? window[v] : fn[v];
+        });
 
-        var namespaces = functionName.split(".");
-        var func = namespaces.pop();
-        for (var i = 0; i < namespaces.length; i++) {
-            context = context[namespaces[i]];
-        }
-
-        try {
-            return context[func].apply(context, args);
-        } catch (x) {
+        if (typeof (fn) !== 'function') {
             console.info(`"${functionName}" is not a function`);
+            return;
         }
+
+        // use bind or just include all the arguments as a variadic array
+        return fn(...args);
     },
 
     /**
@@ -573,7 +569,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
             return;
         }
 
-        this.fnByName(this.options.onSubmitCallback, window, [node]);
+        this.fnByName(this.options.onSubmitCallback, [node]);
     },
 
     /**
@@ -790,7 +786,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
                     return;
                 }
 
-                that.fnByName(that.options.searchCallback, window, [t, v, an]);
+                that.fnByName(that.options.searchCallback, [t, v, an]);
             }
         }
 

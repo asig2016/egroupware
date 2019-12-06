@@ -863,7 +863,7 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
      * @return  void
      */
     focusOnSelected : (idNode, parent, last = -1, delay = null) => {
-        if (idNode === undefined || idNode === '#') {
+        if (idNode === undefined) {
             return;
         }
 

@@ -9,6 +9,65 @@
  * Class which creates a TREE from jQuery jstree
  *
  * @augments et2_link_entry
+ *
+ * # Intro
+ *
+ * Given module has the following pros and cons
+ *
+ * When clicking on the button it will generate a jQuery.modal. That means that none of the nodes are loaded until
+ * you click on the button. So you have no strain there.
+ *
+ * The tree can be build all at once (which is recommended) in most cases. Or use ajax calls to add the children of
+ * the given node for one or more levels.
+ *
+ * ## Loading Children.
+ *
+ * When you are to add all the children do not provide the ajax_loadTreeNode neither for the parents or the children.
+ * Also make sure not to set up the children data field. Use the convention of just building the data as simple as
+ * possible.
+ *
+ * On the other hand when you need to perform ajax searches and bulding the new nodes.
+ * - provide on the fetched children a flag if they have more anchestors. That is a true/false flag
+ * - for those fetched children that do have anchestors add the link needed for opening those children content.
+ *
+ * ## Search
+ *
+ * You can use default module search or implement an ajax search (which, eventually ends up using default module search).
+ * Before explaining how ajax search is performed, it is imperative to understand the complications of the
+ * provided module search.
+ *
+ * - The search itself is not binded on any textarea or text field or anything. You need to provide that all by yourself
+ * - In this implementation we do bind it on a javascript generated input text DOM element.
+ * - The given bind will use already defined jstree.module.search.
+ * - When the search is triggered it will look for all WORDS CONTAINED within the ALREADY GENERATED jstree A TAGS.
+ * - All matching words are then translated into an array of the jstree node ids. Related methods to manipulate that
+ *   array are in `searchCallbacks.events()`. More exact see 'search.jstree' event.
+ * - The aforementiond event will capture all those ids and PLACES them into the disabled 'Search Results' folder.
+ * - if there are aren't any ids captured the folder will remain disabled, otherwise it will open with the number of
+ *   results copied
+ * - When searching any utf8 (actually any non ansii) characters, return result matches exactly those characters. It is
+ *   not case-sensitive though.
+ * 
+ * From the search module in order to utilize it to our needs, we did not use module ajax url link, as it would use
+ * jQuery.ajax method instead of egw.json().sendRequest(...). In addition the module would accept the a json structure
+ * that could only fit for the jQuery.ajax().
+ *
+ * So in order to override this behavior, we need to define if there is an ajax callback from our side or not.
+ * For doing that please see `searchCallbacks.hack()`. The given intermediate method will redirect you to the egw.json
+ * method how to structure the content. What happens here is;
+ *
+ * - A defined ajaxSearch (see searchCallback property) will allow the generation of an ajax node to store all those
+ *   results. Remember that since this is binded to search module and there is an event related after a search all
+ *   the search results will be transfered into 'Search Results' folder.
+ * - We do not push the content into 'Search Results' folder as it is deleted with each performed search, thus, it would
+ *   return no result or most probably an error
+ * - All results are added into the ajax hidden and disabled folder.
+ * - All those results are copied to the 'Search Results' folder.
+ *
+ * ## Server Side
+ *
+ * For server side content please see acactivity2, acactions, aclocation. The latter is the most straightforward without
+ * a search though.
  */
 var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
     attributes: {
@@ -846,6 +905,52 @@ var et2_actree = (function(){ "use strict"; return et2_link_entry.extend({
         });
     },
 
+    /**
+     * Ajax Search Response Builder
+     *
+     * Gets the content from the database and returns all those nodes found. All those nodes will be added into ajaxNode
+     * and from there they will be transfered into the search node. Steps happening here;
+     * -   set up a promise state
+     * -   start by removing all previously added nodes
+     * -   store all those nodes into the tree
+     * -   perform default search via jstree
+     *
+     * > **Note**:  The jstree and nodes are and should defined by the module in use, see examples in
+     *              `acactivity2/js/app.js`, `acactions/js/app.js`.
+     * > **Note**:  The very same method is defined into the given app.js examples. There is no need to have it more
+     *              than once. I just couldn't figure out in my last day how to make this work.
+     *
+     * @version 0.0.1
+     * @access  public
+     * @param   {object} response Json server response
+     * @param   {object} jstree Current jstree opened instance
+     * @param   {string} string Search string we are searching for
+     * @param   {object} node The hidden ajax search node to store the results.
+     * @return  void
+     * @todo    The very same method is defined twice more, just couldn't bother how to set up the path to use this
+     *          one instead and remove the duplicates
+     */
+    treeSearchCallback : (response, jstree, str, node) => {
+        let l = response.nodes.length;
+        jstree.delete_node(node.children);
+        
+        const promise = new Promise((resolve, reject) => {
+            let n = 0;
+            
+            response.nodes.forEach((v) => {
+                ++n;
+                jstree.create_node(node.id, v);
+            });
+
+            n === l ? resolve(str) : reject(new Error('Failed to generate the nodes.'));
+        });
+
+        promise.then(
+            (v) => jstree.search(v),
+            (v) => console.info(v)
+        );
+    },
+    
     /**
      * Move to selected Node,
      *

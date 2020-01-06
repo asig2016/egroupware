@@ -318,7 +318,10 @@ module.exports = function (grunt) {
 						"api/templates/default/etemplate2.css",
 						"pixelegg/css/pixelegg.css",
 						"api/templates/default/print.css",
-						"pixelegg/print.css"
+						"pixelegg/print.css",
+						"achelper/templates/default/widget_aclink.css",
+						"achelper/templates/default/widget_ac.css"
+
 					],
 					"pixelegg/css/mobile.min.css": [
 						"api/js/jquery/chosen/chosen.css",

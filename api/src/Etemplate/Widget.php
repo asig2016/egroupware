@@ -374,6 +374,7 @@ class Widget
 						try
 						{
 							class_exists($class);	// trigger autoloader
+							error_log('cccccccccccccccccccc'.$class);
 						}
 						catch(\Exception $e)
 						{

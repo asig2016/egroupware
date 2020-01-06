@@ -193,14 +193,11 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_extension_itempicker_actions.js",
 						"api/js/etemplate/et2_widget_itempicker.js",
 						"api/js/etemplate/et2_widget_script.js",
+						"achelper/js/et2_widget_aclink.js",
+						"achelper/js/et2_widget_actree.js",
+						"achelper/js/et2_widget_currency.js",
+						"api/js/jquery/inputmask/jquery.inputmask.bundle.js",
 						"api/js/etemplate/et2_core_legacyJSFunctions.js",
-                        "api/js/etemplate/etemplate2.js",
-						"api/js/etemplate/vfsSelectUI.js",
-						"api/js/etemplate/et2_widget_currency.js",
-                        "api/js/etemplate/et2_widget_aclink.js",
-                        "vendor/vakata/jstree/dist/jstree.js",
-                        "api/js/etemplate/et2_widget_actree.js",
-                        "api/js/jquery/inputmask/jquery.inputmask.bundle.js",
 						"api/js/etemplate/etemplate2.js"
 					]
 				}

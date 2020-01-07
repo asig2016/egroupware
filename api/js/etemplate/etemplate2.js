@@ -58,7 +58,8 @@
 	et2_widget_script;
 	/achelper/js/et2_widget_currency.js;
 	/achelper/js/et2_widget_aclink.js;
-	/achelper/js/et2_widget_actree.js;
+	/achelper/js/et2_widget_actree2.js;
+	et2_widget_actree;
 
 	et2_extension_nextmatch;
 	et2_extension_customfields;

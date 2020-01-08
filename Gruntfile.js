@@ -195,7 +195,7 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_widget_script.js",
 						"achelper/js/et2_widget_aclink.js",
 						"achelper/js/et2_widget_actree2.js",
-						"achelper/js/et2_widget_currency.js",
+						"api/js/etemplate/et2_widget_currency.js",
 						"api/js/jquery/inputmask/jquery.inputmask.bundle.js",
 						"api/js/etemplate/et2_core_legacyJSFunctions.js",
 						"api/js/etemplate/etemplate2.js"

@@ -56,7 +56,7 @@
 	et2_widget_barcode;
 	et2_widget_itempicker;
 	et2_widget_script;
-	/achelper/js/et2_widget_currency.js;
+	et2_widget_currency.js;
 	/achelper/js/et2_widget_aclink.js;
 	/achelper/js/et2_widget_actree2.js;
 	et2_widget_actree;

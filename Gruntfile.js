@@ -193,10 +193,6 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_extension_itempicker_actions.js",
 						"api/js/etemplate/et2_widget_itempicker.js",
 						"api/js/etemplate/et2_widget_script.js",
-						"achelper/js/et2_widget_aclink.js",
-						"achelper/js/et2_widget_actree2.js",
-						"api/js/etemplate/et2_widget_currency.js",
-						"api/js/jquery/inputmask/jquery.inputmask.bundle.js",
 						"api/js/etemplate/et2_core_legacyJSFunctions.js",
 						"api/js/etemplate/etemplate2.js"
 					]
@@ -205,7 +201,7 @@ module.exports = function (grunt) {
 			mail: {
 				files: {
 					"mail/js/app.min.js": [
-						"mail/js/app.js"
+					"mail/js/app.js"
 					]
 				}
 			},
@@ -292,6 +288,20 @@ module.exports = function (grunt) {
 						"messenger/js/app.js"
 					]
 				}
+			},
+			achelper: {
+				files: {
+					"achelper/js/app.min.js": [
+						"achelper/js/et2_widget_aclink.js",
+						"achelper/js/et2_widget_actree.js",
+						"achelper/js/et2_widget_currency.js",
+						"vendor/vakata/jstree/dist/jstree.js",
+						"achelper/js/app.js"
+					],
+					"achelper/js/ac_app.min.js": [
+						"achelper/js/ac_app.js"
+					]
+				}
 			}
 		},
 		cssmin: {
@@ -318,10 +328,7 @@ module.exports = function (grunt) {
 						"api/templates/default/etemplate2.css",
 						"pixelegg/css/pixelegg.css",
 						"api/templates/default/print.css",
-						"pixelegg/print.css",
-						"achelper/templates/default/widget_aclink.css",
-						"achelper/templates/default/widget_ac.css"
-
+						"pixelegg/print.css"
 					],
 					"pixelegg/css/mobile.min.css": [
 						"api/js/jquery/chosen/chosen.css",

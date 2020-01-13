@@ -292,11 +292,17 @@ module.exports = function (grunt) {
 			achelper: {
 				files: {
 					"achelper/js/app.min.js": [
-						"achelper/js/et2_widget_aclink.js",
-						"achelper/js/et2_widget_actree.js",
-						"achelper/js/et2_widget_currency.js",
 						"vendor/vakata/jstree/dist/jstree.js",
 						"achelper/js/app.js"
+					],
+					"achelper/js/et2_widget_aclink.min.js": [
+//						"achelper/js/et2_widget_aclink.js"
+					],
+					"achelper/js/et2_widget_actree.min.js": [
+						"achelper/js/et2_widget_actree.js"
+					],
+					"achelper/js/et2_widget_currency.min.js": [
+						"achelper/js/et2_widget_currency.js"
 					],
 					"achelper/js/ac_app.min.js": [
 						"achelper/js/ac_app.js"

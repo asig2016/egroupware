@@ -296,7 +296,7 @@ module.exports = function (grunt) {
 						"achelper/js/app.js"
 					],
 					"achelper/js/et2_widget_aclink.min.js": [
-//						"achelper/js/et2_widget_aclink.js"
+						"achelper/js/et2_widget_aclink.js"
 					],
 					"achelper/js/et2_widget_actree.min.js": [
 						"achelper/js/et2_widget_actree.js"

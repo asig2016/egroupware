@@ -316,12 +316,14 @@ class Widget
 	 */
 	public static function registerWidget($class, $widgets)
 	{
+		//error_log('Register class:'.$class);
 		if (!is_subclass_of($class, __CLASS__))
 		{
 			throw new Api\Exception\WrongParameter(__METHOD__."('$class', ".array2string($widgets).") $class is no subclass of ".__CLASS__.'!');
 		}
 		foreach((array)$widgets as $widget)
 		{
+			//error_log('Widget: '.$widget.' added to registry.');
 			self::$widget_registry[$widget] = $class;
 		}
 	}
@@ -365,6 +367,9 @@ class Widget
 
 			// Use hook to load custom widgets from other apps
 			$widgets = Api\Hooks::process('etemplate2_register_widgets',array(),true);
+
+			error_log('widgets from hook:'.print_r($widgets, true));
+
 			foreach($widgets as $list)
 			{
 				if (is_array($list))
@@ -374,7 +379,7 @@ class Widget
 						try
 						{
 							class_exists($class);	// trigger autoloader
-							error_log('cccccccccccccccccccc'.$class);
+							//error_log('Class exists: '.$class);
 						}
 						catch(\Exception $e)
 						{

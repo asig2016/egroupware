@@ -332,7 +332,7 @@ var AppJS = (function(){ "use strict"; return Class.extend(
 				if(state.state && state.state.selectcols && state.state.selectcols.length > 0 )
 				{
 					// Make sure it's a real array, not an object, then set cols
-					_widget.set_columns(jQuery.extend([],state.state.selectcols));
+					//_widget.set_columns(jQuery.extend([],state.state.selectcols));
 				}
 				_widget.applyFilters(state.state || state.filter || {});
 				nextmatched = true;

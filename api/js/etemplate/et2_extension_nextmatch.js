@@ -820,14 +820,20 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 			var pref = {};
 			list = et2_csvSplit(this.options.settings.columnselection_pref, 2, ".");
 			if(this.options.settings.columnselection_pref.indexOf('nextmatch') == 0)
-			{
+			{	
+				console.log('index nextmatch== 0');
+				
 				app = list[0].substring('nextmatch'.length+1);
+				console.log(app);
 				pref = egw.preference(this.options.settings.columnselection_pref, app);
+				console.log('pref:');
+				console.log(pref);
+
 			}
 			else
 			{
 				app = list[0];
-				console.log('app from list:');
+				console.log('app from list[0]:');
 				console.log(app);
 				// 'nextmatch-' prefix is there in preference name, but not in setting, so add it in
 				pref = egw.preference("nextmatch-"+this.options.settings.columnselection_pref, app);

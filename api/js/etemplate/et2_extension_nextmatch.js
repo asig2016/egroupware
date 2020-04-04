@@ -811,6 +811,9 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 			this.options.settings.columnselection_pref = this.options.template;
 		}
 
+		console.log('this.options.settings.columnselection_pref:');
+		console.log(this.options.settings.columnselection_pref);
+
 		var app = '';
 		var list = [];
 		if(this.options.settings.columnselection_pref) {
@@ -834,6 +837,9 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 			}
 		}
 
+		console.log('Column preference:');
+		console.log(columnPreference);
+
 		// If no column preference or default set, use all columns
 		if(typeof columnPreference =="string" && columnPreference.length == 0)
 		{
@@ -843,6 +849,10 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 
 		var columnDisplay = typeof columnPreference === "string"
 				? et2_csvSplit(columnPreference,null,",") : columnPreference;
+
+		console.log('columnDisplay:');
+		console.log(columnDisplay);
+
 
 		// Adjusted column sizes
 		var size = {};
@@ -859,12 +869,19 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 		}
 		if(!size) size = {};
 
+		console.log('size:');
+		console.log(size);
+
 		// Column order
 		var order = {};
 		for(var i = 0; i < columnDisplay.length; i++)
 		{
 			order[columnDisplay[i]] = i;
 		}
+
+		console.log('order:');
+		console.log(order);
+
 		return {
 			visible: columnDisplay,
 			visible_negated: negated,

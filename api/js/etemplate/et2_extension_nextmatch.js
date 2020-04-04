@@ -827,11 +827,15 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 			else
 			{
 				app = list[0];
+				console.log('app from list:');
+				console.log(app);
 				// 'nextmatch-' prefix is there in preference name, but not in setting, so add it in
 				pref = egw.preference("nextmatch-"+this.options.settings.columnselection_pref, app);
+				console.log('pref:');
+				console.log(pref);
 			}
 			if(pref)
-			{
+			{	
 				negated = (pref[0] == "!");
 				columnPreference = negated ? pref.substring(1) : pref;
 			}

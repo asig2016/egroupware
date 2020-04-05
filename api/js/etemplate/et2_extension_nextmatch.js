@@ -811,44 +811,28 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 			this.options.settings.columnselection_pref = this.options.template;
 		}
 
-		console.log('this.options.settings.columnselection_pref:');
-		console.log(this.options.settings.columnselection_pref);
-
 		var app = '';
 		var list = [];
 		if(this.options.settings.columnselection_pref) {
 			var pref = {};
 			list = et2_csvSplit(this.options.settings.columnselection_pref, 2, ".");
 			if(this.options.settings.columnselection_pref.indexOf('nextmatch') == 0)
-			{	
-				console.log('index nextmatch== 0');
-				
+			{
 				app = list[0].substring('nextmatch'.length+1);
-				console.log(app);
 				pref = egw.preference(this.options.settings.columnselection_pref, app);
-				console.log('pref:');
-				console.log(pref);
-
 			}
 			else
 			{
 				app = list[0];
-				console.log('app from list[0]:');
-				console.log(app);
 				// 'nextmatch-' prefix is there in preference name, but not in setting, so add it in
 				pref = egw.preference("nextmatch-"+this.options.settings.columnselection_pref, app);
-				console.log('pref:');
-				console.log(pref);
 			}
 			if(pref)
-			{	
+			{
 				negated = (pref[0] == "!");
 				columnPreference = negated ? pref.substring(1) : pref;
 			}
 		}
-
-		console.log('Column preference:');
-		console.log(columnPreference);
 
 		// If no column preference or default set, use all columns
 		if(typeof columnPreference =="string" && columnPreference.length == 0)
@@ -859,10 +843,6 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 
 		var columnDisplay = typeof columnPreference === "string"
 				? et2_csvSplit(columnPreference,null,",") : columnPreference;
-
-		console.log('columnDisplay:');
-		console.log(columnDisplay);
-
 
 		// Adjusted column sizes
 		var size = {};
@@ -879,19 +859,12 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 		}
 		if(!size) size = {};
 
-		console.log('size:');
-		console.log(size);
-
 		// Column order
 		var order = {};
 		for(var i = 0; i < columnDisplay.length; i++)
 		{
 			order[columnDisplay[i]] = i;
 		}
-
-		console.log('order:');
-		console.log(order);
-
 		return {
 			visible: columnDisplay,
 			visible_negated: negated,
@@ -1011,8 +984,6 @@ var et2_nextmatch = (function(){ "use strict"; return et2_DOMWidget.extend([et2_
 	 * for next time
 	 */
 	_updateUserPreferences: function() {
-		console.log('updateUserPreferences...,selectcols:');
-		console.log(this.activeFilters.selectcols);
 		var colMgr = this.dataview.getColumnMgr();
 		var app = "";
 		if(!this.options.settings.columnselection_pref) {

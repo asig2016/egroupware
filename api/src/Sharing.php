@@ -95,10 +95,12 @@ class Sharing
 	 */
 	public static function get_token()
 	{
-    // WebDAV has no concept of a query string and clients (including cadaver)
+	// WebDAV has no concept of a query string and clients (including cadaver)
     // seem to pass '?' unencoded, so we need to extract the path info out
     // of the request URI ourselves
     // if request URI contains a full url, remove schema and domain
+
+	//Added some debug info
 		$matches = null;
     if (preg_match('|^https?://[^/]+(/.*)$|', $path_info=$_SERVER['REQUEST_URI'], $matches))
     {
@@ -108,7 +110,13 @@ class Sharing
 		list(, $token/*, $path*/) = preg_split('|[/?]|', $path_info, 3);
 
 		list($token) = explode(':', $token);
+
+		error_log('----------------------------get_token:'.$token);
+		error_log('REQUEST_URI:'.$_SERVER['REQUEST_URI']);
+		error_log('SCRIPT_NAME:'.$_SERVER['SCRIPT_NAME']);
+
 		return $token;
+
 	}
 
 	/**

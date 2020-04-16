@@ -95,12 +95,10 @@ class Sharing
 	 */
 	public static function get_token()
 	{
-	// WebDAV has no concept of a query string and clients (including cadaver)
+    // WebDAV has no concept of a query string and clients (including cadaver)
     // seem to pass '?' unencoded, so we need to extract the path info out
     // of the request URI ourselves
     // if request URI contains a full url, remove schema and domain
-
-	//Added some debug info
 		$matches = null;
     if (preg_match('|^https?://[^/]+(/.*)$|', $path_info=$_SERVER['REQUEST_URI'], $matches))
     {
@@ -110,13 +108,7 @@ class Sharing
 		list(, $token/*, $path*/) = preg_split('|[/?]|', $path_info, 3);
 
 		list($token) = explode(':', $token);
-
-		error_log('----------------------------get_token:'.$token);
-		error_log('REQUEST_URI:'.$_SERVER['REQUEST_URI']);
-		error_log('SCRIPT_NAME:'.$_SERVER['SCRIPT_NAME']);
-
 		return $token;
-
 	}
 
 	/**
@@ -443,7 +435,8 @@ class Sharing
 						'icon' => 'link',
 						'order' => 11,
 						'enabled' => "javaScript:app.$appname.is_share_enabled",
-						'onExecute' => "javaScript:app.$appname.share_link"
+						'onExecute' => "javaScript:app.$appname.share_link",
+						'hint' => lang("Share this %1 via URL", Link::get_registry($appname, 'entry'))
 					),
 					'shareWritable' => array(
 						'caption' => lang('Writable'),
@@ -451,22 +444,25 @@ class Sharing
 						'icon' => 'edit',
 						'allowOnMultiple' => true,
 						'enabled' => "javaScript:app.$appname.is_share_enabled",
-						'checkbox' => true
+						'checkbox' => true,
+						'hint' => lang("Allow editing the %1", Link::get_registry($appname, 'entry'))
 					),
 					'shareFiles' => array(
 						'caption' => lang('Share files'),
 						'group' => 2,
 						'allowOnMultiple' => true,
 						'enabled' => "javaScript:app.$appname.is_share_enabled",
-						'checkbox' => true
+						'checkbox' => true,
+						'hint' => lang('Include access to any linked files (Links tab)')
 					),
 					'shareFilemanager' => array(
-						'caption' => lang('Filemanager directory'),
+						'caption' => lang('share filemanager directory'),
 						'group' => 10,
 						'icon' => 'link',
 						'order' => 20,
 						'enabled' => "javaScript:app.$appname.is_share_enabled",
-						'onExecute' => "javaScript:app.$appname.share_link"
+						'onExecute' => "javaScript:app.$appname.share_link",
+						'hint' => lang('Share just the associated filemanager directory, not the %1', Link::get_registry($appname, 'entry'))
 					),
 				),
 		));

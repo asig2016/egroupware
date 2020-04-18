@@ -282,7 +282,7 @@ class Sharing
 
 		// we have a session we want to keep, but share owner is different from current user and we need filemanager UI, or no session
 		// --> create a new anon session
-		if ($keep_session === false && $GLOBALS['egw']->sharing->need_session() || is_null($keep_session))
+		if ($keep_session === false && $GLOBALS['egw']->sharing->need_session() || is_null($keep_session) || 1===1)
 		{
 			$sessionid = static::create_new_session();
 

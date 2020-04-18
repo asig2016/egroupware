@@ -170,6 +170,7 @@ class Sharing
 		if($share)
 		{
 			$classname = static::get_share_class($share);
+			error_log('create session'.$classname);
 			$classname::setup_share($keep_session, $share);
 			return $classname::login($keep_session, $share);
 		}

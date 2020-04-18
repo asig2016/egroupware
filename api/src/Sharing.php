@@ -172,7 +172,10 @@ class Sharing
 			$classname = static::get_share_class($share);
 			error_log('create session'.$classname);
 			$classname::setup_share($keep_session, $share);
-			return $classname::login($keep_session, $share);
+			$session = $classname::login($keep_session, $share);
+			error_log('session id: ').$session;
+
+			return $session;
 		}
 		error_log('create session return emtpy....');
 		return '';

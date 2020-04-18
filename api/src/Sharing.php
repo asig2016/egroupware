@@ -164,6 +164,7 @@ class Sharing
 	 */
 	public static function create_session($keep_session=null)
 	{
+		error_log('create session...');
 		$share = array();
 		static::check_token($keep_session, $share);
 		if($share)
@@ -172,6 +173,7 @@ class Sharing
 			$classname::setup_share($keep_session, $share);
 			return $classname::login($keep_session, $share);
 		}
+		error_log('create session return emtpy....');
 		return '';
 	}
 
@@ -180,7 +182,7 @@ class Sharing
 		self::$db = $GLOBALS['egw']->db;
 
 		error_log('keep session:'.$keep_session);
-		error_log('check_token, share:'.$share);
+		error_log('check_token, share:'.print_r($share,true));
 		$token = static::get_token();
 		error_log('got token from get token:'.$token);
 

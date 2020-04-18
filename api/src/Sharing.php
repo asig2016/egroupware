@@ -107,6 +107,7 @@ class Sharing
       $path_info = $matches[1];
     }
 	error_log('get token-> path info:'.$path_info);
+	error_log('get token-> script name:'.$_SERVER['SCRIPT_NAME']);
     $path_info = substr($path_info, strlen($_SERVER['SCRIPT_NAME']));
 		list(, $token/*, $path*/) = preg_split('|[/?]|', $path_info, 3);
 

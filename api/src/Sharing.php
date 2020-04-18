@@ -227,7 +227,7 @@ class Sharing
 				"Authorization failed."
 			);
 		}
-		error_log('got to end share:'.$share);
+		error_log('got to end share:'.print_r($share,true));
 	}
 
 	/**

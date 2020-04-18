@@ -109,9 +109,12 @@ class Sharing
 	error_log('get token-> path info:'.$path_info);
 	error_log('get token-> script name:'.$_SERVER['SCRIPT_NAME']);
     $path_info = substr($path_info, strlen($_SERVER['SCRIPT_NAME']));
+	error_log('get token-> path info (after substr):'.$path_info);
 		list(, $token/*, $path*/) = preg_split('|[/?]|', $path_info, 3);
 
+		error_log('get token-> token: '.$token);
 		list($token) = explode(':', $token);
+		error_log('get token-> token (array): '.print_r($token,true));
 		return $token;
 	}
 

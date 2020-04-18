@@ -199,6 +199,7 @@ class Sharing
 			if (isset($GLOBALS['egw']->session) && $GLOBALS['egw']->session->verify()
 				&& isset($GLOBALS['egw']->sharing) && $GLOBALS['egw']->sharing->share['share_token'] === $token)
 			{
+				error_log('check token returns...with sesion id'.$GLOBALS['egw']->session->sessionid);
 				return $GLOBALS['egw']->session->sessionid;
 			}
 		}

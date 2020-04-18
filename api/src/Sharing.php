@@ -179,12 +179,17 @@ class Sharing
 	{
 		self::$db = $GLOBALS['egw']->db;
 
+		error_log('keep session:'.$keep_session);
+		error_log('check_token, share:'.$share);
 		$token = static::get_token();
+		error_log('got token from get token:'.$token);
 
 		// are we called from header include, because session did not verify
 		// --> check if it verifys for our token
 		if ($token && !$keep_session)
 		{
+			error_log('token exist but keep session is not set');
+
 			$_SERVER['PHP_AUTH_USER'] = $token;
 			if (!isset($_SERVER['PHP_AUTH_PW'])) $_SERVER['PHP_AUTH_PW'] = '';
 

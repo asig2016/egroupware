@@ -438,7 +438,7 @@ size(...->0)	mail	el	Μέγεθος (...->0)
 size(0->...)	mail	el	Μέγεθος (0->...)
 small view	mail	el	μικρή προβολή
 smtp	mail	el	SMTP
-sneak preview in list	mail	el	Εμφάνιση των πρώτων λέξεων του μηνύματος (Sneak preview) στην λίστα των μηνυμάτων
+sneak preview in list	mail	el	Εμφάνιση των πρώτων λέξεων στη λίστα
 sort order	mail	el	Κατεύθυνση ταξινόμησης
 source	mail	el	Πηγή
 sources	mail	el	Πηγές

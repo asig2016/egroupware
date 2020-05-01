@@ -92,6 +92,7 @@ anguilla	common	el	ΑΝΓΚΟΥΙΛΛΑ
 antarctica	common	el	ΑΝΤΑΡΚΤΙΚΗ
 antigua and barbuda	common	el	ΑΝΤΙΓΚΟΥΑ & ΜΠΑΡΜΠΟΥΝΤΑ
 api	common	el	EGroupware API
+api-accounts	common	el	Λογαριασμοί χρηστών
 application	common	el	Εφαρμογή
 applications	common	el	Εφαρμογές
 apply	common	el	Εφαρμογή
@@ -101,7 +102,10 @@ are you sure you want to delete this entry ?	common	el	Είστε σίγουρο
 argentina	common	el	ΑΡΓΕΝΤΙΝΗ
 armenia	common	el	ΑΡΜΕΝΙΑ
 aruba	common	el	ΑΡΟΥΜΠΑ
+as default	common	el	Ως προεπιλογή
+attach	common	el	Επισύναψη
 attach file	common	el	Επισύναψη αρχείου
+attachment	common	el	Συνημμένο
 august	common	el	Αύγουστος
 australia	common	el	ΑΥΣΤΡΑΛΙΑ
 austria	common	el	ΑΥΣΤΡΙΑ
@@ -221,7 +225,7 @@ datetime port.<br>if using port 13, please set firewall rules appropriately befo
 day	common	el	ημέρα
 days	common	el	ημέρες
 december	common	el	Δεκέμβριος
-default	common	el	προκαθορισμένο
+default	common	el	Προεπιλογή
 default category	common	el	Προεπιλεγμένη Κατηγορία
 default height for the windows	common	el	Προεπιλεγμένο ύψος για τα παράθυρα
 default width for the windows	common	el	Προεπιλεγμένο πλάτος για τα παράθυρα
@@ -805,11 +809,14 @@ you have selected an invalid date	common	el	Επιλέξατε άκυρη ημε
 you have selected an invalid main category	common	el	Επιλέξατε άκυρη βασική κατηγορία!
 you have successfully logged out	common	el	Επιτυχής έξοδος
 you need to add the webserver user '%1' to the group '%2'.	common	el	Πρέπει να προσθέσετε τον webserver χρήστη '%1' στην ομάδα '%2'.
+you need to select a file first!	common	el	Θα πρέπει να επλέξετε πρώτα ένα αρχείο!
+you need to select some entries first!	common	el	Θα πρέπει να επλέξετε πρώτα κάποιες καταχωρήσεις!
 your code is incorrect !!!	common	el	Ο κωδικός είναι λανθασμένος!
 your message could <b>not</b> be sent!<br>	common	el	Το μήνυμά σας <b>δεν</b> μπόρεσε να σταλεί!<br>
 your message has been sent	common	el	To μήνυμά σας εστάλει
 your search returned %1 matchs	common	el	η αναζήτηση επέστρεψε %1 αποτελέσματα
 your search returned 1 match	common	el	η αναζήτηση επέστρεψε 1 αποτέλεσμα
+your session timed out, please log in again	login	el	Η συνεδρία σας έληξε, παρακαλώ εισέλθετε εκ νέου.
 your settings have been updated	common	el	Οι ρυθμίσεις σας έχουν ενημερωθεί
 zambia	common	el	ΖΑΜΠΙΑ
 zimbabwe	common	el	ΖΙΜΠΑΜΠΟΥΕ

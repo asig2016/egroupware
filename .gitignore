@@ -10,6 +10,7 @@
 *.diff
 *.patch
 *.log
+*.map
 /activesync/
 /archive/
 /authors.txt
@@ -42,6 +43,7 @@
 /registration/
 /sambaadmin/
 /sitemgr/
+/smallpart/
 /stylite/
 /tracker/
 /usage/

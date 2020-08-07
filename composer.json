@@ -60,14 +60,12 @@
 		"ext-xml": "*",
 		"ext-xsl": "*",
 		"adldap2/adldap2": "=4.0.4",
-		"asika/pdf2text": "1.*",
 		"bower-asset/cropper": "2.3.*",
 		"bower-asset/diff2html": "^2.7",
 		"bower-asset/fastclick": "1.0.*",
 		"bower-asset/jquery": "^1.12.4",
 		"bower-asset/jquery-touchswipe": "1.6.*",
 		"bower-asset/jquery-ui": "=1.11.2",
-		"chillerlan/php-qrcode": "^2.0",
 		"egroupware/activesync": "self.version",
 		"egroupware/adodb-php": "self.version",
 		"egroupware/bookmarks": "self.version",
@@ -83,7 +81,6 @@
 		"egroupware/tracker": "self.version",
 		"egroupware/z-push-dev": "^2.5",
 		"fxp/composer-asset-plugin": "^1.2.2",
-		"html2text/html2text": "^4.0",
 		"npm-asset/as-jqplot": "1.0.*",
 		"npm-asset/gridster": "0.5.*",
 		"oomphinc/composer-installers-extender": "^1.1",
@@ -100,11 +97,8 @@
 		"pear/log": "*",
 		"pear/pear": "*",
 		"pear/xml_feed_parser": "^1.0.5",
-		"php-ews/php-ews": "dev-composer",
-		"php-mime-mail-parser/php-mime-mail-parser": "^2.11",
 		"pragmarx/google2fa-qrcode": "^1.0",
-		"tinymce/tinymce": "^5.0",
-		"vakata/jstree": "^3.3"
+		"tinymce/tinymce": "^5.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "~8"

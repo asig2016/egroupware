@@ -892,15 +892,21 @@ class Link extends Link\Storage
 
 		if ($id && is_null($title))	// $app,$id has been deleted ==> unlink all links to it
 		{
-			static $unlinking = array();
-			// check if we are already trying to unlink the entry, to avoid an infinite recursion
-			if (!isset($unlinking[$app]) || !isset($unlinking[$app][$id]))
-			{
-				$unlinking[$app][$id] = true;
-				self::unlink(0,$app,$id);
-				unset($unlinking[$app][$id]);
-			}
-			if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id') unlinked, as $method returned null</p>\n";
+			/* asig_fkar_patch ===> */
+			//Don't delete files if link is not found, only log this
+			//error_log("Cannot find link for app=$app, id=$id");
+			/*
+				static $unlinking = array();
+				// check if we are already trying to unlink the entry, to avoid an infinite recursion
+				if (!isset($unlinking[$app]) || !isset($unlinking[$app][$id]))
+				{
+					$unlinking[$app][$id] = true;
+					self::unlink(0,$app,$id);
+					unset($unlinking[$app][$id]);
+				}
+				if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id') unlinked, as $method returned null</p>\n";
+		     */
+			/* asig_fkar_patch <=== */
 			return False;
 		}
 		if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id')='$title' (from $method)</p>\n";
@@ -1376,16 +1382,10 @@ class Link extends Link\Storage
 				Storage\History::static_add($link['app2'],$link['id2'],$GLOBALS['egw_info']['user']['account_id'],'~file~','', Vfs::basename($url));
 			}
 		}
-		try {
-			if (($Ok = !file_exists($url) || Vfs::remove($url,true)) && ((int)$app > 0 || $fname))
-			{
-				// try removing the dir, in case it's empty
-				if (($dir = Vfs::dirname($url))) @Vfs::rmdir($dir);
-			}
-		}
-		catch (\Exception $e) {
-			// ignore SQL error caused by only virtual directories with non-integer (hash) fs_id
-			$Ok = false;
+		if (($Ok = !file_exists($url) || Vfs::remove($url,true)) && ((int)$app > 0 || $fname))
+		{
+			// try removing the dir, in case it's empty
+			if (($dir = Vfs::dirname($url))) @Vfs::rmdir($dir);
 		}
 		if (!is_null($current_is_root))
 		{

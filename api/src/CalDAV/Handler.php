@@ -287,8 +287,10 @@ abstract class Handler
 	 */
 	static function etag2value($etag)
 	{
-		list(,$val) = explode(':',$etag,2);
-
+		/* asig_fkar_patch ===> */
+		//asig replaced : with ::
+		list(,$val) = explode('::',$etag,2);
+		/* asig_fkar_patch <=== */
 		return $val;
 	}
 

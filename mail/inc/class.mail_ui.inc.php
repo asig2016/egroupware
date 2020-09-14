@@ -3574,6 +3574,14 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 				'(R)',
 			);
 
+			// asig_fkar_patch ===>
+			//Force utf-8 if it is detected
+			if ($singleBodyPart['charSet'] != 'utf-8' &&
+				($string = $singleBodyPart['body']) && preg_match("//u", $string)) {
+				$singleBodyPart['charSet'] = 'UTF-8';
+			}
+			// asig_fkar_patch <===
+
 			if(($singleBodyPart['mimeType'] == 'text/html' || $singleBodyPart['mimeType'] == 'text/plain') &&
 				strtoupper($singleBodyPart['charSet']) != 'UTF-8')
 			{

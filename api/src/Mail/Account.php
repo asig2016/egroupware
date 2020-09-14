@@ -1397,6 +1397,10 @@ class Account implements \ArrayAccess
 			$where[] = self::$db->expression(self::VALID_TABLE, self::VALID_TABLE.'.', array(
 				'account_id' => $account_id ? self::memberships($account_id) : 0
 			));
+			/* asig_fkar_patch ===> */
+			//
+			$where[] = " egw_ea_accounts.acc_name <> 'hidden'  ";
+			/* asig_fkar_patch <=== */
 		}
 		if (empty($order_by) || !preg_match('/^[a-z_]+ (ASC|DESC)$/i', $order_by))
 		{

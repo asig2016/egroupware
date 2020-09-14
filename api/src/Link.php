@@ -858,15 +858,21 @@ class Link extends Link\Storage
 
 		if ($id && is_null($title))	// $app,$id has been deleted ==> unlink all links to it
 		{
-			static $unlinking = array();
-			// check if we are already trying to unlink the entry, to avoid an infinit recursion
-			if (!isset($unlinking[$app]) || !isset($unlinking[$app][$id]))
-			{
-				$unlinking[$app][$id] = true;
-				self::unlink(0,$app,$id);
-				unset($unlinking[$app][$id]);
-			}
-			if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id') unlinked, as $method returned null</p>\n";
+			/* asig_fkar_patch ===> */
+			//Don't delete files if link is not found, only log this
+			error_log("Cannot find link for app=$app, id=$id");
+			/*
+				static $unlinking = array();
+				// check if we are already trying to unlink the entry, to avoid an infinit recursion
+				if (!isset($unlinking[$app]) || !isset($unlinking[$app][$id]))
+				{
+					$unlinking[$app][$id] = true;
+					self::unlink(0,$app,$id);
+					unset($unlinking[$app][$id]);
+				}
+				if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id') unlinked, as $method returned null</p>\n";
+		     */
+			/* asig_fkar_patch <=== */
 			return False;
 		}
 		if (self::DEBUG) echo '<p>'.__METHOD__."('$app','$id')='$title' (from $method)</p>\n";

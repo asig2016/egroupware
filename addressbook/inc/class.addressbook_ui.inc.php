@@ -3313,6 +3313,24 @@ class addressbook_ui extends addressbook_bo
 				}
 				// Skip n_fn, it causes problems in sql
 				unset($query['advanced_search']['n_fn']);
+
+				//Add from to to date filters, usefull to sort thing out when a sync has created mass duplicates
+				$date_fields = ['created', 'modified'];
+				foreach ($date_fields as $date_field){
+					if($_content[$date_field.'_from']){
+						$query['advanced_search'][] = " contact_$date_field >= ".$_content[$date_field.'_from'];
+						//add also form field value, to save it in session later:
+						$query['advanced_search'][$date_field.'_from'] = $_content[$date_field.'_from'];
+					}
+
+					if($_content[$date_field.'_to']){
+						$query['advanced_search'][] = " contact_$date_field <= ".$_content[$date_field.'_to'];
+						//add also form field value, to save it in session later:
+						$query['advanced_search'][$date_field.'_to'] = $_content[$date_field.'_to'];
+					}
+
+				}
+
 			}
 			$query['search'] = '';
 			// store the index state in the session
@@ -3320,6 +3338,12 @@ class addressbook_ui extends addressbook_bo
 
 			// store the advanced search in the session to call it again
 			Api\Cache::setSession('addressbook', 'advanced_search', $query['advanced_search']);
+
+			//unset from, to before actually setting filters, because they mess up serch results.
+			foreach ($date_fields as $date_field){
+				unset($query['advanced_search'][$date_field.'_from']);
+				unset($query['advanced_search'][$date_field.'_to']);
+			}
 
 			// Update client / nextmatch with filters, or clear
 			$response->call("app.addressbook.adv_search", array('advanced_search' => $_content['button']['search'] ? $query['advanced_search'] : ''));
@@ -3376,7 +3400,7 @@ class addressbook_ui extends addressbook_bo
 		// configure edit template as search dialog
 		$readonlys['change_photo'] = true;
 		$readonlys['fileas_type'] = true;
-		$readonlys['creator'] = true;
+		//$readonlys['creator'] = true;
 		// this setting will enable (and show) the search and cancel buttons, setting this to true will hide the before mentioned buttons completely
 		$readonlys['button'] = false;
 		// disable not needed tabs

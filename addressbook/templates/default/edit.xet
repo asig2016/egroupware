@@ -426,7 +426,7 @@
 					</menulist>
 					<description/>
 				</row>
-				<row class="dialogOperators">
+				<row disabled="@showsearchbuttons" class="dialogOperators">
 					<description value="Created"/>
 					<hbox width="100%">
 						<menulist>
@@ -452,7 +452,36 @@
 						<checkbox statustext="Apply changes to all members, whose fields have the same previous content" label="change all organisation members" id="change_org" span="all" disabled="@hide_change_org"/>
 						<button align="right" label="Delete" id="button[delete]" class="button_delete" onclick="et2_dialog.confirm(widget,'Do you really want to delete this contact?','Delete')" image="delete" background_image="1"/>
 					</hbox>
-
+				</row>
+				<row  disabled="!@showsearchbuttons" class="dialogOperators">
+					<description value="Creator"/>
+					<hbox width="100%">
+						<menulist>
+							<menupopup type="select-account" id="creator" options="All" />
+						</menulist>
+					</hbox>
+					<description/>
+					<description value="Modifier"/>
+					<hbox width="100%">
+						<menulist>
+							<menupopup type="select-account" id="modifier" options="All"/>
+						</menulist>
+					</hbox>
+					<description/>
+				</row>
+				<row  disabled="!@showsearchbuttons" class="dialogOperators">
+					<description value="Created"/>
+					<hbox width="100%">
+						<date-time id="created_from" align="right"/>
+						<date-time id="created_to" align="right"/>
+					</hbox>
+					<description/>
+					<description value="Last modified"/>
+					<hbox width="100%">
+						<date-time id="modified_from"  align="right"/>
+						<date-time id="modified_to"  align="right"/>
+					</hbox>
+					<description/>
 				</row>
 				<row disabled="!@showsearchbuttons" class="dialogOperators">
 					<hbox span="all">

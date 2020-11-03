@@ -1015,7 +1015,7 @@ export class et2_selectbox extends et2_inputWidget
 			this.input.trigger("liszt:updated");
 		}
 		// Sometimes value gets set before options
-		if(this.value || (this.options.empty_label && !this.options.multiple) || this.value === ''  && this.input && this.input.children('[value=""]').length === 1)
+		if(this.value || this.options.empty_label || this.value === ''  && this.input && this.input.children('[value=""]').length === 1)
 		{
 			this.set_value(this.value, true);	// true = dont try to set_options, to avoid an infinit recursion
 		}
@@ -1026,20 +1026,21 @@ export class et2_selectbox extends et2_inputWidget
 		}
 	}
 
-	getValue() : string[] | string
+	getValue()
 	{
-		let value: string[] | string = [];
 		if(this.input == null)
 		{
+			var value = [];
 			jQuery("input:checked",this.multiOptions).each(function(){value.push(this.value);});
 			// we need to return null for no value instead of empty array, which gets overwritten by preserved value on server-side
+			this.value = value;
 		}
 		else
 		{
-			value = super.getValue();
-			if (value === null) value = this.options.multiple ? [] : "";	// do NOT return null, as it does not get transmitted to server
+			this.value = super.getValue();
+			if (this.value === null) this.value = this.options.multiple ? [] : "";	// do NOT return null, as it does not get transmitted to server
 		}
-		return value;
+		return this.value;
 	}
 
 	isDirty()

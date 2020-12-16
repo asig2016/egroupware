@@ -1144,7 +1144,11 @@ class calendar_uiforms extends calendar_ui
 					$button == 'save' && $client_updated ? ($content['id'] ? $update_type : 'add') : 'delete'
 				);
 			}
-			Framework::window_close();
+			// Don't try to close quick add, it's not in a popup
+			if($content['template'] !== 'calendar.add')
+			{
+				Framework::window_close();
+			}
 			exit();
 		}
 		unset($event['no_notifications']);
@@ -2023,6 +2027,9 @@ class calendar_uiforms extends calendar_ui
 
 		if (!empty($preserved['lock_token'])) $content['lock_token'] = $preserved['lock_token'];
 
+		//Disable videoconference if the module is not enabled
+		$etpl->disableElement('videoconference', $GLOBALS['egw_info']['user']['apps']['status'] && EGroupware\Status\Hooks::isVideoconferenceDisabled());
+
 		// non_interactive==true from $_GET calls immediate save action without displaying the edit form
 		if(isset($_GET['non_interactive']) && (bool)$_GET['non_interactive'] === true)
 		{
@@ -2099,6 +2106,14 @@ class calendar_uiforms extends calendar_ui
 
 			// convert event from servertime returned by calendar_ical to user-time
 			$this->bo->server2usertime($event);
+
+			// Check if this is an exception
+			if($event['recur_type'] && count($event['recur_exception']) && !$event['recurrence'])
+			{
+				$diff = $event['recur_exception'][0] - $event['start'];
+				$event['start'] += $diff;
+				$event['end'] += $diff;
+			}
 
 			if (($existing_event = $this->bo->read($event['uid'], $event['recurrence'], false, 'ts', null, true)) && // true = read the exception
 				!$existing_event['deleted'])

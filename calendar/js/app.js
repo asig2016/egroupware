@@ -1292,7 +1292,7 @@ var CalendarApp = /** @class */ (function (_super) {
             var end = widget.getRoot().getDOMWidgetById('end');
             var start_time = new Date(widget.getValue());
             var end_time = new Date(end.getValue());
-            if (end_time <= start_time) {
+            if (end.getValue() && end_time <= start_time) {
                 start_time.setMinutes(start_time.getMinutes() + 1);
                 end.set_value(start_time);
             }
@@ -2539,7 +2539,7 @@ var CalendarApp = /** @class */ (function (_super) {
                     && egw.user('apps')['infolog'] && egw.preference('cal_show', 'infolog') !== '0') {
                     // Set width to 70%, otherwise if a scrollbar is needed for the view, it will conflict with the todo list
                     jQuery(CalendarApp.views.day.etemplates[0].DOMContainer).css("width", "70%");
-                    jQuery(view.etemplates[1].DOMContainer).css({ "left": "70%", "height": '100%' });
+                    jQuery(view.etemplates[1].DOMContainer).css({ "left": "70%" });
                     // TODO: Maybe some caching here
                     this.egw.jsonq('calendar_uiviews::ajax_get_todos', [state.state.date, state.state.owner[0]], function (data) {
                         this.getWidgetById('label').set_value(data.label || '');
@@ -3551,7 +3551,7 @@ var CalendarApp = /** @class */ (function (_super) {
      */
     CalendarApp.prototype.joinVideoConferenceAction = function (_action, _sender) {
         var data = egw.dataGetUIDdata(_sender[0].id)['data'];
-        return this.joinVideoConference(data['##videoconference']);
+        return this.joinVideoConference(data['##videoconference'], data);
     };
     /**
      * Join a videoconference
@@ -3560,14 +3560,21 @@ var CalendarApp = /** @class */ (function (_super) {
      *
      * @param {string} videoconference
      */
-    CalendarApp.prototype.joinVideoConference = function (videoconference) {
+    CalendarApp.prototype.joinVideoConference = function (videoconference, _data) {
         return egw.json("EGroupware\\Status\\Videoconference\\Call::ajax_genMeetingUrl", [videoconference,
             {
                 name: egw.user('account_fullname'),
                 account_id: egw.user('account_id'),
-                email: egw.user('account_email')
-            }], function (_url) {
-            app.status.openCall(_url);
+                email: egw.user('account_email'),
+                cal_id: _data.id,
+                title: _data.title
+            }, _data.start, _data.end], function (_value) {
+            if (_value) {
+                if (_value.err)
+                    egw.message(_value.err, 'error');
+                if (_value.url)
+                    app.status.openCall(_value.url);
+            }
         }).sendRequest();
     };
     /**

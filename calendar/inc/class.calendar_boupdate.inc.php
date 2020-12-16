@@ -232,6 +232,25 @@ class calendar_boupdate extends calendar_bo
 				$messages[] = lang('Status of participants set to unknown because of missing category rights');
 			}
 		}
+
+		// generate a video-room-url, if we need one and not already have one
+		if ($event['videoconference'] && empty($event['##videoconference']) && class_exists('EGroupware\\Status\\Videoconference\\Call')
+			&& !EGroupware\Status\Hooks::isVideoconferenceDisabled())
+		{
+			$event['##videoconference'] = EGroupware\Status\Videoconference\Call::genUniqueRoomID();
+		}
+		elseif (isset($event['videoconference']) && !$event['videoconference'])
+		{
+			$event['##videoconference'] = '';
+		}
+		// update videoconference resource amounts based on number of participants
+		if ($event['videoconference'] && !empty($event['##videoconference']) && class_exists('EGroupware\\Status\\Videoconference\\Call')
+			&& !EGroupware\Status\Hooks::isVideoconferenceDisabled() && ($videoconferenceResId = \EGroupware\Status\Hooks::getVideoconferenceResourceId()))
+		{
+			$event['participant_types']['r'][$videoconferenceResId] =
+			$event['participants']['r'.$videoconferenceResId] = 'A'.(count($event['participant_types']['u']) + count($event['participant_types']['e']) + count($event['participant_types']['c']));
+		}
+
 		// check for conflicts only happens !$ignore_conflicts AND if start + end date are given
 		$checked_excluding = null;
 		if (!$ignore_conflicts && !$event['non_blocking'] && isset($event['start']) && isset($event['end']) &&
@@ -247,15 +266,7 @@ class calendar_boupdate extends calendar_bo
 			return $conflicts;
 		}
 
-		// generate a video-room-url, if we need one and not already have one
-		if ($event['videoconference'] && empty($event['##videoconference']) && class_exists('EGroupware\\Status\\Videoconference\\Call'))
-		{
-			$event['##videoconference'] = EGroupware\Status\Videoconference\Call::genUniqueRoomID();
-		}
-		elseif (isset($event['videoconference']) && !$event['videoconference'])
-		{
-			$event['##videoconference'] = '';
-		}
+
 
 		//echo "saving $event[id]="; _debug_array($event);
 		$event2save = $event;
@@ -941,8 +952,9 @@ class calendar_boupdate extends calendar_bo
 			calendar_so::split_status($statusid, $quantity, $role);
 			if ($this->debug > 0) error_log(__METHOD__." trying to notify $userid, with $statusid ($role)");
 
-			// hack to add videoconference in event description, by allways setting $cleared_event
-			$cleared_event = $this->read($event['id'], null, true, 'server');
+			// hack to add videoconference in event description, by always setting $cleared_event
+			// Can't re-load, if we're notifying of a cancelled recurrence we'll load the next event in the series
+			$cleared_event = $event;
 
 			if (!is_numeric($userid))
 			{
@@ -1038,7 +1050,14 @@ class calendar_boupdate extends calendar_bo
 
 				// event is in user-time of current user, now we need to calculate the tz-difference to the notified user and take it into account
 				if (!isset($part_prefs['common']['tz'])) $part_prefs['common']['tz'] = $GLOBALS['egw_info']['server']['server_timezone'];
-				$timezone = new DateTimeZone($part_prefs['common']['tz']);
+				try
+				{
+					$timezone = new DateTimeZone($part_prefs['common']['tz']);
+				}
+				catch(Exception $e)
+				{
+					$timezone = new DateTimeZone($GLOBALS['egw_info']['server']['server_timezone']);
+				}
 				$timeformat = $part_prefs['common']['timeformat'];
 				switch($timeformat)
 				{
@@ -1066,7 +1085,8 @@ class calendar_boupdate extends calendar_bo
 					$details['olddate'] = $olddate->format($timeformat);
 				}
 				// generate a personal videoconference url, if we need one
-				if (!empty($event['##videoconference']) && class_exists('EGroupware\\Status\\Videoconference\\Call'))
+				if (!empty($event['##videoconference']) && class_exists('EGroupware\\Status\\Videoconference\\Call')
+					&& !EGroupware\Status\Hooks::isVideoconferenceDisabled())
 				{
 					$avatar = new Api\Contacts\Photo(is_numeric($userid) ? "account:$userid" :
 						(isset($res_info) && $res_info['type'] === 'c' ? $res_info['res_id'] : $userid),
@@ -1077,7 +1097,8 @@ class calendar_boupdate extends calendar_bo
 						'name' => $fullname,
 						'email' => is_numeric($userid) ? Api\Accounts::id2name($userid, 'account_email') : $userid,
 						'avatar' => (string)$avatar,
-						'account_id' => $userid
+						'account_id' => $userid,
+						'cal_id' => $details['id']
 					], [], $startdate, $enddate);
 					$event_arr['videoconference'] = [
 						'field' => lang('Video Conference'),
@@ -1096,7 +1117,7 @@ class calendar_boupdate extends calendar_bo
 				switch($msg_type == MSG_ALARM ? 'extended' : $part_prefs['calendar']['update_format'])
 				{
 					case 'ical':
-						if (is_null($ics) || $m_type != $msg_type)	// need different ical for organizer notification
+						if (is_null($ics) || $m_type != $msg_type || $event['##videoconference'])	// need different ical for organizer notification or videoconference join urls
 						{
 							$calendar_ical = new calendar_ical();
 							$calendar_ical->setSupportedFields('full');	// full iCal fields+event TZ

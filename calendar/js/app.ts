@@ -1352,7 +1352,7 @@ class CalendarApp extends EgwApp
 			let end = <et2_date> widget.getRoot().getDOMWidgetById('end');
 			let start_time = new Date(widget.getValue());
 			let end_time = new Date(end.getValue());
-			if(end_time <= start_time)
+			if(end.getValue() && end_time <= start_time)
 			{
 				start_time.setMinutes(start_time.getMinutes() + 1);
 				end.set_value(start_time);
@@ -2934,7 +2934,7 @@ class CalendarApp extends EgwApp
 				{
 					// Set width to 70%, otherwise if a scrollbar is needed for the view, it will conflict with the todo list
 					jQuery((<etemplate2>CalendarApp.views.day.etemplates[0]).DOMContainer).css("width","70%");
-					jQuery(view.etemplates[1].DOMContainer).css({"left":"70%", "height":'100%'});
+					jQuery(view.etemplates[1].DOMContainer).css({"left":"70%"});
 					// TODO: Maybe some caching here
 					this.egw.jsonq('calendar_uiviews::ajax_get_todos', [state.state.date, state.state.owner[0]], function(data) {
 						this.getWidgetById('label').set_value(data.label||'');
@@ -4408,7 +4408,7 @@ class CalendarApp extends EgwApp
 	{
 		let data = egw.dataGetUIDdata(_sender[0].id)['data'];
 
-		return this.joinVideoConference(data['##videoconference']);
+		return this.joinVideoConference(data['##videoconference'], data);
 	}
 
 	/**
@@ -4418,7 +4418,7 @@ class CalendarApp extends EgwApp
 	 *
 	 * @param {string} videoconference
 	 */
-	public joinVideoConference(videoconference)
+	public joinVideoConference(videoconference, _data)
 	{
 		return egw.json(
 			"EGroupware\\Status\\Videoconference\\Call::ajax_genMeetingUrl",
@@ -4426,9 +4426,15 @@ class CalendarApp extends EgwApp
 				{
 					name:egw.user('account_fullname'),
 					account_id:egw.user('account_id'),
-					email:egw.user('account_email')
-				}], function(_url){
-				app.status.openCall(_url);
+					email:egw.user('account_email'),
+					cal_id:_data.id,
+					title: _data.title
+				}, _data.start, _data.end], function(_value){
+					if (_value)
+					{
+						if (_value.err) egw.message(_value.err, 'error');
+						if(_value.url) app.status.openCall(_value.url);
+					}
 			}).sendRequest();
 	}
 }

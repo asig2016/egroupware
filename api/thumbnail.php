@@ -132,7 +132,7 @@ function read_thumbnail($src)
 	{
 		$maxw = $maxh = $maxsize;
 	}
-	//error_log(__METHOD__."() maxsize=$maxsize, width=$width, height=$height, minsize=$minsize --> maxw=$maxw, maxh=$maxh, minw=$minw, minh=$minh");
+	error_log(__METHOD__."() maxsize=$maxsize, width=$width, height=$height, minsize=$minsize --> maxw=$maxw, maxh=$maxh, minw=$minw, minh=$minh");
 
 	// Generate the destination filename and check whether the destination directory
 	// had been successfully created (the cache class used in gen_dstfile does that).
@@ -150,6 +150,8 @@ function read_thumbnail($src)
 	}
 	$dst = gen_dstfile($stat && !empty($stat['url']) ? $stat['url'] : $src, $maxsize, $height, $width, $minsize);
 	$dst_dir = dirname($dst);
+	error_log($dst_dir);
+	/*
 	if(file_exists($dst_dir))
 	{
 		// Check whether the destination file already exists and is newer than
@@ -178,6 +180,8 @@ function read_thumbnail($src)
 		// simply output the mime type icon
 		if (!$exists)
 		{
+	 *
+	 */
 			$mime = Vfs::mime_content_type($src);
 			list($app, $icon) = explode('/', Vfs::mime_icon($mime), 2);
 			list(, $path) = explode($GLOBALS['egw_info']['server']['webserver_url'],
@@ -191,7 +195,7 @@ function read_thumbnail($src)
 			{
 				$output_mime = Api\MimeMagic::filename2mime($dst);
 			}
-		}
+		//}
 
 		if ($dst)
 		{
@@ -202,7 +206,7 @@ function read_thumbnail($src)
 			readfile($dst);
 			return true;
 		}
-	}
+	//}
 
 	return false;
 }

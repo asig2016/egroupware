@@ -314,8 +314,8 @@ class Base
 				if($is_link && $do_symlink)
 				{
 					$old_url = $url;
-					$_url = self::symlinkCache_resolve(Vfs::parse_url($url,PHP_URL_PATH));
-					$url = @readlink($url) ?: ($_url != $parts['path'] ?
+					$_url = self::symlinkCache_resolve($url);
+					$url = @readlink($url) ?: (Vfs::parse_url($_url,PHP_URL_PATH) != $parts['path'] ?
 						str_replace([$parts['path'],Vfs::parse_url($old_url,PHP_URL_SCHEME)],[$_url,Vfs::parse_url(Vfs::resolve_url($_url),PHP_URL_SCHEME)],$url) : null) ?:$url;
 					$is_link = $old_url == $url;
 				}

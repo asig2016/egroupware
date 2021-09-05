@@ -103,6 +103,15 @@ class mail_ui
 		'larger'		=> 'greater than',	// lang('greater than')
 		'smaller'		=> 'less than',	// lang('less than')
 		'bydate' 	=> 'Selected date range (with quicksearch)',// lang('Selected date range (with quicksearch)')
+        'bydate_today' => 'Today',
+        'bydate_48h' => 'Last 2 Days',
+        'bydate_96h' => 'Last 4 Days',
+        'bydate_720h'=> 'Last 30 Days',
+        'bydate_1440h'=> 'Last 60 Days',
+        'bydate_currweek' => 'Only current week',
+        'bydate_currmonth' => 'Only current month',
+        'bydate_prevweek' => 'Only previous week'
+
 	);
 
 	/**
@@ -126,6 +135,10 @@ class mail_ui
 	 */
 	function __construct($run_constructor=true)
 	{
+        //asig: Needed for acemailstor report from preview.
+        Framework::includeJS('.', 'app', 'acemailstor', true);
+        Framework::includeCSS('.', 'app', 'acemailstor');
+
 		$this->mail_tree = new mail_tree($this);
 		if (!$run_constructor) return;
 
@@ -1523,7 +1536,7 @@ class mail_ui
 	public static function get_rows(&$query,&$rows,&$readonlys)
 	{
 		unset($readonlys);	// not used, but required by function signature
-
+        $query = acemailstor_lib::create_extended_date_filters($query);
 		// handle possible profile change in get_rows
 		if (!empty($query['selectedFolder']))
 		{
@@ -5044,7 +5057,7 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 				}
 				if (isset($_messageList['activeFilters']) && $_messageList['activeFilters'])
 				{
-					$query = $_messageList['activeFilters'];
+					$query = acemailstor_lib::create_extended_date_filters($_messageList['activeFilters']);
 					if (!empty($query['search']) || !empty($query['filter'])||($query['cat_id']=='bydate' && (!empty($query['startdate'])||!empty($query['enddate']))))
 					{
 						//([filterName] => Schnellsuche[type] => quick[string] => ebay[status] => any
@@ -5246,7 +5259,7 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 				$folder = $uidA['folder']; // all messages in one set are supposed to be within the same folder
 				if (isset($_messageList['activeFilters']) && $_messageList['activeFilters'])
 				{
-					$query = $_messageList['activeFilters'];
+					$query = acemailstor_lib::create_extended_date_filters($_messageList['activeFilters']);
 					if (!empty($query['search']) || !empty($query['filter'])||($query['cat_id']=='bydate' && (!empty($query['startdate'])||!empty($query['enddate']))))
 					{
 						//([filterName] => Schnellsuche[type] => quick[string] => ebay[status] => any
@@ -5412,7 +5425,7 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 				$sourceProfileID = $uidA['profileID'];
 				if (isset($_messageList['activeFilters']) && $_messageList['activeFilters'])
 				{
-					$query = $_messageList['activeFilters'];
+					$query = acemailstor_lib::create_extended_date_filters($_messageList['activeFilters']);
 					if (!empty($query['search']) || !empty($query['filter'])||($query['cat_id']=='bydate' && (!empty($query['startdate'])||!empty($query['enddate']))))
 					{
 						//([filterName] => Schnellsuche[type] => quick[string] => ebay[status] => any

@@ -1214,6 +1214,14 @@ app.classes.mail = AppJS.extend(
 		// Not applied to mobile preview
 		if (!egwIsMobile())
 		{
+
+			var acemailstor = nextmatch.getInstanceManager().app_obj.acemailstor;
+			if( acemailstor ){
+				acemailstor.fillInMailApp_initimportsettings(selected, nextmatch, _id);
+			}else{
+				egw(window).message('Please click once on acemailstor application tab to enable its features in mail app!', 'warning');
+			}
+
 			var smimeSigBtn = this.et2.getWidgetById('previewSmimeSigBtn');
 			if (smimeSigBtn) smimeSigBtn.set_disabled(dataElem.data['smimeSigUrl']?false:true);
 

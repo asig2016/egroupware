@@ -1,3 +1,10 @@
+#mail-compose_mailaccount{
+  font-weight: bold;
+  font-size: large;
+  background: yellow;
+}
+
+
 /**
  * EGroupware: CSS with less preprocessor
  *

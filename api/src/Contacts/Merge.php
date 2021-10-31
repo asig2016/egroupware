@@ -21,12 +21,7 @@ use calendar_boupdate;	// we detect if it is not available
 /**
  * Contacts document merge
  */
-/* asig_fkar_patch ===> */
-//fkar add achelper_merge as a level of abstraction on top of Merge
-//this way our custom functions are included
-//class Merge extends Api\Storage\Merge
-class Merge extends \achelper_merge
-/* asig_fkar_patch <=== */
+class Merge extends Api\Storage\Merge
 {
 	/**
 	 * Functions that can be called via menuaction

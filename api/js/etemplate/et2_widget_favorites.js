@@ -87,7 +87,7 @@ var et2_favorites = /** @class */ (function (_super) {
         if (!_this.options.app) {
             _this.options.app = _this.getInstanceManager().app;
         }
-        _this.stored_filters = _this.load_favorites(_this.options.app);
+        _this.stored_filters = _this.load_favorites(_this.options.app, _this.options.favorites_filter);
         _this.preferred = egw.preference(_this.options.default_pref, _this.options.app);
         if (!_this.preferred || typeof _this.stored_filters[_this.preferred] == "undefined") {
             _this.preferred = "blank";
@@ -138,10 +138,11 @@ var et2_favorites = /** @class */ (function (_super) {
                 sideBoxDOMNodeSort(self.favSortedList);
             }
         });
+        var that = _this;
         // Add a listener on the delete to remove
-        _this.menu.on("click", "div.ui-icon-trash", app[self.options.app], function () {
+        _this.menu.on("click", "div.ui-icon-trash", _this._getAppObject(self.options.app), function () {
             // App instance might not be ready yet, so don't bind directly
-            app[self.options.app].delete_favorite.apply(this, arguments);
+            that._getAppObject(self.options.app).delete_favorite.apply(this, arguments);
         })
             // Wrap and unwrap because jQueryUI styles use a parent, and we don't want to change the state of the menu item
             // Wrap in a span instead of a div because div gets a border
@@ -159,7 +160,7 @@ var et2_favorites = /** @class */ (function (_super) {
      *
      * @param app String Load favorites from this application
      */
-    et2_favorites.prototype.load_favorites = function (app) {
+    et2_favorites.prototype.load_favorites = function (app, favorites_filter) {
         // Default blank filter
         var stored_filters = {
             'blank': {
@@ -172,10 +173,12 @@ var et2_favorites = /** @class */ (function (_super) {
         for (var pref_name in preferences) {
             if (pref_name.indexOf(et2_favorites.PREFIX) == 0 && typeof preferences[pref_name] == 'object') {
                 var name_1 = pref_name.substr(et2_favorites.PREFIX.length);
-                stored_filters[name_1] = preferences[pref_name];
-                // Keep older favorites working - they used to store nm filters in 'filters',not state
-                if (preferences[pref_name]["filters"]) {
-                    stored_filters[pref_name]["state"] = preferences[pref_name]["filters"];
+                if (!favorites_filter || this.resolve(favorites_filter.filter_item, preferences[pref_name]) == favorites_filter.filter_value) {
+                    stored_filters[name_1] = preferences[pref_name];
+                    // Keep older favorites working - they used to store nm filters in 'filters',not state
+                    if (preferences[pref_name]["filters"]) {
+                        stored_filters[pref_name]["state"] = preferences[pref_name]["filters"];
+                    }
                 }
             }
             if (pref_name == 'fav_sort_pref') {
@@ -211,6 +214,11 @@ var et2_favorites = /** @class */ (function (_super) {
         }
         return stored_filters;
     };
+    et2_favorites.prototype.resolve = function (path, obj) {
+        return path.split('.').reduce(function (prev, curr) {
+            return prev ? prev[curr] : null;
+        }, obj || self);
+    };
     // Create & set filter options for dropdown menu
     et2_favorites.prototype.init_filters = function (widget, filters) {
         if (typeof filters == "undefined") {
@@ -244,8 +252,8 @@ var et2_favorites = /** @class */ (function (_super) {
         // Apply preferred filter - make sure it's an object, and not a reference
         if (this.preferred && this.stored_filters[this.preferred]) {
             // use app[appname].setState if available to allow app to overwrite it (eg. change to non-listview in calendar)
-            if (typeof app[this.options.app] != 'undefined') {
-                app[this.options.app].setState(this.stored_filters[this.preferred]);
+            if (typeof this._getAppObject(this.options.app) != 'undefined') {
+                this._getAppObject(this.options.app).setState(this.stored_filters[this.preferred]);
             }
             else {
                 this.set_nm_filters(jQuery.extend({}, this.stored_filters[this.preferred].state));
@@ -277,7 +285,7 @@ var et2_favorites = /** @class */ (function (_super) {
                 }
             }
             // Call framework
-            app[this.options.app].add_favorite(current_filters);
+            this._getAppObject(this.options.app).add_favorite(current_filters);
             // Reset value
             this.set_value(this.preferred, true);
         }
@@ -292,7 +300,7 @@ var et2_favorites = /** @class */ (function (_super) {
         }
         if (filter_name == 'add')
             return false;
-        app[this.options.app].setState(this.stored_filters[filter_name]);
+        this._getAppObject(this.options.app).setState(this.stored_filters[filter_name]);
         return false;
     };
     et2_favorites.prototype.getValue = function () {
@@ -313,6 +321,24 @@ var et2_favorites = /** @class */ (function (_super) {
         // Re-generate filter list so we can add 'Add current'
         this.init_filters(this);
     };
+    /**
+     * get app object including possible private app object from framework tab
+     * @param _app_name
+     */
+    et2_favorites.prototype._getAppObject = function (_app_name) {
+        var _a;
+        _app_name = _app_name !== null && _app_name !== void 0 ? _app_name : this.options.app;
+        // take frameworktab into account because they use private app object
+        if ((_a = window.framework) === null || _a === void 0 ? void 0 : _a.activeApp.isFrameworkTab) {
+            return etemplate2.getByApplication(this.options.app).filter(function (_item) {
+                if (_item.uniqueId.indexOf(window.framework.activeApp.appName) > 0)
+                    return _item.app_obj;
+            })[0]['app_obj'][_app_name];
+        }
+        else {
+            return app[_app_name];
+        }
+    };
     et2_favorites._attributes = {
         "default_pref": {
             "name": "Default preference key",
@@ -329,6 +355,12 @@ var et2_favorites = /** @class */ (function (_super) {
             "name": "Application",
             "type": "string",
             "description": "Application to show favorites for"
+        },
+        "favorites_filter": {
+            "name": "Favorites Filter",
+            "type": "any",
+            "description": "Limit the loaded favorites based on this filter.",
+            "default": false
         },
         "filters": {
             "name": "Extra filters",

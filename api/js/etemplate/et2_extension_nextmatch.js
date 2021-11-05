@@ -2434,6 +2434,12 @@ var et2_nextmatch = /** @class */ (function (_super) {
             "type": "any",
             "description": "The nextmatch settings",
             "default": {}
+        },
+        "favorites_filter": {
+            "name": "Favorites App",
+            "type": "string",
+            "description": "The application to get the favorites for.",
+            "default": false
         }
     };
     /**
@@ -2836,6 +2842,7 @@ var et2_nextmatch_header_bar = /** @class */ (function (_super) {
         var widget_options = {
             default_pref: "nextmatch-" + this.nextmatch.options.settings.columnselection_pref + "-favorite",
             app: this.getInstanceManager().app,
+            favorites_filter: this.nextmatch.options.favorites_filter,
             filters: filters,
             sidebox_target: 'favorite_sidebox_' + this.getInstanceManager().app
         };

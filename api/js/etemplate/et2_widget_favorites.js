@@ -330,10 +330,16 @@ var et2_favorites = /** @class */ (function (_super) {
         _app_name = _app_name !== null && _app_name !== void 0 ? _app_name : this.options.app;
         // take frameworktab into account because they use private app object
         if ((_a = window.framework) === null || _a === void 0 ? void 0 : _a.activeApp.isFrameworkTab) {
-            return etemplate2.getByApplication(this.options.app).filter(function (_item) {
-                if (_item.uniqueId.indexOf(window.framework.activeApp.appName) > 0)
+            var temp_obj = etemplate2.getByApplication(this.options.app).filter(function (_item) {
+                if (_item && _item.uniqueId.indexOf(window.framework.activeApp.appName) > 0)
                     return _item.app_obj;
-            })[0]['app_obj'][_app_name];
+            });
+            if (temp_obj && temp_obj.length > 0) {
+                return temp_obj[0]['app_obj'][_app_name];
+            }
+            else {
+                return app[_app_name];
+            }
         }
         else {
             return app[_app_name];

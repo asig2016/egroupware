@@ -452,9 +452,17 @@ export class et2_favorites extends et2_dropdown_button implements et2_INextmatch
 		// take frameworktab into account because they use private app object
 		if (window.framework?.activeApp.isFrameworkTab)
 		{
-			return etemplate2.getByApplication(this.options.app).filter(_item => {
-				if (_item.uniqueId.indexOf(window.framework.activeApp.appName)>0) return _item.app_obj;
-			})[0]['app_obj'][_app_name];
+
+			var temp_obj = etemplate2.getByApplication(this.options.app).filter(_item => {
+				if (_item && _item.uniqueId.indexOf(window.framework.activeApp.appName)>0) return _item.app_obj;
+			});
+
+			if (temp_obj && temp_obj.length > 0 ){
+				return temp_obj[0]['app_obj'][_app_name];
+			}else{
+				return app[_app_name];
+			}
+
 		}
 		else
 		{

@@ -960,7 +960,7 @@ export abstract class EgwApp
 			for(var i = 0; i < et2.length; i++)
 			{
 				et2[i].widgetContainer.iterateOver(function(_widget) {
-					_widget.stored_filters = _widget.load_favorites(self.appname);
+					_widget.stored_filters = _widget.load_favorites(self.appname, _widget.options.favorites_filter);
 					_widget.init_filters(_widget);
 				}, self, et2_favorites);
 			}

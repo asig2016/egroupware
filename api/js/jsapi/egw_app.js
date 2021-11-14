@@ -760,7 +760,7 @@ var EgwApp = /** @class */ (function () {
             var et2 = etemplate2_1.etemplate2.getByApplication(self.appname);
             for (var i = 0; i < et2.length; i++) {
                 et2[i].widgetContainer.iterateOver(function (_widget) {
-                    _widget.stored_filters = _widget.load_favorites(self.appname);
+                    _widget.stored_filters = _widget.load_favorites(self.appname, _widget.options.favorites_filter);
                     _widget.init_filters(_widget);
                 }, self, et2_widget_favorites_1.et2_favorites);
             }

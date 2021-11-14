@@ -148,13 +148,22 @@ class notifications_popup implements notifications_iface {
 				'account_id' => $_account_id,
 				'notify_type' => self::_type
 			),
-			__LINE__,__FILE__,0 ,'ORDER BY notify_id DESC',self::_appname, 100);
+			__LINE__,__FILE__,0 ,'ORDER BY notify_id DESC',self::_appname, 40);
 		// Fetch the total
 		$total =  $GLOBALS['egw']->db->select(self::_notification_table, 'COUNT(*)', array(
 			'account_id' => $_account_id,
 			'notify_type' => self::_type
 		),
-			__LINE__,__FILE__,0 ,'',self::_appname)->fetchColumn();
+
+       /*
+          $f = fopen('/tmp/notification.log','a+');
+               fwrite($f, 'RENDER_LINKS DBUG#4   links:-----------------------------------------------------------------------------------------------------------');
+               fwrite($f,print_r(array2string($rendered_links),true));
+               fwrite($f, '------------------------------------------------------------------------------------------------------------------------------------------');
+               fclose($f);
+       */
+
+        __LINE__,__FILE__,0 ,'',self::_appname)->fetchColumn();
 		$result = array();
 		if ($rs->NumRows() > 0)	{
 			foreach ($rs as $notification) {
@@ -170,7 +179,7 @@ class notifications_popup implements notifications_iface {
 				}
 				$result[] = array(
 					'id'      => $notification['notify_id'],
-					'message' => $notification['notify_message'],
+                    'message' => achelper_lib::truncatestr( (string) $notification['notify_message'], 450 , lang('...')),
 					'status'  => $notification['notify_status'],
 					'created' => Api\DateTime::server2user($notification['notify_created']),
 					'current' => new Api\DateTime('now'),

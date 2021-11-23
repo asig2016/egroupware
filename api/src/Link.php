@@ -868,7 +868,7 @@ class Link extends Link\Storage
 		{
 			/* asig_fkar_patch ===> */
 			//Don't delete files if link is not found, only log this
-			error_log("Cannot find link for app=$app, id=$id");
+			//error_log("Cannot find link for app=$app, id=$id");
 			/*
 				static $unlinking = array();
 				// check if we are already trying to unlink the entry, to avoid an infinite recursion

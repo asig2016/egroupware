@@ -4818,7 +4818,7 @@ $filter['before']= date("d-M-Y", $cutoffdate2);
 			$quota = $this->mail_bo->getQuotaRoot();
 		} catch (Exception $e) {
 			$quota['limit'] = 'NOT SET';
-			error_log(__METHOD__.__LINE__." ".$e->getMessage());
+			//error_log(__METHOD__.__LINE__." ".$e->getMessage());
 			unset($e);
 		}
 

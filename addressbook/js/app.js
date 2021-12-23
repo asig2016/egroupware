@@ -4,8 +4,9 @@
  *
  * @link: https://www.egroupware.org
  * @package addressbook
- * @author Hadi Nategh	<hn-AT-stylite.de>
- * @copyright (c) 2008-13 by Ralf Becker <RalfBecker-AT-outdoor-training.de>
+ * @author Hadi Nategh <hn-AT-egroupware.org>
+ * @author Ralf Becker <rb-AT-egroupware.org>
+ * @copyright (c) 2008-21 by Ralf Becker <RalfBecker-AT-outdoor-training.de>
  * @license http://opensource.org/licenses/gpl-license.php GPL - GNU General Public License
  */
 var __extends = (this && this.__extends) || (function () {
@@ -25,12 +26,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /*egw:uses
     /api/js/jsapi/egw_app.js
  */
-require("jquery");
-require("jqueryui");
-require("../jsapi/egw_global");
-require("../etemplate/et2_types");
 var egw_app_1 = require("../../api/js/jsapi/egw_app");
 var etemplate2_1 = require("../../api/js/etemplate/etemplate2");
+var et2_widget_dialog_1 = require("../../api/js/etemplate/et2_widget_dialog");
+var et2_extension_nextmatch_actions_js_1 = require("../../api/js/etemplate/et2_extension_nextmatch_actions.js");
+require("./CRM.js");
+var egw_global_1 = require("../../api/js/jsapi/egw_global");
 /**
  * UI for Addressbook
  *
@@ -129,7 +130,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         // Edit to the current entry
         var state = this.getState();
         if (_app === 'addressbook' && state && state.type && state.type === 'view' && state.id === _id) {
-            var content = egw.dataGetUIDdata('addressbook::' + _id);
+            var content = egw_global_1.egw.dataGetUIDdata('addressbook::' + _id);
             if (content.data) {
                 var view = etemplate2_1.etemplate2.getById('addressbook-view');
                 if (view) {
@@ -140,12 +141,12 @@ var AddressbookApp = /** @class */ (function (_super) {
         }
         else if (_app === 'calendar') {
             // Event changed, update any [known] contacts participating
-            var content = egw.dataGetUIDdata(_app + '::' + _id);
+            var content = egw_global_1.egw.dataGetUIDdata(_app + '::' + _id);
             if (content && content.data && content.data.participant_types && content.data.participant_types.c) {
                 for (var contact in content.data.participant_types.c) {
                     // Refresh handles checking to see if the contact is known,
                     // and updating it directly
-                    egw.dataRefreshUID('addressbook::' + contact);
+                    egw_global_1.egw.dataRefreshUID('addressbook::' + contact);
                 }
                 return true;
             }
@@ -245,15 +246,15 @@ var AddressbookApp = /** @class */ (function (_super) {
             contact_id: _senders[0].id.split('::').pop(),
             index: _senders[0]._index
         };
-        var data = egw.dataGetUIDdata(_senders[0].id)['data'];
+        var data = egw_global_1.egw.dataGetUIDdata(_senders[0].id)['data'];
         // CRM list
         if (_action.id != 'view') {
             extras.crm_list = _action.id.replace('view-', '');
         }
         if (!extras.crm_list)
-            extras.crm_list = egw.preference('crm_list', 'addressbook');
+            extras.crm_list = egw_global_1.egw.preference('crm_list', 'addressbook');
         extras.title = (_action.id.match(/\-organisation/) && data.org_name != "") ? data.org_name
-            : data.n_fn + " (" + egw.lang(extras.crm_list) + ")";
+            : data.n_fn + " (" + egw_global_1.egw.lang(extras.crm_list) + ")";
         extras.icon = data.photo;
         return this.openCRMview(extras);
     };
@@ -266,41 +267,50 @@ var AddressbookApp = /** @class */ (function (_super) {
     AddressbookApp.prototype.openCRMview = function (_params, _senders) {
         var contact_id = typeof _params === 'object' ? _params.contact_id : _params;
         if (typeof _senders === 'object') {
-            var data = egw.dataGetUIDdata(_senders[0].id);
+            var data = egw_global_1.egw.dataGetUIDdata(_senders[0].id);
             contact_id = data.data.contact_id;
         }
         if (typeof contact_id !== 'undefined') {
-            var crm_list_1 = _params.crm_list || egw.preference('crm_list', 'addressbook');
-            if (!crm_list_1 || crm_list_1 === '~edit~')
-                crm_list_1 = 'infolog';
-            var url_1 = this.egw.link('/index.php', {
+            var params = {
+                menuaction: 'addressbook.addressbook_ui.edit',
+                ajax: 'true',
+                contact_id: contact_id,
+            };
+            //this.egw.openPopup(this.egw.link('/index.php', params), 870, 610, 'addressbook.addressbook_ui.edit');
+            /*
+            let crm_list = _params.crm_list || egw.preference('crm_list', 'addressbook');
+            if (!crm_list || crm_list === '~edit~') crm_list = 'infolog';
+            let url = this.egw.link('/index.php', {
                 menuaction: 'addressbook.addressbook_ui.view',
                 ajax: 'true',
                 contact_id: contact_id,
-                crm_list: crm_list_1
+                crm_list: crm_list
             });
             // no framework, just open the url
-            if (typeof this.egw.window.framework === 'undefined') {
-                return this.egw.open_link(url_1);
+            if (typeof this.egw.window.framework === 'undefined')
+            {
+                return this.egw.open_link(url);
             }
-            var open_1 = function (_title) {
-                var title = _title || this.egw.link_title('addressbook', contact_id, open_1);
-                if (title) {
-                    this.egw.window.framework.tabLinkHandler(url_1, {
+            let open = function(_title)
+            {
+                let title = _title || this.egw.link_title('addressbook', contact_id, open);
+                if (title)
+                {
+                    this.egw.window.framework.tabLinkHandler(url, {
                         displayName: title,
                         icon: _params.icon || this.egw.link('/api/avatar.php', {
                             contact_id: contact_id,
-                            etag: (new Date).valueOf() / 86400 | 0 // cache for a day, better then no invalidation
+                            etag: (new Date).valueOf()/86400|0	// cache for a day, better then no invalidation
                         }),
-                        refreshCallback: function () {
-                            var _a;
-                            (_a = etemplate2_1.etemplate2.getById("addressbook-view-" + this.appName)) === null || _a === void 0 ? void 0 : _a.app_obj.addressbook.view_set_list();
+                        refreshCallback: function() {
+                            etemplate2.getById("addressbook-view-"+this.appName)?.app_obj.addressbook.view_set_list();
                         },
-                        id: contact_id + '-' + crm_list_1
+                        id: contact_id + '-'+crm_list
                     });
                 }
             }.bind(this);
-            open_1(_params.title);
+            */
+            //open(_params.title);
         }
     };
     /**
@@ -333,7 +343,7 @@ var AddressbookApp = /** @class */ (function (_super) {
                 this.egw.open(id, 'addressbook', 'edit', { makecp: 1 });
                 break;
             case 'button[delete]':
-                et2_dialog.confirm(_widget, egw.lang('Delete this contact?'), egw.lang('Delete'));
+                et2_widget_dialog_1.et2_dialog.confirm(_widget, egw_global_1.egw.lang('Delete this contact?'), egw_global_1.egw.lang('Delete'));
                 break;
             case 'button[close]':
                 framework.activeApp.tab.closeButton.click();
@@ -388,7 +398,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         }
         else {
             extras.owner = extras.owner.join(',');
-            egw.open('', 'calendar', 'list', extras, 'calendar');
+            egw_global_1.egw.open('', 'calendar', 'list', extras, 'calendar');
         }
     };
     /**
@@ -401,10 +411,10 @@ var AddressbookApp = /** @class */ (function (_super) {
         if (!_senders[0].id.match(/^(?:addressbook::)?[0-9]+$/)) {
             // send org-view requests to server
             _action.data.nm_action = "submit";
-            nm_action(_action, _senders);
+            et2_extension_nextmatch_actions_js_1.nm_action(_action, _senders);
         }
         else {
-            var ids = egw.user('account_id') + ',';
+            var ids = egw_global_1.egw.user('account_id') + ',';
             for (var i = 0; i < _senders.length; i++) {
                 // Remove UID prefix for just contact_id
                 var id = _senders[i].id.split('::');
@@ -415,7 +425,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             if (_action.id === 'schedule_call')
                 extra['videoconference'] = 1;
             // Use framework to add calendar entry
-            egw.open('', 'calendar', 'add', extra);
+            egw_global_1.egw.open('', 'calendar', 'add', extra);
         }
     };
     /**
@@ -451,7 +461,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             }, this, true, this).sendRequest();
         }
         else {
-            egw.open('', 'infolog', 'list', extras, 'infolog');
+            egw_global_1.egw.open('', 'infolog', 'list', extras, 'infolog');
         }
     };
     /**
@@ -469,7 +479,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             // call nm_action's popup
             _action.data.nm_action = "popup";
         }
-        nm_action(_action, _senders);
+        et2_extension_nextmatch_actions_js_1.nm_action(_action, _senders);
     };
     /**
     * Actions via ajax
@@ -489,7 +499,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         }
         switch (_action.id) {
             case 'delete':
-                egw.json("addressbook.addressbook_ui.ajax_action", [_action.id, ids, all, no_notifications]).sendRequest(true);
+                egw_global_1.egw.json("addressbook.addressbook_ui.ajax_action", [_action.id, ids, all, no_notifications]).sendRequest(true);
                 break;
         }
     };
@@ -557,33 +567,33 @@ var AddressbookApp = /** @class */ (function (_super) {
         var confirmdialog = function (_title, _value, _buttons, _egw_or_appname) {
             return et2_createWidget("dialog", {
                 callback: function (_buttons, _value) {
-                    if (_buttons == et2_dialog.OK_BUTTON) {
+                    if (_buttons == et2_widget_dialog_1.et2_dialog.OK_BUTTON) {
                         var id = '';
                         var content = this.template.widgetContainer.getArrayMgr('content').data;
                         for (var row in _value.grid) {
                             if (_value.grid[row].confirm == "true" && typeof content.grid != 'undefined') {
                                 id = this.options.value.content.grid[row].confirm;
-                                egw.open(id, 'addressbook');
+                                egw_global_1.egw.open(id, 'addressbook');
                             }
                         }
                     }
                 },
-                title: _title || egw.lang('Input required'),
-                buttons: _buttons || et2_dialog.BUTTONS_OK_CANCEL,
+                title: _title || egw_global_1.egw.lang('Input required'),
+                buttons: _buttons || et2_widget_dialog_1.et2_dialog.BUTTONS_OK_CANCEL,
                 value: {
                     content: {
                         grid: _value
                     }
                 },
-                template: egw.webserverUrl + '/addressbook/templates/default/dupconfirmdialog.xet'
-            }, et2_dialog._create_parent(_egw_or_appname));
+                template: egw_global_1.egw.webserverUrl + '/addressbook/templates/default/dupconfirmdialog.xet'
+            }, et2_widget_dialog_1.et2_dialog._create_parent(_egw_or_appname));
         };
         if (_data.msg && _data.doublicates) {
             var content = [];
             for (var id in _data.doublicates) {
                 content.push({ "confirm": id, "name": _data.doublicates[id] });
             }
-            confirmdialog(this.egw.lang('Duplicate warning'), content, et2_dialog.BUTTONs_OK_CANCEL);
+            confirmdialog(this.egw.lang('Duplicate warning'), content, et2_widget_dialog_1.et2_dialog.BUTTONS_OK_CANCEL);
         }
         if (typeof _data.fileas_options == 'object' && this.et2) {
             var selbox = this.et2.getWidgetById('fileas_type');
@@ -620,7 +630,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             if (typeof name != 'undefined')
                 name.set_value(value);
         }
-        egw.json('addressbook.addressbook_ui.ajax_check_values', [values, widget.id, own_id], this._confirmdialog_callback, this, true, this).sendRequest();
+        egw_global_1.egw.json('addressbook.addressbook_ui.ajax_check_values', [values, widget.id, own_id], this._confirmdialog_callback, this, true, this).sendRequest();
     };
     AddressbookApp.prototype.show_custom_country = function (selectbox) {
         if (!selectbox)
@@ -655,12 +665,12 @@ var AddressbookApp = /** @class */ (function (_super) {
     AddressbookApp.prototype.add_new_list = function (owner, selected) {
         if (!owner || typeof owner == 'object') {
             var filter = this.et2.getWidgetById('filter');
-            owner = filter.getValue() || egw.preference('add_default', 'addressbook');
+            owner = filter.getValue() || egw_global_1.egw.preference('add_default', 'addressbook');
         }
         var contacts = [];
         if (selected && selected[0] && selected[0].getAllSelected()) {
             // Action says all contacts selected, better ask the server for _all_ the IDs
-            var fetching = fetchAll(selected, this.et2.getWidgetById('nm'), jQuery.proxy(function (contacts) {
+            var fetching = et2_extension_nextmatch_actions_js_1.fetchAll(selected, this.et2.getWidgetById('nm'), jQuery.proxy(function (contacts) {
                 this._add_new_list_prompt(owner, contacts);
             }, this));
             if (fetching)
@@ -688,8 +698,8 @@ var AddressbookApp = /** @class */ (function (_super) {
         var lists = this.et2.getWidgetById('filter2');
         var owner_options = this.et2.getArrayMgr('sel_options').getEntry('filter') || {};
         var callback = function (button, values) {
-            if (button == et2_dialog.OK_BUTTON) {
-                egw.json('addressbook.addressbook_ui.ajax_set_list', [0, values.name, values.owner, contacts], function (result) {
+            if (button == et2_widget_dialog_1.et2_dialog.OK_BUTTON) {
+                egw_global_1.egw.json('addressbook.addressbook_ui.ajax_set_list', [0, values.name, values.owner, contacts], function (result) {
                     if (typeof result == 'object')
                         return; // This response not for us
                     // Update list
@@ -717,7 +727,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         var dialog = et2_createWidget("dialog", {
             callback: callback,
             title: this.egw.lang('Add a new list'),
-            buttons: et2_dialog.BUTTONS_OK_CANCEL,
+            buttons: et2_widget_dialog_1.et2_dialog.BUTTONS_OK_CANCEL,
             value: {
                 content: {
                     owner: owner
@@ -726,7 +736,7 @@ var AddressbookApp = /** @class */ (function (_super) {
                     owner: owner_options
                 }
             },
-            template: egw.webserverUrl + '/addressbook/templates/default/add_list_dialog.xet',
+            template: egw_global_1.egw.webserverUrl + '/addressbook/templates/default/add_list_dialog.xet',
             class: "et2_prompt",
             minWidth: 400
         }, this.et2);
@@ -749,9 +759,9 @@ var AddressbookApp = /** @class */ (function (_super) {
                 value = lists.options.select_options[i];
             }
         }
-        et2_dialog.show_prompt(function (button, name) {
-            if (button == et2_dialog.OK_BUTTON) {
-                egw.json('addressbook.addressbook_ui.ajax_set_list', [list, name], function (result) {
+        et2_widget_dialog_1.et2_dialog.show_prompt(function (button, name) {
+            if (button == et2_widget_dialog_1.et2_dialog.OK_BUTTON) {
+                egw_global_1.egw.json('addressbook.addressbook_ui.ajax_set_list', [list, name], function (result) {
                     if (typeof result == 'object')
                         return; // This response not for us
                     // Update list
@@ -810,13 +820,13 @@ var AddressbookApp = /** @class */ (function (_super) {
         var index = window.opener.etemplate2.getById('addressbook-index');
         if (!index) {
             alert('Could not find index');
-            egw(window).close();
+            egw_global_1.egw(window).close();
             return false;
         }
         var nm = index.widgetContainer.getWidgetById('nm');
         if (!index) {
             window.opener.egw.message('Could not find list', 'error');
-            egw(window).close();
+            egw_global_1.egw(window).close();
             return false;
         }
         // Reset filters first
@@ -834,7 +844,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         var link = { 'preset[type]': [], 'preset[file]': [] };
         var content = { data: { files: { file: [], type: [] } } };
         var nm = this.et2.getWidgetById('nm');
-        if (fetchAll(_elems, nm, jQuery.proxy(function (ids) {
+        if (et2_extension_nextmatch_actions_js_1.fetchAll(_elems, nm, jQuery.proxy(function (ids) {
             this.adb_mail_vcard(_action, ids.map(function (num) { return { id: 'addressbook::' + num }; }));
         }, this))) {
             return;
@@ -843,15 +853,15 @@ var AddressbookApp = /** @class */ (function (_super) {
             var idToUse = _elems[i].id;
             var idToUseArray = idToUse.split('::');
             idToUse = idToUseArray[1];
-            link['preset[type]'].push("text/vcard; charset=" + (egw.preference('vcard_charset', 'addressbook') || 'utf-8'));
+            link['preset[type]'].push("text/vcard; charset=" + (egw_global_1.egw.preference('vcard_charset', 'addressbook') || 'utf-8'));
             link['preset[file]'].push("vfs://default/apps/addressbook/" + idToUse + "/.entry");
             content.data.files.file.push("vfs://default/apps/addressbook/" + idToUse + "/.entry");
-            content.data.files.type.push("text/vcard; charset=" + (egw.preference('vcard_charset', 'addressbook') || 'utf-8'));
+            content.data.files.type.push("text/vcard; charset=" + (egw_global_1.egw.preference('vcard_charset', 'addressbook') || 'utf-8'));
         }
-        egw.openWithinWindow("mail", "setCompose", content, link, /mail.mail_compose.compose/);
+        egw_global_1.egw.openWithinWindow("mail", "setCompose", content, link, /mail.mail_compose.compose/);
         for (var index in content) {
             if (content[index].file.length > 0) {
-                egw.message(egw.lang('%1 contact(s) added as %2', content[index].file.length, egw.lang(index)));
+                egw_global_1.egw.message(egw_global_1.egw.lang('%1 contact(s) added as %2', content[index].file.length, egw_global_1.egw.lang(index)));
                 return;
             }
         }
@@ -881,7 +891,7 @@ var AddressbookApp = /** @class */ (function (_super) {
     AddressbookApp.prototype.addEmail = function (action, selected) {
         // Check for all selected.
         var nm = this.et2.getWidgetById('nm');
-        if (fetchAll(selected, nm, jQuery.proxy(function (ids) {
+        if (et2_extension_nextmatch_actions_js_1.fetchAll(selected, nm, jQuery.proxy(function (ids) {
             // fetchAll() returns just the ID, no prefix, so map it to match normal selected
             this.addEmail(action, ids.map(function (num) { return { id: 'addressbook::' + num }; }));
         }, this))) {
@@ -892,7 +902,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         var emails = [];
         for (var i = 0; i < selected.length; i++) {
             // Pull data from global cache
-            var data = egw.dataGetUIDdata(selected[i].id) || { data: {} };
+            var data = egw_global_1.egw.dataGetUIDdata(selected[i].id) || { data: {} };
             var email_business = data.data[action.getManager().getActionById('email_business').checked ? 'email' : ''];
             var email = data.data[action.getManager().getActionById('email_home').checked ? 'email_home' : ''];
             // prefix email with full name
@@ -910,14 +920,14 @@ var AddressbookApp = /** @class */ (function (_super) {
         }
         switch (action.id) {
             case "add_to_to":
-                egw.open_link('mailto:' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
+                egw_global_1.egw.open_link('mailto:' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
                 break;
             case "add_to_cc":
-                egw.open_link('mailto:' + '?cc=' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
+                egw_global_1.egw.open_link('mailto:' + '?cc=' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
                 //egw.mailto('mailto:');
                 break;
             case "add_to_bcc":
-                egw.open_link('mailto:' + '?bcc=' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
+                egw_global_1.egw.open_link('mailto:' + '?bcc=' + emails.join(',').replace(/&/g, '__AMPERSAND__'));
                 break;
         }
         return false;
@@ -935,26 +945,26 @@ var AddressbookApp = /** @class */ (function (_super) {
         // Special processing for email documents - ask about infolog
         if (action && action.data && selected.length > 1) {
             var callback = function (button, value) {
-                if (button == et2_dialog.OK_BUTTON) {
+                if (button == et2_widget_dialog_1.et2_dialog.OK_BUTTON) {
                     var _action = jQuery.extend(true, {}, action);
                     if (value.infolog) {
                         _action.data.menuaction += '&to_app=infolog&info_type=' + value.info_type;
                     }
-                    nm_action(_action, selected, target);
+                    et2_extension_nextmatch_actions_js_1.nm_action(_action, selected, target);
                 }
             };
             et2_createWidget("dialog", {
                 callback: callback,
                 title: action.caption,
-                buttons: et2_dialog.BUTTONS_OK_CANCEL,
-                type: et2_dialog.QUESTION_MESSAGE,
-                template: egw.webserverUrl + '/addressbook/templates/default/mail_merge_dialog.xet',
+                buttons: et2_widget_dialog_1.et2_dialog.BUTTONS_OK_CANCEL,
+                type: et2_widget_dialog_1.et2_dialog.QUESTION_MESSAGE,
+                template: egw_global_1.egw.webserverUrl + '/addressbook/templates/default/mail_merge_dialog.xet',
                 value: { content: { info_type: 'email' }, sel_options: this.et2.getArrayMgr('sel_options').data }
             });
         }
         else {
             // Normal processing for only one contact selected
-            return nm_action(action, selected, target);
+            return et2_extension_nextmatch_actions_js_1.nm_action(action, selected, target);
         }
     };
     /**
@@ -1005,14 +1015,14 @@ var AddressbookApp = /** @class */ (function (_super) {
             // Redirect to list
             // 'blank' is the special name for no filters, send that instead of the nice translated name
             var safe_name = jQuery.isEmptyObject(state) || jQuery.isEmptyObject(state.state || state.filter) ? 'blank' : state.name.replace(/[^A-Za-z0-9-_]/g, '_');
-            egw.open('', this.appname, 'list', { 'favorite': safe_name }, this.appname);
+            egw_global_1.egw.open('', this.appname, 'list', { 'favorite': safe_name }, this.appname);
             return false;
         }
         else if (jQuery.isEmptyObject(state)) {
             // Regular handling first to clear everything but advanced search
             _super.prototype.setState.call(this, state);
             // Clear advanced search, which is in session and etemplate
-            egw.json('addressbook.addressbook_ui.ajax_clear_advanced_search', [], function () {
+            egw_global_1.egw.json('addressbook.addressbook_ui.ajax_clear_advanced_search', [], function () {
                 framework.setWebsiteTitle('addressbook', '');
                 var index = etemplate2_1.etemplate2.getById('addressbook-index');
                 if (index && index.widgetContainer) {
@@ -1046,7 +1056,7 @@ var AddressbookApp = /** @class */ (function (_super) {
                     var nm = index.widgetContainer.getWidgetById('nm');
                     var action = nm.controller._actionManager.getActionById('view_org');
                     var senders = [{ _context: { _widget: nm } }];
-                    return nm_action(action, senders, {}, { ids: [state.state.grouped_view] });
+                    return et2_extension_nextmatch_actions_js_1.nm_action(action, senders, {}, { ids: [state.state.grouped_view] });
                 }
             }
         }
@@ -1083,7 +1093,7 @@ var AddressbookApp = /** @class */ (function (_super) {
                 this.egw.message('');
                 this.egw.json('admin_account::ajax_check', [data, _widget.id], function (_msg) {
                     if (_msg && typeof _msg == 'string') {
-                        egw(window).message(_msg, 'error'); // context get's lost :(
+                        egw_global_1.egw(window).message(_msg, 'error'); // context get's lost :(
                         _widget.getDOMNode().focus();
                     }
                 }, this).sendRequest();
@@ -1113,10 +1123,10 @@ var AddressbookApp = /** @class */ (function (_super) {
         var url = this.getGeolocationConfig();
         // exit if no url or invalide url given
         if (!url || typeof url === 'undefined' || typeof url !== 'string') {
-            egw.debug('warn', 'no url or invalid url given as geoLocationUrl');
+            egw_global_1.egw.debug('warn', 'no url or invalid url given as geoLocationUrl');
             return false;
         }
-        var content = egw.dataGetUIDdata(_selected[0].id);
+        var content = egw_global_1.egw.dataGetUIDdata(_selected[0].id);
         // Selected, but data not found
         if (!content || typeof content.data === 'undefined')
             return false;
@@ -1148,7 +1158,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         var url = this.getGeolocationConfig();
         // exit if no url or invalide url given
         if (!url || typeof url === 'undefined' || typeof url !== 'string') {
-            egw.debug('warn', 'no url or invalid url given as geoLocationUrl');
+            egw_global_1.egw.debug('warn', 'no url or invalid url given as geoLocationUrl');
             return false;
         }
         // array of placeholders with their representing values
@@ -1193,8 +1203,8 @@ var AddressbookApp = /** @class */ (function (_super) {
      * @param {object} _selected
      */
     AddressbookApp.prototype.geoLocationExec = function (_action, _selected) {
-        var content = egw.dataGetUIDdata(_selected[0].id);
-        var geolocation_src = egw.preference('geolocation_src', 'addressbook');
+        var content = egw_global_1.egw.dataGetUIDdata(_selected[0].id);
+        var geolocation_src = egw_global_1.egw.preference('geolocation_src', 'addressbook');
         var self = this;
         if (geolocation_src === 'browser' && navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
@@ -1205,7 +1215,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             });
         }
         else {
-            egw.json('addressbook.addressbook_ui.ajax_get_contact', [egw.user('account_id')], function (_data) {
+            egw_global_1.egw.json('addressbook.addressbook_ui.ajax_get_contact', [egw_global_1.egw.user('account_id')], function (_data) {
                 var url = self.geoLocationUrl(content.data, _action.id === 'business' ? 'one' : 'two', _data, geolocation_src === 'browser' ? 'one' : geolocation_src);
                 window.open(url, '_blank');
             }).sendRequest();
@@ -1220,7 +1230,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         // This default url should be identical to the first value of geolocation_url array
         // defined in addressbook_hooks::config
         var default_url = 'https://maps.here.com/directions/drive{{%rs=/%rs}}%r0,%t0,%z0,%c0{{%d=/%d}}%r1,%t1,%z1+%c1';
-        var geo_url = egw.config('geolocation_url');
+        var geo_url = egw_global_1.egw.config('geolocation_url');
         if (geo_url)
             geo_url = geo_url[0];
         return geo_url || default_url;
@@ -1233,7 +1243,7 @@ var AddressbookApp = /** @class */ (function (_super) {
      */
     AddressbookApp.prototype.can_merge = function (action, selected) {
         return selected.filter(function (row) {
-            var data = egw.dataGetUIDdata(row.id);
+            var data = egw_global_1.egw.dataGetUIDdata(row.id);
             return data && data.data.account_id;
         }).length <= 1;
     };
@@ -1268,7 +1278,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         for (var sel in _selected) {
             if (sel == '0' && _selected[sel]['id'] == 'nm')
                 continue;
-            var row = egw.dataGetUIDdata(_selected[sel]['id']);
+            var row = egw_global_1.egw.dataGetUIDdata(_selected[sel]['id']);
             var enabled = false;
             for (var entry in list) {
                 if (row.data && row.data.account_id && row.data.account_id == list[entry]['account_id']) {
@@ -1281,7 +1291,7 @@ var AddressbookApp = /** @class */ (function (_super) {
         return true;
     };
     AddressbookApp.prototype.videoconference_isThereAnyCall = function (_action, _selected) {
-        return this.videoconference_isUserOnline(_action, _selected) && egw.getSessionItem('status', 'videoconference-session');
+        return this.videoconference_isUserOnline(_action, _selected) && egw_global_1.egw.getSessionItem('status', 'videoconference-session');
     };
     /**
      * Call action
@@ -1291,7 +1301,7 @@ var AddressbookApp = /** @class */ (function (_super) {
     AddressbookApp.prototype.videoconference_actionCall = function (_action, _selected) {
         var data = [];
         for (var sel in _selected) {
-            var row = egw.dataGetUIDdata(_selected[sel]['id']);
+            var row = egw_global_1.egw.dataGetUIDdata(_selected[sel]['id']);
             data.push({
                 id: row.data.account_id,
                 name: row.data.n_fn,
@@ -1300,7 +1310,7 @@ var AddressbookApp = /** @class */ (function (_super) {
             });
         }
         if (_action.id == 'invite') {
-            app.status.inviteToCall(data, egw.getSessionItem('status', 'videoconference-session'));
+            app.status.inviteToCall(data, egw_global_1.egw.getSessionItem('status', 'videoconference-session'));
         }
         else {
             app.status.makeCall(data);

@@ -313,6 +313,16 @@ class AddressbookApp extends EgwApp
 		}
 		if (typeof contact_id !== 'undefined')
 		{
+
+			var params = {
+				menuaction: 'addressbook.addressbook_ui.edit',
+				ajax: 'true',
+				contact_id: contact_id,
+			};
+
+			//this.egw.openPopup(this.egw.link('/index.php', params), 870, 610, 'addressbook.addressbook_ui.edit');
+
+			/*
 			let crm_list = _params.crm_list || egw.preference('crm_list', 'addressbook');
 			if (!crm_list || crm_list === '~edit~') crm_list = 'infolog';
 			let url = this.egw.link('/index.php', {
@@ -344,7 +354,8 @@ class AddressbookApp extends EgwApp
 					});
 				}
 			}.bind(this);
-			open(_params.title);
+			*/
+			//open(_params.title);
 		}
 	}
 

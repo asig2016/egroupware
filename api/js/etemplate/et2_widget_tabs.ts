@@ -458,7 +458,7 @@ class et2_tabbox extends et2_valueWidget implements et2_IInput,et2_IResizeable,e
 
 		// lookup for nm children and trigger a resize, since nm inside inactive
 		// tabs are not getting render due to tab's deffer loading.
-		if (this._children.length > 0 && this.tabData && this.tabData.length > 0) {
+		if ( this._children.length > 0 && this.tabData && this.tabData.length > 0 && this.tabData[_idx]['widget'] ) {
 			this.tabData[_idx]['widget'].iterateOver(function(nm){
 				if (nm && nm._type == 'nextmatch') nm.resize();
 			}, this.tabData[_idx]['widget'], et2_nextmatch);

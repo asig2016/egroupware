@@ -365,7 +365,7 @@ var et2_tabbox = /** @class */ (function (_super) {
         this.tabContainer.children(":eq(" + _idx + ")").show();
         // lookup for nm children and trigger a resize, since nm inside inactive
         // tabs are not getting render due to tab's deffer loading.
-        if (this._children.length > 0 && this.tabData && this.tabData.length > 0) {
+        if (this._children.length > 0 && this.tabData && this.tabData.length > 0 && this.tabData[_idx]['widget']) {
             this.tabData[_idx]['widget'].iterateOver(function (nm) {
                 if (nm && nm._type == 'nextmatch')
                     nm.resize();

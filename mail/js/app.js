@@ -430,7 +430,7 @@ app.classes.mail = AppJS.extend(
 		this.push_active[acc_id] = true;
 
 		// update unseen counter in folder-tree (also for delete)
-		if (foldertree && pushData.acl.folder && typeof pushData.acl.unseen !== 'undefined')
+		if (foldertree && pushData.acl && pushData.acl.folder && typeof pushData.acl.unseen !== 'undefined')
 		{
 			let folder_id = {};
 			folder_id[folder] = (foldertree.getLabel(folder) || pushData.acl.folder)
@@ -442,10 +442,20 @@ app.classes.mail = AppJS.extend(
 		// only handle delete by default, for simple case of uid === "$app::$id"
 		if (pushData.type === 'delete')
 		{
-			[].concat(pushData.id).forEach(uid => {
-				pushData.id = uid;
-				this._super.call(this, pushData);
-			});
+			let nm = this.et2 ? this.et2.getWidgetById('nm') : null;
+			if(nm){
+
+				var entry = nm.controller._selectionMgr._getRegisteredRowsEntry(pushData.id);
+				if( entry && entry.ao ){
+					var next_entry = entry.ao.getNext(1);
+					console.log('next entry')
+					console.log(next_entry);
+					this.mail_preview(next_entry,nm);
+				}
+				nm.refresh(pushData.id, 'update-in-place');
+
+			}
+
 			return;
 		}
 

@@ -762,6 +762,8 @@ class calendar_uiviews extends calendar_ui
 	 */
 	function get_todos(&$todo_label)
 	{
+        return false;
+
 		$todos_from_hook = Api\Hooks::process(array(
 			'location'  => 'calendar_include_todos',
 			'year'      => $this->year,

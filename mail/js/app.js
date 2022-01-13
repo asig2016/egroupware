@@ -450,7 +450,7 @@ app.classes.mail = AppJS.extend(
 					var next_entry = entry.ao.getNext(1);
 					console.log('next entry')
 					console.log(next_entry);
-					this.mail_preview(next_entry,nm);
+					//this.mail_preview(next_entry,nm);
 				}
 				nm.refresh(pushData.id, 'update-in-place');
 

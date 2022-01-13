@@ -442,19 +442,30 @@ app.classes.mail = AppJS.extend(
 		// only handle delete by default, for simple case of uid === "$app::$id"
 		if (pushData.type === 'delete')
 		{
-			let nm = this.et2 ? this.et2.getWidgetById('nm') : null;
-			if(nm){
-
-				var entry = nm.controller._selectionMgr._getRegisteredRowsEntry(pushData.id);
-				if( entry && entry.ao ){
-					var next_entry = entry.ao.getNext(1);
-					console.log('next entry')
-					console.log(next_entry);
-					this.mail_preview(next_entry,nm);
-				}
-				nm.refresh(pushData.id, 'update-in-place');
-
+			if (pushData.id.length>1)
+			{
+				[].concat(pushData.id).forEach(uid => {
+					pushData.id = uid;
+					this._super.call(this, pushData);
+				});
 			}
+			else
+			{
+				let nm = this.et2 ? this.et2.getWidgetById('nm') : null;
+				if(nm){
+
+					var entry = nm.controller._selectionMgr._getRegisteredRowsEntry(pushData.id);
+					if( entry && entry.ao ){
+						var next_entry = entry.ao.getNext(1);
+						console.log('next entry')
+						console.log(next_entry);
+						//this.mail_preview(next_entry,nm);
+					}
+					nm.refresh(pushData.id, 'update-in-place');
+
+				}
+			}
+
 
 			return;
 		}

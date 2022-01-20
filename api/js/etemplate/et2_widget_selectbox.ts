@@ -242,7 +242,7 @@ export class et2_selectbox extends et2_inputWidget
 				this.input.removeAttr('size');
 				this.input.attr('name', this.id);
 
-				if (this.options.empty_label && (<HTMLSelectElement>this.input[0]).options[0].value !== '')
+				if (this.options.empty_label && (<HTMLSelectElement>this.input[0]) && (<HTMLSelectElement>this.input[0]).options[0] && (<HTMLSelectElement>this.input[0]).options[0].value !== '')
 				{
 					this._appendOptionElement('', this.options.empty_label);
 				}

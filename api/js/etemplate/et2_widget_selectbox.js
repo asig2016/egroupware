@@ -148,7 +148,7 @@ var et2_selectbox = /** @class */ (function (_super) {
                 this.input.prop('multiple', false);
                 this.input.removeAttr('size');
                 this.input.attr('name', this.id);
-                if (this.options.empty_label && this.input[0].options[0].value !== '') {
+                if (this.options.empty_label && this.input[0] && this.input[0].options[0] && this.input[0].options[0].value !== '') {
                     this._appendOptionElement('', this.options.empty_label);
                 }
             }

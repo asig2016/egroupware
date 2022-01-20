@@ -206,6 +206,7 @@ class AddressbookApp extends EgwApp
 	{
 		// show missed calls on their CRM view
 		let et2_id = this.et2?.getInstanceManager().uniqueId;
+
 		if (pushData.app === 'stylite' && pushData.acl.missed &&
 			et2_id && et2_id.substr(0, 17) === 'addressbook-view-' &&
 			pushData.acl.account_id == this.egw.user('account_id') &&
@@ -213,6 +214,7 @@ class AddressbookApp extends EgwApp
 		{
 			egw_getFramework()?.notifyAppTab(et2_id.substr(17));
 		}
+
 
 		// don't care about other apps data
 		if(pushData.app !== this.appname) return;
@@ -311,7 +313,8 @@ class AddressbookApp extends EgwApp
 			let data = egw.dataGetUIDdata(_senders[0].id);
 			contact_id = data.data.contact_id;
 		}
-		if (typeof contact_id !== 'undefined')
+		if (typeof contact_id !== 'undefined' && 1 === 2 )
+		//disbale open crm wir for now
 		{
 			let crm_list = _params.crm_list || egw.preference('crm_list', 'addressbook');
 			if (!crm_list || crm_list === '~edit~') crm_list = 'infolog';
@@ -345,6 +348,9 @@ class AddressbookApp extends EgwApp
 				}
 			}.bind(this);
 			open(_params.title);
+		}else if(typeof contact_id !== 'undefined'){
+			//egw(window).message('Crm view is disabled for now, contact is:' + contact_id);
+			console.log('Crm view is disabled for now, contact is:' + contact_id);
 		}
 	}
 

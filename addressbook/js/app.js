@@ -1114,6 +1114,7 @@ var AddressbookApp = /** @class */ (function (_super) {
      * @returns {boolean} return false if no address found
      */
     AddressbookApp.prototype.geoLocation_enabled = function (_action, _selected) {
+        return false;
         // multiple selection is not supported
         if (_selected.length > 1)
             return false;
@@ -1224,6 +1225,7 @@ var AddressbookApp = /** @class */ (function (_super) {
      * @returns {String}
      */
     AddressbookApp.prototype.getGeolocationConfig = function () {
+        return '';
         // This default url should be identical to the first value of geolocation_url array
         // defined in addressbook_hooks::config
         var default_url = 'https://maps.here.com/directions/drive{{%rs=/%rs}}%r0,%t0,%z0,%c0{{%d=/%d}}%r1,%t1,%z1+%c1';
@@ -1239,6 +1241,7 @@ var AddressbookApp = /** @class */ (function (_super) {
      * @param {egwActionObject[]} selected Selected rows
      */
     AddressbookApp.prototype.can_merge = function (action, selected) {
+        return false;
         return selected.filter(function (row) {
             var data = egw_global_1.egw.dataGetUIDdata(row.id);
             return data && data.data.account_id;
@@ -1269,6 +1272,7 @@ var AddressbookApp = /** @class */ (function (_super) {
      * @param _selected
      */
     AddressbookApp.prototype.videoconference_isUserOnline = function (_action, _selected) {
+        return false;
         if (egwIsMobile())
             return false;
         var list = app.status ? app.status.getEntireList() : {};

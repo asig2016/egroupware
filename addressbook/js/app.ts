@@ -1345,6 +1345,7 @@ class AddressbookApp extends EgwApp
 	 */
 	geoLocation_enabled(_action, _selected)
 	{
+		return false;
 		// multiple selection is not supported
 		if (_selected.length>1) return false;
 
@@ -1482,6 +1483,7 @@ class AddressbookApp extends EgwApp
 	 */
 	getGeolocationConfig()
 	{
+		return '';
 		// This default url should be identical to the first value of geolocation_url array
 		// defined in addressbook_hooks::config
 		var default_url = 'https://maps.here.com/directions/drive{{%rs=/%rs}}%r0,%t0,%z0,%c0{{%d=/%d}}%r1,%t1,%z1+%c1';
@@ -1498,6 +1500,7 @@ class AddressbookApp extends EgwApp
 	 */
 	can_merge(action, selected)
 	{
+		return false;
 		return selected.filter(function (row) {
 			var data = egw.dataGetUIDdata(row.id);
 			return data && data.data.account_id;
@@ -1534,6 +1537,7 @@ class AddressbookApp extends EgwApp
 	 */
 	private videoconference_isUserOnline(_action, _selected)
 	{
+		return false;
 		if (egwIsMobile()) return false;
 		let list = app.status ? app.status.getEntireList() : {};
 		for (let sel in _selected)

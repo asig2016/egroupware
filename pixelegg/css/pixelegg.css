@@ -4452,6 +4452,11 @@ span.overlayContainer img.overlay {
   background-size: 16px;
   background-image: url(../images/topmenu_items/logout.svg);
 }
+#egw_fw_header #egw_fw_topmenu #egw_fw_topmenu_items ul a#topmenu_useraccount {
+  background-repeat: no-repeat;
+  background-size: 16px;
+  background-image: url(../images/accounts.png);
+}
 #egw_fw_header #egw_fw_topmenu #egw_fw_topmenu_items ul a#topmenu_print {
   background-repeat: no-repeat;
   background-size: 16px;

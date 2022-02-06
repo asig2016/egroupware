@@ -4174,44 +4174,39 @@ td.message span.message {
  */
 /*z.b. Dateimanager overlay*/
 span.iconOverlayContainer {
-    margin: 2px 5px 2px 2px;
-    position: relative;
-    -moz-user-select: none;
-    -khtml-user-select: none;
-    user-select: none;
-    overflow: visible;
-    display: inline-block;
+  margin: 2px 5px 2px 2px;
+  position: relative;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  user-select: none;
+  overflow: visible;
+  display: inline-block;
 }
-
 span.overlayContainer {
-    position: absolute;
-    right: -2px;
-    bottom: -2px;
-    vertical-align: bottom;
-    text-align: right;
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  vertical-align: bottom;
+  text-align: right;
 }
-
 span.iconContainer {
-    display: inline-block;
-    padding: 0;
-    margin: 0;
-    text-align: center;
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+  text-align: center;
 }
-
 span.overlayContainer img.overlay {
-    position: relative;
-    top: 1px;
-    margin: 0;
-    padding: 0;
-    height: 9px;
-    width: 11px;
+  position: relative;
+  top: 1px;
+  margin: 0;
+  padding: 0;
+  height: 9px;
+  width: 11px;
 }
-
 .et2_link_list span.overlayContainer img.overlay {
-    height: 9px !important;
-    width: 9px !important;
+  height: 9px !important;
+  width: 9px !important;
 }
-
 /**
  * EGroupware: Stylite Pixelegg template
  *
@@ -7201,6 +7196,12 @@ table.egwGridView_grid img.et2_appicon {
 }
 #egw_fw_header #egw_fw_topmenu #egw_fw_topmenu_items ul a#topmenu_acl {
   background-image: url(../images/topmenu_items/access.svg);
+}
+#egw_fw_header #egw_fw_topmenu #egw_fw_topmenu_items ul a#topmenu_useraccount {
+  background-image: url(../images/accounts.png);
+  background-repeat: no-repeat;
+  background-size: 18px;
+  background-position-x: -2px;
 }
 #egw_fw_header #egw_fw_topmenu #egw_fw_topmenu_items ul a#topmenu_calls {
   background-image: url(../images/phone.svg);

@@ -1208,7 +1208,10 @@ egwActionObject.prototype.insertObject = function(_index, _id, _iface, _flags)
 
 		// Set the parent to null and reset the focus of the object
 		obj.parent = null;
-		obj.setFocused(false);
+		//asig added this, because I receive an error after moving mails to subfolder. moving mails to
+		if(typeof obj.setFocused === 'function'){
+			obj.setFocused(false);
+		}
 
 		// Set the parent to this object
 		obj.parent = this;

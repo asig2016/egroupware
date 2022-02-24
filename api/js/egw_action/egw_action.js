@@ -1850,7 +1850,12 @@ egwActionObject.prototype.setAllSelected = function(_selected, _informParent)
 	{
 		for (var i = 0; i < this.children.length; i++)
 		{
-			this.children[i].setAllSelected(_selected, false);
+			if( typeof this.children[i].setAllSelected === 'function'){
+
+				this.children[i].setAllSelected(_selected, false);
+
+			}
+
 		}
 	}
 

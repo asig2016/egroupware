@@ -513,7 +513,7 @@ export class et2_dataview_selectionManager
 			this._inUpdate = true; // Recursion prevention
 
 			// Update the state of the action object
-			if (_entry.ao)
+			if ( _entry.ao && typeof _entry.ao.setSelected === 'function' && typeof _entry.ao.setFocused === 'function' )
 			{
 				_entry.ao.setSelected(egwBitIsSet(_state, EGW_AO_STATE_SELECTED));
 				_entry.ao.setFocused(egwBitIsSet(_state, EGW_AO_STATE_FOCUSED));

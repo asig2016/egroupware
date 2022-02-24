@@ -277,7 +277,9 @@ var et2_dataview_selectionManager = /** @class */ (function () {
         }
         // Force context (actual widget) in here, it's the last place it's available
         _entry.ao._context = this._context;
-        _entry.ao.updateActionLinks(_links);
+        if (typeof _entry.ao.updateActionLinks === 'function') {
+            _entry.ao.updateActionLinks(_links);
+        }
         _entry.ao._index = _idx;
         // Overwrite some functions like "traversePath", "getNext" and
         // "getPrevious"

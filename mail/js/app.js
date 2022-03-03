@@ -442,7 +442,7 @@ app.classes.mail = AppJS.extend(
 		// only handle delete by default, for simple case of uid === "$app::$id"
 		if (pushData.type === 'delete')
 		{
-			if (pushData.id.length>1)
+			if (Array.isArray(pushData.id))
 			{
 				[].concat(pushData.id).forEach(uid => {
 					pushData.id = uid;

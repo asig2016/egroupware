@@ -1054,7 +1054,7 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 		// Maximum number of requests to queue.  50 chosen arbitrarily just to limit things
 		const max_queued = 50;
 
-		if(this._queued_refreshes === null)
+		if(this._queued_refreshes === null || _row_ids === null )
 		{
 			// Already too many or an EDIT came, we'll refresh everything later
 			return;

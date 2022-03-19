@@ -702,7 +702,7 @@ var et2_nextmatch = /** @class */ (function (_super) {
     et2_nextmatch.prototype._queue_refresh = function (_row_ids, _type) {
         // Maximum number of requests to queue.  50 chosen arbitrarily just to limit things
         var max_queued = 50;
-        if (this._queued_refreshes === null) {
+        if (this._queued_refreshes === null || _row_ids === null) {
             // Already too many or an EDIT came, we'll refresh everything later
             return;
         }

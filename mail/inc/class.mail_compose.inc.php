@@ -406,6 +406,20 @@ class mail_compose
 				$_content = $this->setDefaults($_content);
 			}
 		}
+
+        //hook mail_compose_prepare
+        $temp = Api\Hooks::process( array(
+            'location' => 'mail_compose_prepare',
+            'content' => $_content,
+        ));
+
+        foreach ($temp as $hook){
+            if($hook){
+                $_content =  array_merge($_content,$hook);
+            }
+
+        }
+
 		// VFS Selector was used
 		if (!empty($_content['selectFromVFSForCompose']))
 		{

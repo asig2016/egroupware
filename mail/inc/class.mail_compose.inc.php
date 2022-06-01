@@ -1413,6 +1413,10 @@ class mail_compose
 		$content['html_toolbar'] = empty(Mail::$mailConfig['html_toolbar']) ?
 			implode(',', Etemplate\Widget\HtmlArea::$toolbar_default_list) : implode(',', Mail::$mailConfig['html_toolbar']);
 		//error_log(__METHOD__.__LINE__.array2string($content));
+
+        //asig: Temporay hack to sent tmaplate data for achelper_hooks::mail_compose_after_save, should be working with hooks, but its not
+        //TODO Make it work without this.
+        $preserv['template_data'] = $content['template_data'];
 		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,array(),$preserv,2);
 	}
 

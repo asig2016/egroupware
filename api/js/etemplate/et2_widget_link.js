@@ -804,7 +804,8 @@ var et2_link_entry = /** @class */ (function (_super) {
             else {
                 // Title will be fetched from server and then set
                 var title = this.egw().link_title(_value.app, _value.id, function (title) {
-                    this.search.removeClass("loading").val(title + "");
+                    var _a;
+                    (_a = this.search) === null || _a === void 0 ? void 0 : _a.removeClass("loading").val(title + "");
                     // Remove specific display and revert to CSS file
                     // show() would use inline, should be inline-block
                     this.clear.css('display', '');

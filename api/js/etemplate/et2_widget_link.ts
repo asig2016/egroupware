@@ -1032,7 +1032,7 @@ export class et2_link_entry extends et2_inputWidget
 				// Title will be fetched from server and then set
 				var title = this.egw().link_title(_value.app, _value.id, function(title)
 				{
-					this.search.removeClass("loading").val(title+"");
+					this.search?.removeClass("loading").val(title+"");
 					// Remove specific display and revert to CSS file
 					// show() would use inline, should be inline-block
 					this.clear.css('display','');

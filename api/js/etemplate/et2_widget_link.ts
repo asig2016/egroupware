@@ -1035,9 +1035,9 @@ export class et2_link_entry extends et2_inputWidget
 					this.search?.removeClass("loading").val(title+"");
 					// Remove specific display and revert to CSS file
 					// show() would use inline, should be inline-block
-					this.clear.css('display','');
+					this.clear?.css('display','');
 				}, this);
-				this.search.addClass("loading");
+				this.search?.addClass("loading");
 			}
 		}
 		if(_value.title)

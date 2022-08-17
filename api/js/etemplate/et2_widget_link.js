@@ -752,6 +752,7 @@ var et2_link_entry = /** @class */ (function (_super) {
         return value;
     };
     et2_link_entry.prototype.set_value = function (_value) {
+        var _a;
         if (typeof _value == 'string' || typeof _value == 'number') {
             if (typeof _value == 'string' && _value.indexOf(",") > 0)
                 _value = _value.replace(",", ":");
@@ -804,13 +805,13 @@ var et2_link_entry = /** @class */ (function (_super) {
             else {
                 // Title will be fetched from server and then set
                 var title = this.egw().link_title(_value.app, _value.id, function (title) {
-                    var _a;
+                    var _a, _b;
                     (_a = this.search) === null || _a === void 0 ? void 0 : _a.removeClass("loading").val(title + "");
                     // Remove specific display and revert to CSS file
                     // show() would use inline, should be inline-block
-                    this.clear.css('display', '');
+                    (_b = this.clear) === null || _b === void 0 ? void 0 : _b.css('display', '');
                 }, this);
-                this.search.addClass("loading");
+                (_a = this.search) === null || _a === void 0 ? void 0 : _a.addClass("loading");
             }
         }
         if (_value.title) {

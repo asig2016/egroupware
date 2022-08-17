@@ -30,7 +30,7 @@
 				<row>
 					<description value="Assign:"/>
 					<hbox>
-						<listbox multiple="false" search="true"  width="150" id="handled_by" type="select-account" account_type="both" />
+						<listbox search="true"  width="150" id="handled_by" />
 						<listbox label="Required action" multiple="false" size="25" id="action_required" onchange="app.acemailstor.fillInMailApp_actionduedate"/>
 						<date-time label="Due" id="action_duedate" size="10" />
 						<listbox label="" multiple="false" size="25" id="direction" onchange="app.acemailstor.fillInMailApp_requiredaction" />

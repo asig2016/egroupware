@@ -39,10 +39,13 @@ class Favorites
 	 *
 	 * @param string $app application, needed to find preferences
 	 * @param string $default preference name for default favorite, default "nextmatch-$app.index.rows-favorite"
+     * @param null|array $favorites_filter optionaly return only favorites based on this filter criteria being an array with two keys: 'filter_item' and 'filter_value'
+     * i.e. ['filter_item' => 'state.col_filter.subapp', 'filter_value' => 'header_types' ]
+     * @param $skip_add dont add the add button to the end
 	 *
 	 * @return array with a single sidebox menu item (array) containing html for favorites
 	 */
-	public static function list_favorites($app, $default=null)
+	public static function list_favorites($app, $default=null, $favorites_filter = null, $skip_add = false )
 	{
 		if (!$app)
 		{
@@ -58,7 +61,7 @@ class Favorites
 		$target = 'favorite_sidebox_'.$app;
 
 		/* @var $filters array an array of favorites*/
-		$filters =  self::get_favorites($app);
+		$filters =  self::get_favorites($app, $favorites_filter);
 		$is_admin = $GLOBALS['egw_info']['user']['apps']['admin'];
 		$html = "<span id='$target' class='ui-helper-clearfix sidebox-favorites'><ul class='ui-menu ui-widget-content ui-corner-all favorites' role='listbox'>\n";
 
@@ -94,8 +97,10 @@ class Favorites
 		}
 
 		// If were're here, the app supports favorites, so add a 'Add' link too
-		$html .= "<li data-id='add' class='ui-menu-item' role='menuitem'><a href='javascript:app.$app.add_favorite()' class='ui-corner-all'>";
-		$html .= Api\Html::image($app, 'new') . lang('Add current'). '</a></li>';
+        if(!$skip_add){
+            $html .= "<li data-id='add' class='ui-menu-item' role='menuitem'><a href='javascript:app.$app.add_favorite()' class='ui-corner-all'>";
+            $html .= Api\Html::image($app, 'new') . lang('Add current'). '</a></li>';
+        }
 
 		$html .= '</ul></span>';
 
@@ -136,10 +141,11 @@ class Favorites
 	 * The default 'Blank' favorite is not included here
 	 *
 	 * @param string $app Current application
-	 *
+     * @param null|array $favorites_filter optionaly return only favorites based on this filter criteria being an array with two keys: 'filter_item' and 'filter_value'
+	 *        i.e. ['filter_item' => 'state.col_filter.subapp', 'filter_value' => 'header_types' ]
 	 * @return array Favorite information
 	 */
-	public static function get_favorites($app)
+	public static function get_favorites($app, $favorites_filter = null)
 	{
 		$favorites = array(
 			'blank' => array(
@@ -156,6 +162,8 @@ class Favorites
 		$sorted_list = array();
 		$fav_sort_pref = self::get_fav_sort_pref($app);
 
+
+
 		// Look through all preferences & pull out favorites
 		foreach((array)$GLOBALS['egw_info']['user']['preferences'][$app] as $pref_name => $pref)
 		{
@@ -163,7 +171,25 @@ class Favorites
 			{
 				if(!is_array($pref)) continue;	// old favorite
 
-				$favorites[(string)substr($pref_name,strlen($pref_prefix))] = $pref;
+                if( $favorites_filter && is_array($favorites_filter) && $favorites_filter['filter_item'] && $favorites_filter['filter_value']){
+
+                    $path = explode('.', $favorites_filter['filter_item']);
+                    $temp  =& $pref;
+
+                    foreach ($path as $key){
+                        $temp =& $temp[$key];
+                    }
+
+                    if( $temp === $favorites_filter['filter_value'] ){
+                        $favorites[(string)substr($pref_name,strlen($pref_prefix))] = $pref;
+                    }
+
+                }else{
+
+                    $favorites[(string)substr($pref_name,strlen($pref_prefix))] = $pref;
+
+                }
+
 			}
 		}
 		if (is_array($fav_sort_pref))

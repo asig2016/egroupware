@@ -409,8 +409,13 @@ export class et2_taglist extends et2_selectbox implements et2_IResizeable
 		{
 			this.div.unbind("click.et2_baseWidget")
 				.on("click.et2_baseWidget", '.ms-sel-item', jQuery.proxy(function(event) {
-				// Pass the target as expected, but also the data for that tag
-				this.click(/*event.target,*/ jQuery(event.target).parent().data("json"));
+
+					// Pass the target as expected, but also the data for that tag
+					if( typeof jQuery(event.target).parent().data("json") === 'undefined'){
+						this.click(/*event.target,*/ jQuery(event.target).parent().parent().data("json"));
+					}else {
+						this.click(/*event.target,*/ jQuery(event.target).parent().data("json"));
+					}
 			},this));
 		}
 

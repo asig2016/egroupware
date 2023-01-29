@@ -264,7 +264,12 @@ var et2_taglist = /** @class */ (function (_super) {
             this.div.unbind("click.et2_baseWidget")
                 .on("click.et2_baseWidget", '.ms-sel-item', jQuery.proxy(function (event) {
                 // Pass the target as expected, but also the data for that tag
-                this.click(/*event.target,*/ jQuery(event.target).parent().data("json"));
+                if (typeof jQuery(event.target).parent().data("json") === 'undefined') {
+                    this.click(/*event.target,*/ jQuery(event.target).parent().parent().data("json"));
+                }
+                else {
+                    this.click(/*event.target,*/ jQuery(event.target).parent().data("json"));
+                }
             }, this));
         }
         // onFocus

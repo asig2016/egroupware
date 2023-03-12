@@ -630,9 +630,12 @@ abstract class Ajax extends Api\Framework
 			foreach($file as &$link)
 			{
 				$ajax = null;
-				preg_match('/ajax=(true|false)/', $link, $ajax);
-				$link = preg_replace("/^(javascript:egw_link_handler\(')(.*)menuaction=([^&]+)(.*)(','[^']+'\))$/",
-					'$1$2menuaction=admin.admin_ui.index&load=$3$4&ajax=' . ($ajax[1] ? $ajax[1] : 'true') .'\',\'admin\')', $link);
+                //Added by asig:
+                if(!is_array($link)){
+                    preg_match('/ajax=(true|false)/', $link, $ajax);
+                    $link = preg_replace("/^(javascript:egw_link_handler\(')(.*)menuaction=([^&]+)(.*)(','[^']+'\))$/",
+                        '$1$2menuaction=admin.admin_ui.index&load=$3$4&ajax=' . ($ajax[1] ? $ajax[1] : 'true') .'\',\'admin\')', $link);
+                }
 			}
 		}
 

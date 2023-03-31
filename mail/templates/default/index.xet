@@ -23,7 +23,7 @@
 				<row>
 					<hbox>
 						<buttononly image="reload" background_image="1" onclick="widget.getInstanceManager().app_obj.acemailstor.info_reload(event,widget);" />
-						<buttononly image="add" background_image="1" onclick="widget.getInstanceManager().app_obj.acemailstor.OpenInfolog(event,widget);" />
+						<buttononly image="add" background_image="1" onclick="widget.getInstanceManager().app_obj.acemailstor.addTodo(event,widget);" />
 					</hbox>
 					<aclink id="infolog_id" listbox_autohide="true" only_app="infolog" class="et2_fullWidth" icon_width="16" icon_height="16" listbox_empty_label="Select from open Infologs for Client" onchange="app.acemailstor.fillInMailApp_handled_by"/>
 				</row>

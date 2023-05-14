@@ -212,7 +212,12 @@ class Select extends Etemplate\Widget
 			}
 			if ($ok && $value === '' && $this->attrs['needed'])
 			{
-				self::set_validation_error($form_name,lang('Field must not be empty !!!',$value),'');
+                if((strpos($this->attrs['needed'], '$cont') !== false) || (strpos($this->attrs['needed'], '@') !== false)){
+                    $this->attrs['needed'] =  api\Etemplate\Widget::expand_name($this->attrs['needed'], null, null, null, null,$content);
+                }
+                if($this->attrs['needed']){
+                    self::set_validation_error($form_name,lang('Field must not be empty !!!',$value),'');
+                }
 			}
 			if (!$multiple && is_array($value) && count($value) > 1)
 			{

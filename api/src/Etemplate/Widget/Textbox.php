@@ -126,9 +126,15 @@ class Textbox extends Etemplate\Widget
 
 			$value = $value_in = self::get_array($content, $form_name);
 
-			if ((string)$value === '' && $this->attrs['needed'])
+			if ((string)$value === '' && $this->attrs['needed'] )
 			{
-				self::set_validation_error($form_name,lang('Field must not be empty !!!'),'');
+                if((strpos($this->attrs['needed'], '$cont') !== false) || (strpos($this->attrs['needed'], '@') !== false)){
+                    $this->attrs['needed'] =  api\Etemplate\Widget::expand_name($this->attrs['needed'], null, null, null, null,$content);
+                }
+                if($this->attrs['needed']){
+                    self::set_validation_error($form_name,lang('Field must not be empty !!!'),'');
+                }
+
 			}
 			if ((int) $this->attrs['maxlength'] > 0 && mb_strlen($value) > (int) $this->attrs['maxlength'])
 			{

@@ -1196,6 +1196,7 @@ export class et2_link_entry extends et2_inputWidget
 	 */
 	_results( data)
 	{
+		debugger;
 		if(this.request)
 		{
 			this.request = null;

@@ -935,6 +935,7 @@ var et2_link_entry = /** @class */ (function (_super) {
      * @param {Array} data
      */
     et2_link_entry.prototype._results = function (data) {
+        debugger;
         if (this.request) {
             this.request = null;
         }

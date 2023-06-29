@@ -127,6 +127,7 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_core_valueWidget.js",
 						"api/js/etemplate/et2_core_inputWidget.js",
 						"api/js/etemplate/et2_widget_color.js",
+						"api/js/etemplate/et2_widget_countdown.js",
 						"api/js/jquery/blueimp/js/blueimp-gallery.min.js",
 						"api/js/etemplate/expose.js",
 						"api/js/etemplate/et2_widget_description.js",
@@ -198,7 +199,6 @@ module.exports = function (grunt) {
 						"api/js/etemplate/et2_extension_itempicker_actions.js",
 						"api/js/etemplate/et2_widget_itempicker.js",
 						"api/js/etemplate/et2_widget_script.js",
-						"api/js/etemplate/et2_widget_countdown.js",
 						"api/js/etemplate/et2_core_legacyJSFunctions.js",
 						"api/js/etemplate/etemplate2.js"
 					]
@@ -290,6 +290,55 @@ module.exports = function (grunt) {
 						"achelper/js/et2_widget_aclink.js",
 						"achelper/js/et2_widget_actree.js",
 						"achelper/js/et2_widget_currency.js"
+                    ]
+                }
+            },
+			acagreements: {
+                files: {
+                    "acagreements/js/app.min.js": [
+                        "acagreements/js/app.js"
+                    ]
+                }
+            },
+			acerp: {
+                files: {
+                    "acerp/js/app.min.js": [
+                        "acerp/js/app.js"
+                    ]
+                }
+            },
+			acilog: {
+                files: {
+                    "acilog/js/app.min.js": [
+                        "acilog/js/app.js"
+                    ]
+                }
+            },
+			acclients: {
+                files: {
+                    "acclients/js/app.min.js": [
+                        "acclients/js/app.js"
+                    ]
+                }
+            },
+			acdms: {
+                files: {
+                    "acdms/js/app.min.js": [
+                        "acdms/js/app.js"
+                    ]
+                }
+            },
+			acemailstor: {
+                files: {
+                    "acemailstor/js/app.min.js": [
+                        "acemailstor/js/app.js"
+                    ]
+                }
+            },
+			infolog: {
+                files: {
+                    "infolog/js/app.min.js": [
+                        "infolog/js/app.js"
                     ]
                 }
             },

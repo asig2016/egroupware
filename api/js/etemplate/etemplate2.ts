@@ -229,6 +229,19 @@ export class etemplate2
 	 */
 	public clear(_keep_app_object?:boolean)
 	{
+
+		// If using a private app object, remove all of them
+		if(!_keep_app_object && this.app_obj !== window.app)
+		{
+			for(const app_name in this.app_obj)
+			{
+				if(this.app_obj[app_name] instanceof EgwApp)
+				{
+					this.app_obj[app_name].destroy();
+				}
+			}
+		}
+
 		jQuery(this._DOMContainer).trigger('clear');
 
 		// Remove any handlers on window (resize)
@@ -266,17 +279,6 @@ export class etemplate2
 			}
 		}
 
-		// If using a private app object, remove all of them
-		if(!_keep_app_object && this.app_obj !== window.app)
-		{
-			for(const app_name in this.app_obj)
-			{
-				if(this.app_obj[app_name] instanceof EgwApp)
-				{
-					this.app_obj[app_name].destroy();
-				}
-			}
-		}
 	}
 
 	get widgetContainer(): et2_container

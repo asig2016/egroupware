@@ -177,6 +177,14 @@ var etemplate2 = /** @class */ (function () {
      * @param _keep_app_object keep app object
      */
     etemplate2.prototype.clear = function (_keep_app_object) {
+        // If using a private app object, remove all of them
+        if (!_keep_app_object && this.app_obj !== window.app) {
+            for (var app_name in this.app_obj) {
+                if (this.app_obj[app_name] instanceof egw_app_1.EgwApp) {
+                    this.app_obj[app_name].destroy();
+                }
+            }
+        }
         jQuery(this._DOMContainer).trigger('clear');
         // Remove any handlers on window (resize)
         if (this.uniqueId) {
@@ -201,14 +209,6 @@ var etemplate2 = /** @class */ (function () {
             for (var i = 0; i < etemplate2._byTemplate[name_1].length; i++) {
                 if (etemplate2._byTemplate[name_1][i] == this) {
                     etemplate2._byTemplate[name_1].splice(i, 1);
-                }
-            }
-        }
-        // If using a private app object, remove all of them
-        if (!_keep_app_object && this.app_obj !== window.app) {
-            for (var app_name in this.app_obj) {
-                if (this.app_obj[app_name] instanceof egw_app_1.EgwApp) {
-                    this.app_obj[app_name].destroy();
                 }
             }
         }

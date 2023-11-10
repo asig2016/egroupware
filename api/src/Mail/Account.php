@@ -1580,7 +1580,7 @@ class Account implements \ArrayAccess
 	 */
 	static function get_default($smtp=false, $return_id=false, $log_no_default=true)
 	{
-
+    /*
         if( $GLOBALS['egw_info']['apps']['notifications'] && $config = Api\Config::read( 'notifications' ) ) {
 
             if ((int)$config['async_identity'] > 0) {
@@ -1595,6 +1595,9 @@ class Account implements \ArrayAccess
 
             }
         }
+    */
+
+        //$ddd = self::search(true, 'params');
 
 		try
 		{

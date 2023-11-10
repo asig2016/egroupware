@@ -1580,6 +1580,22 @@ class Account implements \ArrayAccess
 	 */
 	static function get_default($smtp=false, $return_id=false, $log_no_default=true)
 	{
+
+        if( $GLOBALS['egw_info']['apps']['notifications'] && $config = Api\Config::read( 'notifications' ) ) {
+
+            if ((int)$config['async_identity'] > 0) {
+
+                error_log(__METHOD__.__LINE__.' Async identity was set to: '.$config['async_identity']);
+
+                if($return_id === false){
+                    return new Api\Mailer( (int)$config['async_identity'] );
+                }else{
+                    return (int)$config['async_identity'];
+                }
+
+            }
+        }
+
 		try
 		{
 			foreach(self::search(true, 'params') as $acc_id => $params)

@@ -1580,24 +1580,45 @@ class Account implements \ArrayAccess
 	 */
 	static function get_default($smtp=false, $return_id=false, $log_no_default=true)
 	{
-    /*
-        if( $GLOBALS['egw_info']['apps']['notifications'] && $config = Api\Config::read( 'notifications' ) ) {
-
+        //Prefer profile set in notifications app for smtp
+        if( $smtp && $GLOBALS['egw_info']['apps']['notifications'] && $config = Api\Config::read( 'notifications' ) ) {
+            //error_log(__METHOD__.__LINE__.' notifications... ');
+            //error_log(__METHOD__.__LINE__.print_r($config, true));
             if ((int)$config['async_identity'] > 0) {
+                //error_log(__METHOD__.__LINE__.' notifications... 2');
+                foreach(self::search(true, 'params') as $acc_id => $params)
+                {
+                    if ( (int) $acc_id === (int) $config['async_identity'] )
+                    {
+                        if (!$params['acc_smtp_host'] || !$params['acc_smtp_port']) continue;
+                        // check requirement of session, which is not available in async service!
+                        if (isset($GLOBALS['egw_info']['flags']['async-service']) ||
+                            empty($GLOBALS['egw_info']['user']['account_id']))	// happens during login when notifying about blocked accounts
+                        {
+                            if ($params['acc_smtp_auth_session']) continue;
+                            // may fail because of smtp only profile, or no session password, etc
+                            try
+                            {
+                                $account = new Account($params);
+                            }
+                            catch (\Exception $x)
+                            {
+                                unset($x);
+                                continue;
+                            }
+                            if (Credentials::isUser($account->acc_smtp_pw_enc)) continue;
+                        }
 
-                error_log(__METHOD__.__LINE__.' Async identity was set to: '.$config['async_identity']);
+                        return $return_id ? $acc_id : (isset($account) && $account->acc_id == $acc_id ?
+                            $account : new Account($params));
 
-                if($return_id === false){
-                    return new Api\Mailer( (int)$config['async_identity'] );
-                }else{
-                    return (int)$config['async_identity'];
+                    }
+
+
                 }
 
             }
         }
-    */
-
-        //$ddd = self::search(true, 'params');
 
 		try
 		{

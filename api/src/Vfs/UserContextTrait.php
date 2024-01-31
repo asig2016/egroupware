@@ -97,10 +97,6 @@ trait UserContextTrait
 			return true;
 		}
 
-		if( !((int) $this->user > 0) ){
-			$this->user = $GLOBALS['egw_info']['user']['account_id'];
-		}
-
 		// throw exception if stat array is used insead of path, can be removed soon
 		if (is_array($path))
 		{

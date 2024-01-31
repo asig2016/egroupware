@@ -190,7 +190,7 @@ trait UserContextTrait
 			return true;
 		}
 		$memberships = Api\Accounts::getInstance()->memberships($this->user, true);
-		error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 3 = ".var_export(($check << 3),true)." mode &  check << 3 =".var_export(($stat['mode'] & ($check << 3)),true)."stat[gid]={$stat['gid']} with memberships.. =>".var_export(($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'] &&  $memberships && in_array(-abs( (int) $stat['gid']), $memberships),true));
+		error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 3 = ".var_export(($check << 3),true)." mode &  check << 3 =".var_export(($stat['mode'] & ($check << 3)),true)."user:{$this->user} stat[gid]={$stat['gid']} with memberships.. =>".var_export(($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'] &&  $memberships && in_array(-abs( (int) $stat['gid']), $memberships),true));
 		// check if there's a group access and we have the right membership
 		if (($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'])
 		{

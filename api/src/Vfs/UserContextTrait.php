@@ -97,6 +97,10 @@ trait UserContextTrait
 			return true;
 		}
 
+		if(!$this->user){
+			$this->user = $GLOBALS['egw_info']['user']['account_id'];
+		}
+
 		// throw exception if stat array is used insead of path, can be removed soon
 		if (is_array($path))
 		{
@@ -158,7 +162,7 @@ trait UserContextTrait
 					$stat['gid'] = abs($get_params['gid']);
 				}
 				// continue with mode check based on url mount-parameters
-				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",check=$check - continue with mode check based on url mount-parameters");
+				//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",check=$check - continue with mode check based on url mount-parameters");
 			}
 			else
 			{
@@ -174,7 +178,7 @@ trait UserContextTrait
 			}
 		}
 
-		error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check $check =>".var_export(($stat['mode'] & $check) == $check,true));
+		//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check $check =>".var_export(($stat['mode'] & $check) == $check,true));
 		// check if other rights grant access
 		if (($stat['mode'] & $check) == $check)
 		{
@@ -182,26 +186,26 @@ trait UserContextTrait
 			return true;
 		}
 
-		error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 6 = ".var_export(($check << 6),true)." mode &  check << 6 =".var_export(($stat['mode'] & ($check << 6)),true)." =>".var_export(($stat['mode'] & ($check << 6)) == ($check << 6) && $stat['uid'] && $stat['uid'] == $this->user,true));
+		//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 6 = ".var_export(($check << 6),true)." mode &  check << 6 =".var_export(($stat['mode'] & ($check << 6)),true)." =>".var_export(($stat['mode'] & ($check << 6)) == ($check << 6) && $stat['uid'] && $stat['uid'] == $this->user,true));
 		// check if there's owner access and we are the owner
 		if (($stat['mode'] & ($check << 6)) == ($check << 6) && $stat['uid'] && $stat['uid'] == $this->user)
 		{
 			//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via owner rights!");
 			return true;
 		}
-		$memberships = Api\Accounts::getInstance()->memberships($GLOBALS['egw_info']['user']['account_id'], true);
-		error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 3 = ".var_export(($check << 3),true)." mode &  check << 3 =".var_export(($stat['mode'] & ($check << 3)),true)."user:{$this->user} stat[gid]={$stat['gid']} with memberships.. =>".var_export(($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'] &&  $memberships && in_array(-abs( (int) $stat['gid']), $memberships),true));
+		$memberships = Api\Accounts::getInstance()->memberships($this->user, true);
+		//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 3 = ".var_export(($check << 3),true)." mode &  check << 3 =".var_export(($stat['mode'] & ($check << 3)),true)."user:{$this->user} stat[gid]={$stat['gid']} with memberships.. =>".var_export(($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'] &&  $memberships && in_array(-abs( (int) $stat['gid']), $memberships),true));
 		// check if there's a group access and we have the right membership
 		if (($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'])
 		{
 
-			error_log('member_ships:'.json_encode($memberships));
+			//error_log('member_ships:'.json_encode($memberships));
 			if ( $memberships && in_array(-abs( (int) $stat['gid']), $memberships))
 			{
-				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via group rights!");
+				//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via group rights!");
 				return true;
 			}else{
-				error_log(__METHOD__."FAILED: access via group rights! stat:".json_encode($stat));
+				//error_log(__METHOD__."FAILED: access via group rights! stat:".json_encode($stat));
 			}
 		}
 

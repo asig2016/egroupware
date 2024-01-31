@@ -104,7 +104,7 @@ trait UserContextTrait
 		}
 
 		// if we have no $stat, delegate whole check to vfs stream-wrapper to correctly deal with shares / effective user-ids
-		if (is_null($stat) || is_null($stat['name']) || !$stat['name'] )
+		if ( is_null($stat) )
 		{
 			$stat = $this->url_stat($path, 0);
 		}
@@ -201,7 +201,7 @@ trait UserContextTrait
 				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via group rights!");
 				return true;
 			}else{
-				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) FAILED: access via group rights!");
+				error_log(__METHOD__."FAILED: access via group rights! stat:".json_encode($stat));
 			}
 		}
 

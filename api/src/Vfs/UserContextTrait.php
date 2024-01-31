@@ -97,7 +97,7 @@ trait UserContextTrait
 			return true;
 		}
 
-		if(!$this->user){
+		if( !((int) $this->user > 0) ){
 			$this->user = $GLOBALS['egw_info']['user']['account_id'];
 		}
 

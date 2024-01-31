@@ -163,6 +163,10 @@ trait UserContextTrait
 				}
 				// continue with mode check based on url mount-parameters
 				//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",check=$check - continue with mode check based on url mount-parameters");
+
+				if( !((int) $this->user > 0) ){
+					$this->user = $GLOBALS['egw_info']['user']['account_id'];
+				}
 			}
 			else
 			{
@@ -193,6 +197,7 @@ trait UserContextTrait
 			//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via owner rights!");
 			return true;
 		}
+
 		$memberships = Api\Accounts::getInstance()->memberships($this->user, true);
 		//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']}, (stat[mode] ".sprintf('%o',$stat['mode'])." & check $check ) == check << 3 = ".var_export(($check << 3),true)." mode &  check << 3 =".var_export(($stat['mode'] & ($check << 3)),true)."user:{$this->user} stat[gid]={$stat['gid']} with memberships.. =>".var_export(($stat['mode'] & ($check << 3)) == ($check << 3) && $stat['gid'] &&  $memberships && in_array(-abs( (int) $stat['gid']), $memberships),true));
 		// check if there's a group access and we have the right membership

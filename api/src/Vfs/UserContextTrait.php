@@ -196,10 +196,12 @@ trait UserContextTrait
 		{
 			$memberships = Api\Accounts::getInstance()->memberships($this->user, true);
 			error_log('member_ships:'.json_encode($memberships));
-			if ( $memberships && in_array(-abs($stat['gid']), $memberships))
+			if ( $memberships && in_array(-abs( (int) $stat['gid']), $memberships))
 			{
 				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) access via group rights!");
 				return true;
+			}else{
+				error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",$check) FAILED: access via group rights!");
 			}
 		}
 

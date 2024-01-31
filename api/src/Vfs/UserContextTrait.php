@@ -104,7 +104,7 @@ trait UserContextTrait
 		}
 
 		// if we have no $stat, delegate whole check to vfs stream-wrapper to correctly deal with shares / effective user-ids
-		if (is_null($stat))
+		if (is_null($stat) || is_null($stat['name']) || !$stat['name'] )
 		{
 			$stat = $this->url_stat($path, 0);
 		}

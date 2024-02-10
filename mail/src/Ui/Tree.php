@@ -108,7 +108,7 @@ class Tree
 	{
 		$roots = array(TreeWidget::ID => 0, TreeWidget::CHILDREN => array());
 
-		foreach(Mail\Account::search(true, 'params') as $acc_id => $params)
+		foreach(Mail\Account::search(true, 'params', null, false, 0, true, true) as $acc_id => $params)
 		{
 			// checking a single requested account only: skip everything else before it can
 			// trigger a live is_imap() connection attempt for accounts we don't even want

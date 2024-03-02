@@ -102,6 +102,11 @@ function implements_et2_INextmatchSortable(obj) {
  *                                          +--------------+-----------+-------+
  *                                          | header_right | favorites | count |
  *                                          +--------------+-----------+-------+
+ * then comes...
+ * +- nextmatch_header +
+ * +  header_row2      |
+ * +-------------------+
+ *
  * @augments et2_DOMWidget
  */
 var et2_nextmatch = /** @class */ (function (_super) {
@@ -1858,6 +1863,9 @@ var et2_nextmatch = /** @class */ (function (_super) {
     et2_nextmatch.prototype.set_header_row = function (template) {
         this.header._build_header("row", template);
     };
+    et2_nextmatch.prototype.set_header_row2 = function (template) {
+        this.header._build_header("row2", template);
+    };
     et2_nextmatch.prototype.set_no_filter = function (bool, filter_name) {
         if (typeof filter_name == 'undefined') {
             filter_name = 'filter';
@@ -2372,13 +2380,19 @@ var et2_nextmatch = /** @class */ (function (_super) {
         "header_right": {
             "name": "Right custom template",
             "type": "string",
-            "description": "Customise the nextmatch - right side.  Provided template becomes a child of nextmatch, and any input widgets are automatically bound to refresh the nextmatch on change.  Any inputs with an onChange attribute can trigger the nextmatch to refresh by returning true.",
+            "description": "Customise the nextmatch - right side, before favorites and row count. Provided template becomes a child of nextmatch, and any input widgets are automatically bound to refresh the nextmatch on change.  Any inputs with an onChange attribute can trigger the nextmatch to refresh by returning true.",
             "default": ""
         },
         "header_row": {
             "name": "Inline custom template",
             "type": "string",
-            "description": "Customise the nextmatch - inline, after row count.  Provided template becomes a child of nextmatch, and any input widgets are automatically bound to refresh the nextmatch on change.  Any inputs with an onChange attribute can trigger the nextmatch to refresh by returning true.",
+            "description": "Customise the nextmatch - inline, after search before category,filter,filter2,header_right,favorites,row count.  Provided template becomes a child of nextmatch, and any input widgets are automatically bound to refresh the nextmatch on change.  Any inputs with an onChange attribute can trigger the nextmatch to refresh by returning true.",
+            "default": ""
+        },
+        "header_row2": {
+            "name": "Inline custom template",
+            "type": "string",
+            "description": "Customise the nextmatch - inline, after row count in new line.  Provided template becomes a child of nextmatch, and any input widgets are automatically bound to refresh the nextmatch on change.  Any inputs with an onChange attribute can trigger the nextmatch to refresh by returning true.",
             "default": ""
         },
         "no_filter": {
@@ -2515,7 +2529,8 @@ var et2_nextmatch_header_bar = /** @class */ (function (_super) {
         this.headers = [
             { id: this.nextmatch.options.header_left },
             { id: this.nextmatch.options.header_right },
-            { id: this.nextmatch.options.header_row }
+            { id: this.nextmatch.options.header_row },
+            { id: this.nextmatch.options.header_row2 }
         ];
         // The rest of the header
         this.header_div = this.row_div = jQuery(document.createElement("div"))
@@ -2705,7 +2720,7 @@ var et2_nextmatch_header_bar = /** @class */ (function (_super) {
      * @param {string} template_name Name of the template to load into the location
      */
     et2_nextmatch_header_bar.prototype._build_header = function (location, template_name) {
-        var id = location == "left" ? 0 : (location == "right" ? 1 : 2);
+        var id = location == "left" ? 0 : (location == "right" ? 1 : (location == "row" ? 2 : 3));
         var existing = this.headers[id];
         // @ts-ignore
         if (existing && existing._type) {
@@ -2735,6 +2750,11 @@ var et2_nextmatch_header_bar = /** @class */ (function (_super) {
                 case 2: // header_row: after search
                     window.setTimeout(function () {
                         jQuery(header.getDOMNode()).insertAfter(self.header_div.find('div.search'));
+                    }, 1);
+                    break;
+                case 3: // header_row2: below everything
+                    window.setTimeout(function () {
+                        jQuery(header.getDOMNode()).insertAfter(self.header_div);
                     }, 1);
                     break;
             }

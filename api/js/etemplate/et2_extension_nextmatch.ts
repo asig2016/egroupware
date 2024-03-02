@@ -3772,7 +3772,7 @@ class et2_nextmatch_header_bar extends et2_DOMWidget implements et2_INextmatchHe
 		this.favorites = et2_createWidget('favorites', widget_options, this);
 
 		// Add into header
-		jQuery(this.favorites.getDOMNode(this.favorites)).prependTo(egwIsMobile() ? this.search_box.find('.nm_favorites_div').show() : this.right_div);
+		jQuery(this.favorites.getDOMNode(this.favorites)).prependTo(egwIsMobile() ? this.search_box.find('.nm_favorites_div').show() : this.header_div );
 	}
 
 	/**

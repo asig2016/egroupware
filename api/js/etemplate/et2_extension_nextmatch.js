@@ -2868,7 +2868,7 @@ var et2_nextmatch_header_bar = /** @class */ (function (_super) {
         };
         this.favorites = et2_core_widget_1.et2_createWidget('favorites', widget_options, this);
         // Add into header
-        jQuery(this.favorites.getDOMNode(this.favorites)).prependTo(egwIsMobile() ? this.search_box.find('.nm_favorites_div').show() : this.right_div);
+        jQuery(this.favorites.getDOMNode(this.favorites)).prependTo(egwIsMobile() ? this.search_box.find('.nm_favorites_div').show() : this.header_div);
     };
     /**
      * Updates all the filter elements in the header

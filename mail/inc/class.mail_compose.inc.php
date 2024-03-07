@@ -304,6 +304,7 @@ class mail_compose
 	 */
 	function compose(array $_content=null,$msg=null, $_focusElement='to',$suppressSigOnTop=false, $isReply=false)
 	{
+		$readonlys = [];
 		if ($msg) Framework::message($msg);
 
 		if (!empty($GLOBALS['egw_info']['user']['preferences']['mail']['LastSignatureIDUsed']))
@@ -411,11 +412,16 @@ class mail_compose
         $temp = Api\Hooks::process( array(
             'location' => 'mail_compose_prepare',
             'content' => $_content,
+			'readonlys' => $readonlys
         ));
+
+
 
         foreach ($temp as $hook){
             if($hook){
-                $_content =  array_merge($_content,$hook);
+                $_content =  array_merge($_content,$hook['content']);
+				$readonlys = array_merge($readonlys,$hook['readonlys']);
+				$preserv = array_merge($readonlys,$hook['preserv']);
             }
 
         }
@@ -1414,10 +1420,7 @@ class mail_compose
 			implode(',', Etemplate\Widget\HtmlArea::$toolbar_default_list) : implode(',', Mail::$mailConfig['html_toolbar']);
 		//error_log(__METHOD__.__LINE__.array2string($content));
 
-        //asig: Temporay hack to sent tmaplate data for achelper_hooks::mail_compose_after_save, should be working with hooks, but its not
-        //TODO Make it work without this.
-        $preserv['template_data'] = $content['template_data'];
-		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,array(),$preserv,2);
+		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,$readonlys,$preserv,2);
 	}
 
 	/**

@@ -309,11 +309,12 @@ class Link extends Link\Storage
 				$to_json[$app] = array_intersect_key($data, array_flip(array(
 					'view','view_id','view_popup',
 					'add','add_app','add_id','add_popup','no_quick_add',
-					'edit','edit_id','edit_popup',
+					'edit','edit_id','edit_popup','edit_icon',
 					'list','list_popup',
 					'search',
 					'name','icon','query',
-					'mime','entry','entries'
+					'mime','entry','entries',
+					'context_menu','getdata_fnt','edit_tab','acbuttonmode',
 				)));
 			}
 		}

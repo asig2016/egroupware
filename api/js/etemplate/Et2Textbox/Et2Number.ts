@@ -57,7 +57,7 @@ export class Et2Number extends Et2Textbox
 
 				.form-control-input {
 					min-width: min-content;
-					max-width: 7em;
+					max-width: 100%;
 				}
 
 				.input__control {

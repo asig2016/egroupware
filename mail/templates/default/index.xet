@@ -68,7 +68,12 @@
                     -->
                 </box>
                 <row >
-                    <link-entry_ro id="acemailstor_id" label="Mail was already imported:" span="2" only_app="acemailstor" class="et2_fullWidth" readonly="true" />
+                    <et2-link app="acemailstor"
+                              noLang="true"
+                              id="acemailstor_id"
+                              span="2"
+                              target_app=" "
+                    />
                 </row>
             </rows>
         </grid>

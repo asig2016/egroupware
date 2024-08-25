@@ -1,6 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE overlay PUBLIC "-//EGroupware GmbH//eTemplate 2.0//EN" "https://www.egroupware.org/etemplate2.0.dtd">
 <overlay>
+    <template id="mail.index.import_acemailstor" template="" lang="" group="0" version="0.0.0.004">
+        <grid width="100%" >
+            <columns>
+                <column />
+                <column />
+            </columns>
+            <rows>
+                <box id="controls_identifier" >
+                    <!--asig:
+                    This is used for showing/hiding extra filters via toggle_widgetvisibility function with parent parameter
+                    We cannot use an id in grid for example because it would mess up the col_filter array.
+                    So we se an identifier here directly below the parent grid we want to hide.
+                    -->
+                </box>
+                <row >
+                    <ac-select
+                            id="client_id"
+                            emptyLabel="Select from suggested clients"
+                            app="acclients"
+                            onchange="app.acemailstor.fillInMailApp_InfologId_handled_by" />
+                </row>
+                <row>
+                    <ac-select
+                            id="infolog_id"
+                            app="acilog"
+                            emptyLabel="Select from open Infologs for Client"
+                            onchange="app.acemailstor.fillInMailApp_handled_by"
+                    />
+                </row>
+                <row>
+                    <description value="Assign:"/>
+                    <hbox>
+                        <listbox multiple="false" search="true"  width="150" id="handled_by" type="select-account" account_type="both" />
+                        <listbox label="Required action" multiple="false" size="25" id="action_required" onchange="app.acemailstor.fillInMailApp_actionduedate"/>
+                        <date-time label="Due" id="action_duedate" size="10" />
+                        <listbox label="" multiple="false" size="25" id="direction" onchange="app.acemailstor.fillInMailApp_requiredaction" />
+                    </hbox>
+                </row>
+                <row>
+                    <description value="Access:"/>
+                    <box>
+                        <listbox multiple="false" search="true"  width="150" id="owner" type="select-account" account_type="both" />
+                    </box>
+                </row>
+                <row>
+                    <hbox span="all">
+                        <buttononly label="Move" id="import_move" onclick="widget.getInstanceManager().app_obj.acemailstor.importormoveMail(event,widget);" image="move" background_image="1"/>
+                        <buttononly label="Copy" id="import_copy" onclick="widget.getInstanceManager().app_obj.acemailstor.importormoveMail(event,widget);"/>
+                        <checkbox label="Do not update Infolog Description" id="skip_update" />
+                    </hbox>
+                </row>
+            </rows>
+        </grid>
+        <grid width="100%" class="hidden">
+            <columns>
+                <column />
+                <column />
+            </columns>
+            <rows>
+                <box id="imported_identifier" >
+                    <!--asig:
+                    This is used for showing/hiding extra filters via toggle_widgetvisibility function with parent parameter
+                    We cannot use an id in grid for example because it would mess up the col_filter array.
+                    So we se an identifier here directly below the parent grid we want to hide.
+                    -->
+                </box>
+                <row >
+                    <link-entry_ro id="acemailstor_id" label="Mail was already imported:" span="2" only_app="acemailstor" class="et2_fullWidth" readonly="true" />
+                </row>
+            </rows>
+        </grid>
+    </template>
+    <template id="mail.index.import.move" template="" lang="" group="0" version="1.9.003">
+        <grid width="100%" height="320">
+            <columns>
+                <column width="100%" />
+            </columns>
+            <rows>
+                <row>
+                    <et2-textbox id="mail_id" readonly="true" class="hidden"/>
+                </row>
+                <row valign="top" >
+                    <et2-hbox>
+                        <et2-select
+                                label=""
+                                multiple="false"
+                                id="allowed_folders"
+                        />
+                        <buttononly label="Move" id="folder_move" onclick="widget.getInstanceManager().app_obj.acemailstor.importormoveMail(event,widget);" />
+                    </et2-hbox>
+                    <!--<hbox>
+                        <listbox id="allowed_folders" label="Folder" multiple="false" width="499" search="true" empty_label="Select Folder to move mails to..." />
+                    </hbox>-->
+                </row>
+            </rows>
+        </grid>
+    </template>
     <template id="mail.index.preview">
         <toolbar id="toolbar" list_header="short"/>
         <grid id="mailPreview" width="100%">
@@ -99,6 +196,19 @@
                                         </et2-details>
                                     </et2-hbox>
                                 </et2-vbox>
+                                <et2-hbox disabled="@hide_acemailstorfeatures">
+                                    <!--<hbox disabled="true">-->
+                                    <tabbox id="tabs" span="all" width="100%" tab_height="130">
+                                        <tabs>
+                                            <tab id="acemailstor" label="Import to acemailstor"/>
+                                            <tab id="move" label="Move to folder"/>
+                                        </tabs>
+                                        <tabpanels>
+                                            <template id="mail.index.import_acemailstor"/>
+                                            <template id="mail.index.import.move"/>
+                                        </tabpanels>
+                                    </tabbox>
+                                </et2-hbox>
                             </et2-vbox>
                         </et2-hbox>
                     </et2-vbox>

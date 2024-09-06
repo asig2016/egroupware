@@ -560,6 +560,7 @@ export class etemplate2
 	 */
 	async load(_name, _url, _data, _callback?, _app?, _no_et2_ready?, _open_target?)
 	{
+		debugger;
 		this.ready = false;
 		let app = _app || window.app;
 		this.name = _name;	// store top-level template name to have it available in widgets
@@ -646,6 +647,7 @@ export class etemplate2
 			console.log("et2.load(): error loading lang-files and app.js: " + err.message);
 		}).then(() =>
 		{
+			debugger;
 			this.clear();
 
 			// Initialize application js
@@ -696,6 +698,7 @@ export class etemplate2
 
 			const _load = function()
 			{
+				debugger;
 				egw.debug("log", "Loading template...");
 				if(egw.debug_level() >= 4 && console.timeStamp)
 				{
@@ -726,8 +729,16 @@ export class etemplate2
 				const deferred = [];
 
 				// Inform the widget tree that it has been successfully loaded.
-				this._widgetContainer.loadingFinished(deferred);
-
+				// Load & process
+				try
+				{
+					this._widgetContainer.loadingFinished(deferred);
+				}
+				catch(e)
+				{
+					debugger;
+				}
+				debugger;
 				// Connect to the window resize event
 				jQuery(window).on("resize." + this.uniqueId, this, function(e)
 				{
@@ -765,7 +776,7 @@ export class etemplate2
 						})
 					]).then(() =>
 					{
-
+						debugger;
 						console.timeEnd("deferred");
 						console.timeStamp("Deferred done");
 						// Clear dirty now that it's all loaded
@@ -777,6 +788,7 @@ export class etemplate2
 
 						if(typeof window.framework != 'undefined' && typeof window.framework.et2_loadingFinished != 'undefined')
 						{
+							debugger;
 							//Call loading finished method of the framework with local window
 							window.framework.et2_loadingFinished(egw(window).window);
 						}
@@ -855,10 +867,12 @@ export class etemplate2
 			{
 				if(etemplate2.templates[_name])
 				{
+					debugger;
 					// Set array managers first, or errors will happen
 					this._widgetContainer.setArrayMgrs(this._createArrayManagers(_data));
 
 					// Already have it
+
 					_load.apply(this, []);
 					return;
 				}

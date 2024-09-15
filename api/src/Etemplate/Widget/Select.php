@@ -750,7 +750,7 @@ class Select extends Etemplate\Widget
 				// set default of true (ajax_get_options uses a legacy_options string, which means nothing set is "")
 				if ($globalCategories === null || $globalCategories === '')
 				{
-					$globalCategories = true;
+					$globalCategories = false;
 				}
 				$parentCat = self::expand_name($widget->attrs['parentCat'], 0, 0, '', '', self::$cont) ?? $type4;
 

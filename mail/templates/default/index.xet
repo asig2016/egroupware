@@ -8,14 +8,7 @@
                 <column />
             </columns>
             <rows>
-                <box id="controls_identifier" >
-                    <!--asig:
-                    This is used for showing/hiding extra filters via toggle_widgetvisibility function with parent parameter
-                    We cannot use an id in grid for example because it would mess up the col_filter array.
-                    So we se an identifier here directly below the parent grid we want to hide.
-                    -->
-                </box>
-                <row >
+                <row>
                     <ac-select
                             id="client_id"
                             emptyLabel="Select from suggested clients"
@@ -79,7 +72,7 @@
         </grid>
     </template>
     <template id="mail.index.import.move" template="" lang="" group="0" version="1.9.003">
-        <grid width="100%" height="320">
+        <grid width="100%" height="50">
             <columns>
                 <column width="100%" />
             </columns>
@@ -202,17 +195,14 @@
                                     </et2-hbox>
                                 </et2-vbox>
                                 <et2-hbox disabled="@hide_acemailstorfeatures">
-                                    <!--<hbox disabled="true">-->
-                                    <tabbox id="tabs" span="all" width="100%" tab_height="130">
-                                        <tabs>
-                                            <tab id="acemailstor" label="Import to acemailstor"/>
-                                            <tab id="move" label="Move to folder"/>
-                                        </tabs>
-                                        <tabpanels>
+                                    <ac-vbox-details-container>
+                                        <et2-details id="import_acemailstor_details" summary="Import" open="true">
                                             <template id="mail.index.import_acemailstor"/>
+                                        </et2-details>
+                                        <et2-details id="import_move_details" summary="Move">
                                             <template id="mail.index.import.move"/>
-                                        </tabpanels>
-                                    </tabbox>
+                                        </et2-details>
+                                    </ac-vbox-details-container>
                                 </et2-hbox>
                             </et2-vbox>
                         </et2-hbox>

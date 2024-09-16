@@ -1109,3 +1109,11 @@ table.et2_egw_action_ddHelper_row .innerContainer {
 .et2_egw_action_ddHelper_row et2-vbox::part(base) {
 	gap: 1px;
 }
+
+#mail-index_mailPreview_import_acemailstor_details::part(header),
+#mail-index_mailPreview_import_move_details::part(header) {
+	width: 100px;
+	height: 11px;
+	background-color: var(--sl-color-gray-150);
+	border-style: outset;
+}

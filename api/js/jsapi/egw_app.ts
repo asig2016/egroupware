@@ -804,6 +804,7 @@ export abstract class EgwApp
 	 */
 	async mergeAction(_action : egwAction, _selected : egwActionObject[])
 	{
+		debugger;
 		// Find what we need
 		let nm = null;
 		let action = _action;
@@ -828,6 +829,7 @@ export abstract class EgwApp
 			ids.push(split[1]);
 		}
 		let document = await this._getMergeDocument(nm?.getInstanceManager(), _action, _selected);
+		debugger;
 		if(!document.documents || document.documents.length == 0)
 		{
 			return;

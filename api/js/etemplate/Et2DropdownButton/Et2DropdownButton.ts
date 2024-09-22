@@ -136,7 +136,7 @@ export class Et2DropdownButton extends Et2WidgetWithSelectMixin(LitElement)
 	_optionTemplate(option : SelectOption) : TemplateResult
 	{
 		let icon = option.icon ? html`
-            <et2-image slot="prefix" src=${option.icon} icon></et2-image>` : '';
+			<et2-image slot="prefix" src=${option.icon} width="20px" height="20px"></et2-image>` : '';
 
 		return html`
             <sl-menu-item

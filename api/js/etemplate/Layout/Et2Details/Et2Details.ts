@@ -13,9 +13,10 @@ import {SlDetails} from "@shoelace-style/shoelace";
 import shoelace from "../../Styles/shoelace";
 import {property} from "lit/decorators/property.js";
 import {customElement} from "lit/decorators/custom-element.js";
+import {et2_IDetachedDOM} from "../../et2_core_interfaces";
 
 @customElement("et2-details")
-export class Et2Details extends Et2Widget(SlDetails)
+export class Et2Details extends Et2Widget(SlDetails) implements et2_IDetachedDOM
 {
 	static get styles()
 	{
@@ -149,6 +150,15 @@ export class Et2Details extends Et2Widget(SlDetails)
 		super.disconnectedCallback();
 		window.document.removeEventListener('mouseout', this._mouseOutEvent);
 	}
+
+	getDetachedAttributes(_attrs)	{}
+
+	getDetachedNodes()
+	{
+		return [this.getDOMNode()];
+	}
+
+	setDetachedAttributes(_nodes, _values) {}
 
 	/**
 	 * Handle mouse out event for hiding out details

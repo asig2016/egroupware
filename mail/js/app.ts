@@ -23,6 +23,10 @@ import type {Et2DatagridUpdateType} from "../../api/js/etemplate/Et2Datagrid/Et2
 import {Et2DatagridUpdateTypes} from "../../api/js/etemplate/Et2Datagrid/Et2Datagrid.types";
 import type {Et2Nextmatch} from "../../api/js/etemplate/Et2Nextmatch/Et2Nextmatch";
 import type {EgwFrameworkApp, FilterInfo} from "../../kdots/js/EgwFrameworkApp";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 import {MailCompose} from "./compose";
 import {formatJmapAddress, isPreferenceOn, JmapBodyResult, JmapMessageReference, JmapUserError, MailJmap} from "./jmap";
 import {renderAttachmentIndex} from "./attachmentIndex";
@@ -170,6 +174,11 @@ export class MailApp extends EgwApp
 	 * stores push activated acc ids
 	 */
 	push_active : any = {};
+
+	/**
+	 * ac-mail object
+	 */
+	acemailarch_obj: any = false;
 
 	private _compose : MailCompose;
 	private _jmap : MailJmap;
@@ -323,6 +332,11 @@ export class MailApp extends EgwApp
 			// Let mail's direct-JMAP path (see jmap.ts) answer NextMatch's regular row-fetch itself for Stalwart-backed accounts, instead of round-tripping through get_rows.
 			// Not from a popup: it shares this dataRegister with the window that opened it.
 			this.egw.dataRegisterFetch('mail', this.jmap.fetchRows, this.jmap);
+		}
+
+		// outside the is_popup() guard on purpose: compose.xet runs in a popup and uses it too
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
 		}
 	}
 
@@ -2717,6 +2731,15 @@ export class MailApp extends EgwApp
 		// the async re-renders below must not overwrite the preview once another row was selected
 		const isPreview = template && template === this.et2.getWidgetById('mailPreview');
 		const stillDisplayed = () => !isPreview || rowId === this.currentlyFocussed;
+		// every async re-render below goes through here: set_value() destroys and recreates the
+		// embedded acemailstor import panel (preview only), so the mail_id filled on selection
+		// is gone - initialize it again
+		const rerender = (content) =>
+		{
+			if (egwIsMobile() || !template || !stillDisplayed()) return;
+			template.set_value(content);
+			if (isPreview) this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+		};
 		data = data ?? egw.dataGetUIDdata(rowId).data ?? {};
 		data.emailTag = egw.preference('emailTag', 'mail') ?? 'onlyname';
 
@@ -2762,7 +2785,7 @@ export class MailApp extends EgwApp
 					data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 					// Update client cache to avoid resolving winmail.dat attachment again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data});
+					rerender({content:data});
 				}
 				else
 				{
@@ -2789,7 +2812,7 @@ export class MailApp extends EgwApp
 					await this.resolveAttachmentViewUrls(rowId, data.attachmentsBlock);
 					// Update client cache to avoid re-fetching the attachment block again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data, sel_options:sel_options});
+					rerender({content:data, sel_options:sel_options});
 					// body may have already finished loading (empty) before this resolved -
 					// retry the auto-index now that attachmentsBlock is known
 					this.retryAttachmentIndexForRow(rowId, data.attachmentsBlock);
@@ -2825,7 +2848,7 @@ export class MailApp extends EgwApp
 						data[field + 'address'] = formatted;
 					}
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content: data, sel_options: sel_options});
+					rerender({content: data, sel_options: sel_options});
 				});
 			});
 		}
@@ -2853,7 +2876,7 @@ export class MailApp extends EgwApp
 				if (changed)
 				{
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content: data, sel_options: sel_options});
+					rerender({content: data, sel_options: sel_options});
 				}
 			});
 		}
@@ -3170,6 +3193,7 @@ export class MailApp extends EgwApp
 								this.resolveSmimeAttachmentsBlock(this.et2.getWidgetById('mailPreview'), rowId, attachments);
 							}
 						});
+					this.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 				},
 				Math.min(this.inFlightRequests * 200, 300)
 			));
@@ -3381,8 +3405,20 @@ export class MailApp extends EgwApp
 			data.attachment_icon = 'attach';
 			data.attachments = 'attach';
 			egw.dataStoreUID(rowId, data);
-			this.renderMessageInto(template, rowId, data);
 			this.patchRow(rowId);
+			const isPreview = template === this.et2.getWidgetById('mailPreview');
+			// another row got selected while this was in flight - don't render it over that one
+			if (isPreview && rowId !== this.currentlyFocussed)
+			{
+				return;
+			}
+			this.renderMessageInto(template, rowId, data);
+			// renderMessageInto() recreated the embedded acemailstor import panel - initialize
+			// it again, same as renderMessageInto()'s own async re-renders
+			if (isPreview && !egwIsMobile())
+			{
+				this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+			}
 		}).catch((e) => console.error('MailApp.resolveSmimeAttachmentsBlock(): failed', e));
 	}
 

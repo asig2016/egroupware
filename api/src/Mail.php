@@ -5026,9 +5026,10 @@ class Mail
 		// if message is just a pdf, return it to browser to display
 		if ($output_no_body && ($_structure->getType() === 'application/pdf' || $_structure->getPrimaryType() === 'image'))
 		{
-			header('Content-Type: '.$_structure->getType());
-			echo $this->getAttachment($_uid, $_partID ?? '1', 0, true, $_folder)->getContents();
-			exit();
+			//asig: Disable functionality for now because it breakes acemailstor intgreation.
+			//header('Content-Type: '.$_structure->getType());
+			//echo $this->getAttachment($_uid, $_partID ?? '1', 0, true, $_folder)->getContents();
+			//exit();
 		}
 
 		switch($_structure->getPrimaryType())

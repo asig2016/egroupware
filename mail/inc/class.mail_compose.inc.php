@@ -304,6 +304,7 @@ class mail_compose
 	 */
 	function compose(array $_content=null,$msg=null, $_focusElement='to',$suppressSigOnTop=false, $isReply=false)
 	{
+		$readonlys = [];
 		if ($msg) Framework::message($msg);
 
 		if (!empty($GLOBALS['egw_info']['user']['preferences']['mail']['LastSignatureIDUsed']))
@@ -399,6 +400,24 @@ class mail_compose
 			$this->composeID = $_content['composeID'] = $this->generateComposeID();
 			$_content = $this->setDefaults($_content+['mailidentity' => $_REQUEST['preset']['identity'] ?? null]);
 		}
+
+		//hook mail_compose_prepare
+		$temp = Api\Hooks::process( array(
+			'location' => 'mail_compose_prepare',
+			'content' => $_content,
+			'readonlys' => $readonlys
+		));
+
+		foreach ($temp as $hook){
+			if($hook){
+				$_content =  array_merge($_content,$hook['content']);
+				$readonlys = array_merge($readonlys,$hook['readonlys']);
+				$preserv = array_merge($readonlys,$hook['preserv']);
+			}
+
+		}
+		unset($temp,$hook);
+
 		// VFS Selector was used
 		if (!empty($_content['selectFromVFSForCompose']))
 		{
@@ -1425,7 +1444,7 @@ class mail_compose
 		$content['html_toolbar'] = empty(Mail::$mailConfig['html_toolbar']) ?
 			implode(',', Etemplate\Widget\HtmlArea::$toolbar_default_list) : implode(',', Mail::$mailConfig['html_toolbar']);
 		//error_log(__METHOD__.__LINE__.array2string($content));
-		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,array(),$preserv,2);
+		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,$readonlys,$preserv,2);
 	}
 
 	/**

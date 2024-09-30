@@ -14,6 +14,7 @@ import {date} from "../lib/date.js";
 import {Et2Button} from "./Et2Button";
 import {Et2Tabs} from "../Layout/Et2Tabs/Et2Tabs";
 import {SelectOption} from "../Et2Select/FindSelectOptions";
+import {property} from "lit/decorators/property.js";
 
 /**
  * Class which implements the "et2-button-timestamp" tag
@@ -48,6 +49,13 @@ export class Et2ButtonTimestamper extends Et2Button
 		}
 	}
 
+	/**
+	 * accountField="account_lid"
+	 * "account_fullname";
+	 */
+	@property({type: String})
+	accountField: string = "account_lid";
+
 	constructor(...args : any[])
 	{
 		super(...args);
@@ -76,11 +84,11 @@ export class Et2ButtonTimestamper extends Et2Button
 		// Get properly formatted user name
 
 		// Try from account first, it's faster
-		const fromAccount = this.egw().user("account_fullname") || "";
+		const fromAccount = this.egw().user(this.accountField) || "";
 
 		if(fromAccount != "")
 		{
-			this.setText(text + fromAccount + ': ');
+			this.setText(fromAccount + ' ' + text + ': ');
 		}
 		else
 		{
@@ -88,7 +96,7 @@ export class Et2ButtonTimestamper extends Et2Button
 			this.egw().accounts('accounts').then((accounts) =>
 			{
 				const account = accounts.filter((option : SelectOption) => option.value == user)[0];
-				this.setText(text + account.label + ': ');
+				this.setText(account.label + ' ' + text + ': ');
 			});
 		}
 	}

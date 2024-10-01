@@ -88,7 +88,7 @@ export class Et2ButtonTimestamper extends Et2Button
 
 		if(fromAccount != "")
 		{
-			this.setText(text + fromAccount + ': ');
+			this.setText(fromAccount + text + ': ');
 		}
 		else
 		{
@@ -96,7 +96,7 @@ export class Et2ButtonTimestamper extends Et2Button
 			this.egw().accounts('accounts').then((accounts) =>
 			{
 				const account = accounts.filter((option : SelectOption) => option.value == user)[0];
-				this.setText(text + account.label + ': ');
+				this.setText(account.label + text + ': ');
 			});
 		}
 	}

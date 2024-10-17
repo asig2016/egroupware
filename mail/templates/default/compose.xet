@@ -83,7 +83,7 @@
                         <et2-description value="Subject"></et2-description>
                         <et2-textbox align="left" width="100%" id="subject" height="25" onchange="app.mail.subject2title"></et2-textbox>
                         <et2-hbox align="left">
-                            <et2-checkbox statustext="Change editor type" label="HTML" id="mimeType" onchange="app.mail.submitOnChange" tabindex="7" roTrue=" " roFalse="disable"></et2-checkbox>
+                            <et2-checkbox statustext="Change editor type" label="HTML" id="mimeType" onchange="app.mail.submitOnChange" tabindex="7" roTrue=" " roFalse="disable" hidden="@hide_expanders"></et2-checkbox>
                         </et2-hbox>
                     </row>
                 </rows>

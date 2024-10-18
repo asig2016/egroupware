@@ -1444,6 +1444,10 @@ class mail_compose
 		$content['html_toolbar'] = empty(Mail::$mailConfig['html_toolbar']) ?
 			implode(',', Etemplate\Widget\HtmlArea::$toolbar_default_list) : implode(',', Mail::$mailConfig['html_toolbar']);
 		//error_log(__METHOD__.__LINE__.array2string($content));
+		if($content['limit_mailacount_sel_option']){
+			$mailacc_sel_option = [ $content['mailaccount'] => $sel_options['mailaccount'][$content['mailaccount']]];
+			$sel_options['mailaccount'] = $mailacc_sel_option;
+		}
 		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,$readonlys,$preserv,2);
 	}
 

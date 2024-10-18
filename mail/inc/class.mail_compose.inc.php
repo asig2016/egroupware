@@ -1447,6 +1447,7 @@ class mail_compose
 		if($content['limit_mailacount_sel_option']){
 			$mailacc_sel_option = [ $content['mailaccount'] => $sel_options['mailaccount'][$content['mailaccount']]];
 			$sel_options['mailaccount'] = $mailacc_sel_option;
+			$preserv['limit_mailacount_sel_option'] = $content['limit_mailacount_sel_option'];
 		}
 		$etpl->exec('mail.mail_compose.compose',$content,$sel_options,$readonlys,$preserv,2);
 	}

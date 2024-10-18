@@ -405,8 +405,7 @@ class mail_compose
 		$temp = Api\Hooks::process( array(
 			'location' => 'mail_compose_prepare',
 			'content' => $_content,
-			'readonlys' => $readonlys,
-			'sel_options' => $sel_options
+			'readonlys' => $readonlys
 		));
 
 		foreach ($temp as $hook){
@@ -700,7 +699,7 @@ class mail_compose
 			$suppressSigOnTop = true;
 			if (!empty($composeCache['mailaccount']) && !empty($_content['mailaccount']) && $_content['mailaccount'] != $composeCache['mailaccount'])
 			{
-				$acc = Mail\Account::read( (int) $_content['mailaccount']);
+				$acc = Mail\Account::read($_content['mailaccount']);
 				//error_log(__METHOD__.__LINE__.array2string($acc));
 				$Identities = Mail\Account::read_identity($acc['ident_id'],true);
 				//error_log(__METHOD__.__LINE__.array2string($Identities));

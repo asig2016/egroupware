@@ -1316,7 +1316,7 @@ EOF;
 		}
 
 		// array of topmenu preferences items (orders of the items matter)
-		$topmenu_preferences = ['darkmode','prefs', 'acl','useraccount', 'cats', 'security'];
+		$topmenu_preferences = ['darkmode','prefs', 'acl','useraccount','userroles', 'cats', 'security'];
 
 		// set topmenu preferences items
 		if($GLOBALS['egw_info']['user']['apps']['preferences'])
@@ -1385,6 +1385,10 @@ EOF;
 				'title' => 'My Account',
 				'hook'  => 'user_account',
 				'icon'  => 'addressbook/accounts',
+			),
+			'userroles' => array(
+				'title' => 'My Roles',
+				'hook'  => 'user_roles',
 			),
 			'cats' => array(
 				'title' => 'Categories',
@@ -1458,6 +1462,16 @@ EOF;
 						'url'   => "javascript:egw.open_link('".self::link('/index.php?menuaction=addressbook.addressbook_ui.edit&account_id='.$GLOBALS['egw_info']['user']['account_id'])."','_blank','850x580')",
 					));
 				}
+				break;
+			case 'userroles':
+				$config = Config::read('phpgwapi');
+				$this->_add_topmenu_item(array(
+					'id' => $type,
+					'name' => 'userroles',
+					'title' => lang($types[$type]['title']),
+					'url'   => "javascript:egw.open_link('".
+						self::link('/index.php?menuaction=acclients.acclients_roles.index&user_id='.$GLOBALS['egw_info']['user']['account_id'])."','_blank','850x580')",
+				));
 				break;
 			default:
 				$this->_add_topmenu_item(array(

@@ -174,8 +174,8 @@ A.sieveRowInActive
 table tr.attachmentRow > td{
 	vertical-align: middle;
 }
-table tr.attachmentRow > td et2-description{
-	width: 84vw;
+table tr.attachmentRow .et2_link .useEllipsis {
+	width: 12vw;
 	overflow-wrap: anywhere;
 }
 table tr.attachmentRow > td > img {

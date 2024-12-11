@@ -158,6 +158,11 @@ trait UserContextTrait
 					$stat['gid'] = abs($get_params['gid']);
 				}
 				// continue with mode check based on url mount-parameters
+				//error_log(__METHOD__."(path=$path||stat[name]={$stat['name']},stat[mode]=".sprintf('%o',$stat['mode']).",check=$check - continue with mode check based on url mount-parameters");
+
+				if( !((int) $this->user > 0) ){
+					$this->user = $GLOBALS['egw_info']['user']['account_id'];
+				}
 			}
 			else
 			{

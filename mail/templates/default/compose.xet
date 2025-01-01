@@ -11,7 +11,7 @@
 							  onchange="app.mail.submitOnChange" tabindex="7" roTrue=" " roFalse="disable">
 				</et2-checkbox>
 			</et2-hbox>
-            <et2-vfs-select-dialog class="$cont[vfsNotAvailable] compose_egw_icons" title="Attach files" buttonLabel="attach" id="selectFromVFSForCompose" multiple="true" onchange="app.mail.vfsUploadForCompose"/>
+            <et2-vfs-select-dialog class="$cont[vfsNotAvailable] compose_egw_icons" path="@default_path" title="Attach files" buttonLabel="attach" id="selectFromVFSForCompose" multiple="true" onchange="app.mail.vfsUploadForCompose"/>
 			<et2-hbox  class="mail-compose_toolbar_assist" width="100%">
                 <file class="mail-compose_fileselector" statustext="Select file to attach to message" multiple="true" progress="attachments" onFinish="app.mail.uploadForCompose" onStart="app.mail.composeUploadStart" id="uploadForCompose" drop_target="mail-compose"/>
 				<et2-checkbox  statustext="check to save as infolog on send" id="to_infolog" selectedValue="on" unselectedValue="off" ></et2-checkbox>

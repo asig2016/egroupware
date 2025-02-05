@@ -4087,7 +4087,14 @@ export class et2_nextmatch_header_bar extends et2_DOMWidget implements et2_INext
 					{
 						// Not null is easy, just get values
 						const value = this.getInstanceManager().getValues(sub_header);
-						header.nextmatch.applyFilters(value[header.nextmatch.id]);
+						const custom_grid = header.nextmatch?.options?.settings?.grid;
+
+						if(custom_grid){
+							header.nextmatch.applyFilters(value[custom_grid][header.nextmatch.id]);
+						}else{
+							header.nextmatch.applyFilters(value[header.nextmatch.id]);
+						}
+
 					}
 				}
 				// In case this gets bound twice, it's important to return

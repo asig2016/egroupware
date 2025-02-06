@@ -92,6 +92,7 @@ window.fw_base = (function(){ "use strict"; return Class.extend(
 	 */
 	loadApplications: function (apps)
 	{
+		debugger;
 		//Close all open tabs, remove all applications from the application list
 		this.sidemenuUi.clean();
 		this.tabsUi.clean();
@@ -156,7 +157,10 @@ window.fw_base = (function(){ "use strict"; return Class.extend(
 			}
 
 			//If the opened field is set, add the application to the restore array.
-			if ((typeof app.opened != 'undefined') && (app.opened !== false) || app.status == 5)
+			if ((typeof app.opened != 'undefined') && (app.opened !== false) || app.status == 5 ||
+				app.internalName ===  'acilog' ||
+				app.internalName === 'acclients'
+			)
 			{
 				defaultApp = null;
 

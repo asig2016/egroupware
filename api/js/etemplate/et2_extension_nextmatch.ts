@@ -332,6 +332,11 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 	private template_promise : Promise<void>;
 
 	/**
+	 * Event handler reference: Prevents duplicate event listeners.
+	 */
+	private flagDivClickHandler;
+
+	/**
 	 * Constructor
 	 *
 	 * @memberOf et2_nextmatch
@@ -344,6 +349,8 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 		this.columns = [];
 		// keeps sorted columns
 		this.sortedColumnsList = [];
+
+		this.flagDivClickHandler = null;
 
 		// Directly set current col_filters from settings
 		jQuery.extend(this.activeFilters.col_filter, this.options.settings.col_filter);
@@ -406,32 +413,60 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 	 */
 	destroy()
 	{
+		debugger;
+		// Remove existing event listener from tab or container we are on
+		const tab = this.get_tab_info();
+		if (tab && 	tab.flagDiv && 	this.flagDivClickHandler ){
+			tab.flagDiv.removeEventListener("click", this.flagDivClickHandler);
+			this.flagDivClickHandler = null;
+		}
+
 		// Stop auto-refresh
 		if(this._autorefresh_timer)
 		{
 			window.clearInterval(this._autorefresh_timer);
 			this._autorefresh_timer = null;
 		}
+
 		// Unbind handler used for toggling autorefresh
-		jQuery(this.getInstanceManager().DOMContainer.parentNode).off('show.et2_nextmatch');
-		jQuery(this.getInstanceManager().DOMContainer.parentNode).off('hide.et2_nextmatch');
+		const container = this.getInstanceManager().DOMContainer.parentNode;
+		jQuery(container).off("hide.et2_nextmatch");
+		jQuery(container).off("show.et2_nextmatch");
 
 		// Free the grid components
 		this.dataview.destroy();
-		if(this.rowProvider)
-		{
+		this.dataview = null;
+
+		if ( this.rowProvider && typeof this.rowProvider.destroy === "function" ) {
 			this.rowProvider.destroy();
+			this.rowProvider = null;
 		}
 		if(this.controller)
 		{
 			this.controller.destroy();
+			this.controller = null;
 		}
 		if(this.dynheight)
 		{
 			this.dynheight.destroy();
+			this.dynheight = null;
+		}
+
+		if(this.selectPopup)
+		{
+			this.selectPopup.remove();
+			this.selectPopup = null;
 		}
 
 		super.destroy();
+
+		// Nullify object references to allow garbage collection.
+
+		// (Also null out any other DOM or component properties as needed.)
+		this.innerDiv = null;
+
+
+
 	}
 
 	getController()
@@ -1316,31 +1351,35 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 	 *
 	 * @returns {undefined}
 	 */
-	_getDynheight()
-	{
-		// Find the parent container, either a tab or the main container
-		const tab = this.get_tab_info();
+	 _getDynheight() {
+        // Find the parent container, either a tab or the main container
+        const tab = this.get_tab_info();
 
-		if(!tab)
-		{
-			return new et2_dynheight(this.getInstanceManager().DOMContainer, this.innerDiv, 100);
-		}
+        if (!tab) {
+            return new et2_dynheight(this.getInstanceManager().DOMContainer, this.innerDiv, 100);
+        } else if (tab && tab.contentDiv) {
+            // Bind a resize while we're here
+            if (tab.flagDiv) {
 
-		else if(tab && tab.contentDiv)
-		{
-			// Bind a resize while we're here
-			if(tab.flagDiv)
-			{
-				tab.flagDiv.addEventListener("click", (e) =>
-				{
-					window.setTimeout(() => this.resize(), 1);
-				});
-			}
-			return new et2_dynheight(tab.contentDiv, this.innerDiv, 100);
-		}
+				// Remove existing event listener if already attached
+                if (this.flagDivClickHandler) {
+                    tab.flagDiv.removeEventListener("click", this.flagDivClickHandler);
+                }
 
-		return false;
-	}
+                // Define the event handler
+                this.flagDivClickHandler = () => {
+                    window.setTimeout(() => this.resize(), 1);
+                };
+
+                // Attach the event listener
+                tab.flagDiv.addEventListener("click", this.flagDivClickHandler);
+            }
+            return new et2_dynheight(tab.contentDiv, this.innerDiv, 100);
+        }
+
+        return false;
+    }
+
 
 	/**
 	 * Generates the column caption for the given column widget

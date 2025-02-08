@@ -125,16 +125,22 @@ export class et2_dataview
 		if (this.grid)
 		{
 			this.grid.destroy();
+			this.grid = null;
 		}
 
 		// Free the row provider
 		if (this.rowProvider)
 		{
 			this.rowProvider.destroy();
+			this.rowProvider = null;
 		}
 
 		// Detatch the outer element
-		this.table.remove();
+		if( this.table ){
+			this.table.remove();
+			this.table = null;
+		}
+
 	}
 
 	/**

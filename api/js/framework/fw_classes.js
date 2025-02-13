@@ -58,11 +58,15 @@
 	 * destroy application object and its relative parts
 	 */
 	window.egw_fw_class_application.prototype.destroy = function () {
-		delete this.tab;
-		if (this.sidemenuEntry) this.sidemenuEntry.remove();
-		delete this.sidemenuEntry;
-		delete this.browser;
-		delete (framework.applications[this.appName]);
+		if(this.sidemenuEntry) {
+			this.sidemenuEntry.remove();
+		}
+		// Clear other properties that might reference DOM nodes
+		this.tab = null;
+		this.sidemenuEntry = null;
+		this.browser = null;
+		// Remove from the global registry:
+		delete framework.applications[this.appName];
 	};
 
 	/**

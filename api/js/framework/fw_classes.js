@@ -58,15 +58,37 @@
 	 * destroy application object and its relative parts
 	 */
 	window.egw_fw_class_application.prototype.destroy = function () {
-		if(this.sidemenuEntry) {
+		// 1) If there's a known array of event listeners, remove them
+		if (this._listeners) {
+			this._listeners.forEach(({ node, type, handler }) => {
+				node.removeEventListener(type, handler);
+			});
+			this._listeners = [];
+		}
+
+		// 2) If you are using Observers, disconnect them
+		if (this._observer) {
+			this._observer.disconnect();
+			this._observer = null;
+		}
+
+		// 3) Remove the DOM node (and any custom elements)
+		if (this.sidemenuEntry) {
+			// If child Shoelace elements need any teardown, do so here
+			// ...
 			this.sidemenuEntry.remove();
 		}
-		// Clear other properties that might reference DOM nodes
-		this.tab = null;
+
+		// 4) Null out references
 		this.sidemenuEntry = null;
+		this.tab = null;
 		this.browser = null;
-		// Remove from the global registry:
-		delete framework.applications[this.appName];
+		this.parentFw = null; // break potential circular reference
+
+		// 5) Remove from framework global registry
+		if (framework.applications[this.appName]) {
+			delete framework.applications[this.appName];
+		}
 	};
 
 	/**

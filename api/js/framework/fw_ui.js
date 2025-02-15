@@ -573,9 +573,49 @@ window.egw_fw_ui_tab.prototype.hideTabHeader = function()
  */
 window.egw_fw_ui_tab.prototype.remove = function()
 {
+	// Hide the tab if it’s still visible
 	this.hide();
-	jQuery(this.contentDiv).remove();
-	jQuery(this.headerDiv).remove();
+
+	// 1) Remove DOM
+	if (this.contentDiv) {
+		jQuery(this.contentDiv).remove();
+		this.contentDiv._parent = null;
+		this.contentDiv = null;
+	}
+	if (this.headerDiv) {
+		// If you bound a click or other event via jQuery, .remove() will unbind them
+		// But if you used .addEventListener, remove them or rely on jQuery as well
+
+		// Clear callback references
+		if (this.headerDiv._callbackObject) {
+			this.headerDiv._callbackObject.context = null;
+			this.headerDiv._callbackObject.proc = null;
+			this.headerDiv._callbackObject = null;
+		}
+
+		jQuery(this.headerDiv).remove();
+		this.headerDiv._parent = null;
+		this.headerDiv = null;
+	}
+
+	if (this.closeButton) {
+		jQuery(this.closeButton).remove();
+		this.closeButton._callbackObject = null;
+		this.closeButton._parent = null;
+		this.closeButton = null;
+	}
+
+	if (this.notificationDiv) {
+		jQuery(this.notificationDiv).remove();
+		this.notificationDiv = null;
+	}
+
+	// 2) Null out references
+	this.parent = null;
+	this.tag = null;
+	this.callback = null;
+	this.closeCallback = null;
+	this.browser = null; // If you had this reference
 };
 
 /**
@@ -804,17 +844,17 @@ window.egw_fw_ui_tabs.prototype.setCloseable = function(_closeable)
  */
 window.egw_fw_ui_tabs.prototype.clean = function()
 {
-	//Remove all tabs, clean the tabs array
+	// Remove all tabs
 	for (var i = 0; i < this.tabs.length; i++)
 	{
-		array_remove(this.tabs, i);
+		if (this.tabs[i] && typeof this.tabs[i].remove === 'function') {
+			this.tabs[i].remove();
+		}
 	}
+	this.tabs = [];
 
-	//Reset all arrays and references
-	this.tabs = new Array();
 	this.activeTab = null;
-	this.tabHistory = new Array();
-
+	this.tabHistory = [];
 	return true;
 };
 
@@ -975,10 +1015,28 @@ window.egw_fw_ui_category.prototype.close = function(_instantly)
 
 window.egw_fw_ui_category.prototype.remove = function()
 {
-	//Delete the content and header div
-	jQuery(this.contDiv).remove();
-	jQuery(this.headerDiv).remove();
+	if (this.contentDiv) {
+		jQuery(this.contentDiv).remove();
+		this.contentDiv._parent = null;
+		this.contentDiv = null;
+	}
+	if (this.headerDiv) {
+		jQuery(this.headerDiv).remove();
+		this.headerDiv._parent = null;
+		this.headerDiv = null;
+	}
+	if (this.contDiv) {
+		// If you still want that container in the DOM, maybe do not remove it,
+		// but if you do remove it, then you can null it out, too
+		this.contDiv = null;
+	}
+	// Null out other references
+	this.callback = null;
+	this.animationCallback = null;
+	this.tag = null;
+	this.catName = null;
 };
+
 
 /**
  * egw_fw_ui_scrollarea class
@@ -1084,6 +1142,22 @@ window.egw_fw_ui_scrollarea = function(_contDiv)
 	//Update - read height of the children elements etc.
 	this.update();
 }
+
+window.egw_fw_ui_scrollarea.prototype.remove = function()
+{
+	// If you used jQuery on scrollDiv for .on('mousewheel', ...), .remove() unbinds it:
+	if (this.scrollDiv) {
+		jQuery(this.scrollDiv).remove();
+		this.scrollDiv = null;
+	}
+	if (this.outerDiv) {
+		jQuery(this.outerDiv).remove();
+		this.outerDiv = null;
+	}
+	this.contDiv = null;
+	// Clear references, e.g. any intervals, timeouts, or other properties
+	// ...
+};
 
 window.egw_fw_ui_scrollarea.prototype.setScrollPos = function(_pos)
 {
@@ -1320,6 +1394,20 @@ window.egw_fw_ui_splitter = function(_contDiv, _orientation, _resizeCallback, _c
 
 	jQuery(this.contDiv).append(this.splitterDiv);
 }
+
+window.egw_fw_ui_splitter.prototype.remove = function()
+{
+	// InteractJS fix
+	interact(this.splitterDiv).unset(); // or draggable(false) if you just want to disable
+	jQuery(this.splitterDiv).remove();
+
+	this.splitterDiv._parent = null;
+	this.splitterDiv = null;
+	this.contDiv = null;
+	this.resizeCallback = null;
+	this.constraints = null;
+	this.tag = null;
+};
 
 window.egw_fw_ui_splitter.prototype.clipDelta = function(_delta)
 {

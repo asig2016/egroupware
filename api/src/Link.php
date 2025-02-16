@@ -314,7 +314,7 @@ class Link extends Link\Storage
 					'search',
 					'name','icon','query',
 					'mime','entry','entries',
-					'context_menu','getdata_fnt'
+					'context_menu','getdata_fnt','edit_tab',
 				)));
 			}
 		}

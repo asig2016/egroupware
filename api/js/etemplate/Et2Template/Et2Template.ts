@@ -521,7 +521,10 @@ export class Et2Template extends Et2Widget(LitElement)
 
 	protected getUrl()
 	{
-		if(this.url)
+		if(this.url === "null"){
+			debugger;
+		}
+		if(this.url && this.url !== "null")
 		{
 			return this.url;
 		}

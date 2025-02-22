@@ -14,6 +14,7 @@ import {IsEmail} from "../../api/js/etemplate/Validators/IsEmail";
 import {SelectOption} from "../../api/js/etemplate/Et2Select/FindSelectOptions";
 import {Et2StaticSelectMixin} from "../../api/js/etemplate/Et2Select/StaticOptions";
 import {classMap} from "lit/directives/class-map.js";
+import {egw} from "../../api/js/jsapi/egw_global";
 
 /**
  * Select widget customised for calendar owner, which can be a user
@@ -154,8 +155,8 @@ export class CalendarOwner extends Et2StaticSelectMixin(Et2Select)
 			if(Object.keys(missing_labels).length > 0)
 			{
 				// Proper label was not found by parent - ask directly
-				this.egw().json('calendar_owner_etemplate_widget::ajax_owner', [missing_labels], function(data)
-				{
+				this.egw().request('calendar_owner_etemplate_widget::ajax_owner', [missing_labels])
+					.then( (data) => {
 					for(let owner in data)
 					{
 						if(!owner || typeof owner == "undefined")
@@ -179,7 +180,7 @@ export class CalendarOwner extends Et2StaticSelectMixin(Et2Select)
 						}
 					}
 					this.requestUpdate("select_options");
-				}, this, true, this).sendRequest();
+				});
 			}
 		});
 	}

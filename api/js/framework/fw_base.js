@@ -603,13 +603,16 @@ window.fw_base = (function(){ "use strict"; return Class.extend(
 
 		//As a new tab might remove a row from the tab header, we have to resize all tab content browsers
 		 this.tag.parentFw.resizeHandler();
+
+		delete(this.tag.parentFw.tabApps[this.tag.appName]);
+		this.tag.parentFw._setTabAppsSession(this.tag.parentFw.tabApps);
+
+
 		if (app.isFrameworkTab)
 		{
 			app.destroy();
 		}
 
-		delete(this.tag.parentFw.tabApps[this.tag.appName]);
-		this.tag.parentFw._setTabAppsSession(this.tag.parentFw.tabApps);
 	 },
 
 	/**

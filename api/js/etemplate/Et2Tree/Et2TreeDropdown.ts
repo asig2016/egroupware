@@ -16,6 +16,7 @@ import {Et2InputWidgetInterface} from "../Et2InputWidget/Et2InputWidget";
 import {Required} from "../Validators/Required";
 import {SelectOption} from "../Et2Select/FindSelectOptions";
 import {EgwMenuShoelace} from "../../egw_action/EgwMenuShoelace";
+import {Et2Link} from "../Et2Link/Et2Link";
 
 
 interface TreeSearchResults extends SearchResultsInterface<TreeItemData>
@@ -210,6 +211,19 @@ export class Et2TreeDropdown extends SearchMixin<Constructor<any> & Et2InputWidg
 			}
 		}
 
+		//For ajax populated tree: If value is not found in select_options get displayLabel from egw()?.link_title
+		if( !this.multiple && changedProperties.has("value") &&
+			this.value &&
+			this.select_options.length === 0
+		)
+		{
+			this.egw()?.link_title(this.app, this.value, true).then(title =>
+			{
+				this.displayLabel = title || Et2Link.MISSING_TITLE;
+			});
+
+		}
+
 		if(changedProperties.has("value"))
 		{
 			// Base off this.value, not this.getValue(), to ignore readonly
@@ -252,6 +266,16 @@ export class Et2TreeDropdown extends SearchMixin<Constructor<any> & Et2InputWidg
 			if(option)
 			{
 				this.displayLabel = option.label ?? option.text;
+			}else{
+
+				this.displayLabel = '??';
+
+				this.egw()?.link_title(this.app, this.value, true).then(title =>
+				{
+					this.displayLabel = title || Et2Link.MISSING_TITLE;
+					this.requestUpdate("value", oldValue);
+				});
+
 			}
 		}
 
@@ -727,6 +751,10 @@ export class Et2TreeDropdown extends SearchMixin<Constructor<any> & Et2InputWidg
 		if(!this.multiple)
 		{
 			this.value = event?.detail?.selection?.map(i => i.id || i.value) ?? []
+			//For ajax populated tree: If value is not found in select_options get displayLabel from tree leaf
+			if( this.value && this.select_options.length === 0 ){
+				this.displayLabel = event.detail.selection[0].renderOptions.host.innerText;
+			}
 		}
 		else
 		{

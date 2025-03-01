@@ -308,7 +308,7 @@ export class etemplate2
 						}, self, et2_IResizeable);
 					}
 				}
-			}, 100);
+			}, 400);
 		}
 		// Initial resize needs to be resized immediately (for instance for nextmatch resize)
 		else if(this._widgetContainer)

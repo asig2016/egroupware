@@ -241,7 +241,7 @@ export class Et2Details extends Et2Widget(SlDetails)
 
 	render()
 	{
-		const isRtl = this.matches(':dir(rtl)');
+		const isRtl = this.matches('[dir="rtl"]');
 
 		return html`
             <div

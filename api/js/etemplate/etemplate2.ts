@@ -256,6 +256,7 @@ export class etemplate2
 	 */
 	public resize(e)
 	{
+		debugger;
 		const event = e;
 		const self = this;
 		let excess_height : number | boolean = false;
@@ -275,6 +276,7 @@ export class etemplate2
 			}
 			this.resize_timeout = setTimeout(function()
 			{
+				debugger;
 				self.resize_timeout = false;
 				if(self._widgetContainer)
 				{
@@ -308,7 +310,7 @@ export class etemplate2
 						}, self, et2_IResizeable);
 					}
 				}
-			}, 400);
+			}, 1000);
 		}
 		// Initial resize needs to be resized immediately (for instance for nextmatch resize)
 		else if(this._widgetContainer)

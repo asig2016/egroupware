@@ -29,6 +29,11 @@ import {
 import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import {Et2VfsSelectButton} from "../../api/js/etemplate/Et2Vfs/Et2VfsSelectButton";
 import {et2_nextmatch} from "../../api/js/etemplate/et2_extension_nextmatch";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
+
 /* required dependency, commented out because no module, but egw:uses is no longer parsed
 */
 var keepFromExpander;
@@ -108,6 +113,12 @@ app.classes.mail = AppJS.extend(
 	push_active: {},
 
 	/**
+	 * ac-mail object
+	*/
+
+	acemailarch_obj: false,
+
+	/**
 	 * Initialize javascript for this application
 	 *
 	 * @memberOf mail
@@ -130,6 +141,11 @@ app.classes.mail = AppJS.extend(
 				},
 				this
 			);
+
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
+		}
+
 	},
 
 	/**
@@ -1406,6 +1422,7 @@ app.classes.mail = AppJS.extend(
 				console.log(rowId);
 				// Request email body from server
 				IframeHandle.set_src(egw.link('/index.php',{menuaction:'mail.mail_ui.loadEmailBody',_messageID:rowId}));
+				self.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 				jQuery(IframeHandle.getDOMNode()).on('load', function(e){
 					self.resolveExternalImages (this.contentWindow.document);
 				});

@@ -46,6 +46,9 @@
             </columns>
             <rows>
                 <row>
+                    <et2-select id="acSelect"/>
+                </row>
+                <row>
                     <et2-description  for="role" value="Role"></et2-description>
                     <et2-hbox>
                         <et2-textbox  id="role" tabindex="20" width="60%" maxlength="128" autocomplete="section-one"></et2-textbox>

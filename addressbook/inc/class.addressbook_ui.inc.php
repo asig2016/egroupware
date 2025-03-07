@@ -2934,6 +2934,11 @@ class addressbook_ui extends addressbook_bo
 				//error_log(__METHOD__."() changed tabs=".array2string($tabs));
 			}
 		}
+
+		for ($x = 10000; $x <= 14000; $x++) {
+			$sel_options['acSelect'][$x] = 'Test'.$x;
+		}
+
 		return $this->tmpl->exec('addressbook.addressbook_ui.edit', $content, $sel_options, $readonlys, $preserve, 2);
 	}
 

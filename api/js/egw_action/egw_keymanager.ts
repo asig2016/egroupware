@@ -92,6 +92,25 @@ function ready(fn)
 	}
 }
 
+export function contextMenuHandler(event: MouseEvent): boolean
+{
+	// Check for an actual "keyboard-like" context menu
+	if (!(event.x === 1 && event.y === 1))
+	{
+		return true;
+	}
+	// If no Ctrl key, pass a "MENU" key event to our global key handler
+	if (
+		!event.ctrlKey &&
+		egw_keyHandler(EGW_KEY_MENU, event.shiftKey, event.ctrlKey || event.metaKey, event.altKey)
+	)
+	{
+		event.preventDefault();
+		return false;
+	}
+	return true;
+}
+
 /**
  * Register the onkeypress handler on the document
  */
@@ -133,25 +152,13 @@ ready(() => {//waits for DOM ready
 		}
 	});
 });
+
+
+
 /**
  * Required to catch the context menu
  */
-window.addEventListener("contextmenu", function(event)
-{
-	// Check for actual key press
-	if(!(event.x == 1 && event.y == 1))
-	{
-		return true;
-	}
-	if (!event.ctrlKey && egw_keyHandler(EGW_KEY_MENU, event.shiftKey, event.ctrlKey || event.metaKey, event.altKey))
-	{
-		// If the key handler successfully passed the key event to some
-		// subcomponent, prevent the default action
-		event.preventDefault();
-		return false;
-	}
-	return true;
-});
+window.addEventListener("contextmenu", contextMenuHandler);
 
 
 /**

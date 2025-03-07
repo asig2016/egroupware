@@ -1,4 +1,4 @@
- /**
+/**
  * EGroupware clientside API object
  *
  * @license http://opensource.org/licenses/gpl-license.php GPL - GNU General Public License
@@ -46,7 +46,8 @@
 		{
 			if (_cond(_arr[i]))
 			{
-				_arr[i].instance && _arr[i].instance.unregisterAllPlugins();
+				_arr[i].instance && _arr[i].instance.unregisterAllPlugins &&
+				_arr[i].instance.unregisterAllPlugins();
 				_arr.splice(i, 1);
 			}
 		}
@@ -111,7 +112,7 @@
 	/**
 	 * The getWndModules function returns all window specific api modules for
 	 * the given window. If those window specific api instances were not created
-	 * yet, the functions creates them.
+	 * yet, the function creates them.
 	 *
 	 * @param _egw is a reference to the global _egw instance and is passed as
 	 * 	a context to the module instance.
@@ -119,7 +120,7 @@
 	 * @param _moduleInstances is the the object which contains the application
 	 * 	and window specific module instances.
 	 * @param _instances refers to all api instances.
-	 * @param _window is the window for which the module instances should get
+	 * @param _window is the window for which the module instances should be
 	 * 	created.
 	 */
 	function getWndModules(_egw, _modules, _moduleInstances, _instances, _window)
@@ -136,21 +137,33 @@
 			'modules': mods
 		});
 
-		// Add an eventlistener for the "onunload" event -- if "onunload" gets
-		// called, we have to delete the module slot created above
-		var fnct = function() {
+		// --- Start of memory-leak fix: Switch from "beforeunload" to "unload"
+		//     and detach the listener after cleanup.
+		function fnct() {
 			cleanupEgwInstances(_instances, _moduleInstances, function(_w) {
 				return _w.window === _window;
 			});
-		};
+
+			// Remove the unload listener so the closure can't keep references alive
+			if (_window.removeEventListener)
+			{
+				_window.removeEventListener('unload', fnct, false);
+			}
+			else if (_window.detachEvent)
+			{
+				_window.detachEvent('onunload', fnct);
+			}
+		}
+
 		if (_window.attachEvent)
 		{
-			_window.attachEvent('onbeforeunload', fnct);
+			_window.attachEvent('onunload', fnct);
 		}
 		else
 		{
-			_window.addEventListener('beforeunload', fnct, false);
+			_window.addEventListener('unload', fnct, false);
 		}
+		// --- End of memory-leak fix
 
 		// Otherwise create the window specific instances
 		for (var key in _modules)
@@ -331,9 +344,12 @@
 		_moduleInstances.glo[_module] = globalExtension;
 
 		// Merge the extension into the global instances
-		for (var i = 0; i < _instances['~global~'].length; i++)
+		if (_instances['~global~'])
 		{
-			mergeObjects(_instances['~global~'][i].instance, globalExtension);
+			for (var i = 0; i < _instances['~global~'].length; i++)
+			{
+				mergeObjects(_instances['~global~'][i].instance, globalExtension);
+			}
 		}
 
 		for (var key in _moduleInstances.app)
@@ -345,9 +361,12 @@
 
 			// Merge the extension into all instances for
 			// the current application
-			for (var i = 0; i < _instances[key].length; i++)
+			if (_instances[key])
 			{
-				mergeObjects(_instances[key][i].instance, appExtension);
+				for (var i = 0; i < _instances[key].length; i++)
+				{
+					mergeObjects(_instances[key][i].instance, appExtension);
+				}
 			}
 		}
 	}
@@ -373,7 +392,7 @@
 					if (_instances[key][j].window === wnd)
 					{
 						mergeObjects(_instances[key][j].instance,
-								wndExtension);
+							wndExtension);
 					}
 				}
 			}
@@ -414,7 +433,7 @@
 		var instances = {};
 
 		/**
-		 * Set a interval which is used to cleanup unused API instances all 10
+		 * Set an interval which is used to cleanup unused API instances every 10
 		 * seconds.
 		 */
 		window.setInterval(function() {
@@ -423,7 +442,7 @@
 					return w.window && w.window.closed;
 				}
 				catch(e) {
-					// IE(11) seems to throw a permission denied error, when accessing closed property
+					// IE(11) might throw a permission denied error when accessing closed
 					return true;
 				}
 			});
@@ -431,8 +450,8 @@
 
 		/**
 		 * The egw function returns an instance of the client side api. If no
-		 * parameter is given, an egw istance, which is not bound to a certain
-		 * application is returned.
+		 * parameter is given, an egw instance, which is not bound to a certain
+		 * application, is returned.
 		 * You may pass either an application name (as string) to the egw
 		 * function and/or a window object. If you specify both, the app name
 		 * has to preceed the window object reference. If no window object is
@@ -474,7 +493,7 @@
 
 			// Generate an API instance
 			return getEgwInstance(egw, modules, moduleInstances, instances,
-					_app, _window);
+				_app, _window);
 		};
 
 		var globalEgw = {
@@ -516,8 +535,7 @@
 			 * instance, 'api' is returned.
 			 */
 			getAppName: function() {
-				// Otherwise return the correct application name.
-				return this.app_name() || this.appName || 'api';
+				return this.app_name && this.app_name() || this.appName || 'api';
 			},
 
 			/**
@@ -558,8 +576,7 @@
 						// Create new application specific instances and merge
 						// those into all api instances for that application
 						case egw.MODULE_APP_LOCAL:
-							mergeAppLocalModule(_module, _code, instances,
-									moduleInstances);
+							mergeAppLocalModule(_module, _code, instances, moduleInstances);
 							break;
 
 
@@ -577,9 +594,9 @@
 			/**
 			 * Very similar to the egw function itself, but the module function
 			 * returns just the functions exported by a single extension -- in
-			 * this way extensions themselve are capable of accessing each
-			 * others functions while they are being instanciated. Yet you
-			 * should be carefull not to create any cyclic dependencies.
+			 * this way extensions themselves are capable of accessing each
+			 * others' functions while they are being instantiated. Yet you
+			 * should be careful not to create any cyclic dependencies.
 			 *
 			 * @param _module is the name of the module
 			 * @param _for may either be a string describing an application,
@@ -604,7 +621,7 @@
 					{
 						var mods = moduleInstances.app[_for];
 
-						// Otherwise just instanciate the module if it has not
+						// Otherwise just instantiate the module if it has not
 						// been created yet.
 						if (typeof mods[_module] === 'undefined')
 						{
@@ -663,7 +680,7 @@
 					}
 				}
 
-				// Now update all already instanciated instances
+				// Now update all already instantiated instances
 				for (var key in instances)
 				{
 					for (var i = 0; i < instances[key].length; i++)

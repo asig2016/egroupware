@@ -394,25 +394,29 @@ window.fw_base = (function(){ "use strict"; return Class.extend(
 				// reliable init sidebox, as app.js might initialise earlier
 				if (typeof app[_app.appName] == 'object' && jQuery('#favorite_sidebox_'+_app.appName, this.sidemenuDiv).length)
 				{
-					var sidebox = jQuery('#favorite_sidebox_'+_app.appName, this.sidemenuDiv)?.getElementsByTagName('ul')[0];
-					var self = this;
-					var currentAppName = _app.appName;
+					if( typeof jQuery('#favorite_sidebox_'+_app.appName, this.sidemenuDiv).getElementsByTagName === 'function' ){
+
+						var sidebox = jQuery('#favorite_sidebox_'+_app.appName, this.sidemenuDiv).getElementsByTagName('ul')[0];
+
+						var self = this;
+						var currentAppName = _app.appName;
 
 
-					let sortablejs = Sortable.create(sidebox, {
-						ghostClass: 'ui-fav-sortable-placeholder',
-						draggable: 'li:not([data-id$="add"])',
-						delay: 25,
-						dataIdAttr: 'data-id',
-						onSort: function(event)
-						{
-							let favSortedList = sortablejs.toArray();
-							self.egw.set_preference(currentAppName, 'fav_sort_pref', favSortedList);
-							self._refresh_fav_nm();
-						}
-					});
+						let sortablejs = Sortable.create(sidebox, {
+							ghostClass: 'ui-fav-sortable-placeholder',
+							draggable: 'li:not([data-id$="add"])',
+							delay: 25,
+							dataIdAttr: 'data-id',
+							onSort: function(event)
+							{
+								let favSortedList = sortablejs.toArray();
+								self.egw.set_preference(currentAppName, 'fav_sort_pref', favSortedList);
+								self._refresh_fav_nm();
+							}
+						});
 
-					if (sidebox.length) app[_app.appName]._init_sidebox.call(app[_app.appName], sidebox);
+						if (sidebox.length) app[_app.appName]._init_sidebox.call(app[_app.appName], sidebox);
+					}
 				}
 			}
 		}

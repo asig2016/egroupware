@@ -142,6 +142,12 @@ app.classes.mail = AppJS.extend(
 				},
 				this
 			);
+
+			if( this.acemailarch_obj === false ){
+
+				this.acemailarch_obj = new acemailarch();
+
+			}
 	},
 
 	/**

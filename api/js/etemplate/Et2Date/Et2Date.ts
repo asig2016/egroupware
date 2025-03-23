@@ -519,60 +519,81 @@ export class Et2Date extends Et2InputWidget(LitFlatpickr)
 	/**
 	 * Override some flatpickr defaults to get things how we like it
 	 *
+	 * IMPORTANT CHANGE HERE:
+	 *  super.getOptions() now returns a Promise. However, we keep getOptions() returning
+	 *  an "object" in its immediate return, so the rest of the code can still do:
+	 *  let opts = this.getOptions();
+	 *  and get a plain object.
+	 *
+	 *  We immediately create a defaultOptions object. Then we asynchronously merge in
+	 *  whatever super.getOptions() resolves to. So any code that needs the final super
+	 *  options *immediately* should be adapted to wait or handle that it's still pending.
+	 *
 	 * @see https://flatpickr.js.org/options/
 	 * @returns {any}
 	 */
 	public getOptions()
 	{
-		let options = super.getOptions();
+		// 1) Make a local object with default values
+		const defaultOptions = {
+			altFormat: <string> this.egw()?.preference("dateformat") || "Y-m-d",
+			altInput: true,
+			allowInput: true,
+			dateFormat: "Y-m-dT00:00:00\\Z",
+			weekNumbers: true,
+			// wrap = false, etc.
+			onDayCreate: this._onDayCreate,
+			onChange: this._updateValueOnChange.bind(this),
+			onReady: this._onReady.bind(this),
+			// Remove inert attribute on open
+			onOpen: [() => {
+				this._instance?.calendarContainer?.removeAttribute("inert");
+			}],
+			plugins: [
+				// Turn on scroll wheel support
+				//@ts-ignore
+				new scrollPlugin()
+			]
+		};
 
-		options.altFormat = <string>this.egw()?.preference("dateformat") || "Y-m-d";
-		options.altInput = true;
-		options.allowInput = true;
-		options.dateFormat = "Y-m-dT00:00:00\\Z";
-		options.weekNumbers = true;
-		// Wrap needs to be false because flatpickr can't look inside et2-textbox and find the <input> it wants
-		// We provide it directly through findInputField()
-		options.wrap = false;
-
-		options.onDayCreate = this._onDayCreate;
-
-		this._localize(options);
-
-		if(this.inline)
-		{
-			options.inline = this.inline;
-		}
-		if(this.placement)
-		{
-			options.position = this._convert_placement(this.placement);
-		}
-
-		options.plugins = [
-			// Turn on scroll wheel support
-			// @ts-ignore TypeScript can't find scrollPlugin, but rollup does
-			new scrollPlugin()
-		];
-		// Add "Ok" and "today" buttons
+		// 2) Add "Ok" and "Today" buttons to the plugin array as before
 		const buttons = this._buttonPlugin();
-		if(buttons)
+		if (buttons)
 		{
-			options.plugins.push(buttons)
+			defaultOptions.plugins.push(buttons);
 		}
 
+		// 3) Localize firstDayOfWeek, etc.
+		this._localize(defaultOptions);
 
-		// Listen for flatpickr change so we can update internal value, needed for validation
-		options.onChange = this._updateValueOnChange;
-		options.onReady = this._onReady;
-
-		// Remove inert attribute so we can work in Et2Dialog
-		options.onOpen = [() =>
+		// 4) If inline or placement are set, update accordingly
+		if (this.inline)
 		{
-			this._instance.calendarContainer?.removeAttribute("inert")
-		}];
+			defaultOptions.inline = this.inline;
+		}
+		if (this.placement)
+		{
+			defaultOptions.position = this._convert_placement(this.placement);
+		}
 
-		return options;
+		// 5) Now, super.getOptions() is a Promise. Let's merge it into defaultOptions.
+		Promise.resolve(super.getOptions()).then((superOpts:any) =>
+		{
+			// Merge super's result into our defaultOptions
+			Object.assign(defaultOptions, superOpts);
+			// Some final tweaks if needed:
+			// (Re-) apply or override anything from super if we must
+			defaultOptions.altFormat = <string> this.egw()?.preference("dateformat") || "Y-m-d";
+			// etc. as you wish
+		})
+			.catch(() => {
+				// If super.getOptions() rejects for some reason, ignore or handle error
+			});
+
+		// 6) Return your local object right away (synchronously)
+		return defaultOptions;
 	}
+
 
 	/**
 	 * Handle click on shortcut button(s) like "Today"

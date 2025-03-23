@@ -50,6 +50,15 @@ class admin_hooks
 				'link' => false,
 				'icon' => false
 			);
+
+			$file['testml'] =  [
+				'text' => 'testml',
+				'icon' => 'preferences',
+				//'link' =>  "javascript:egw.openPopup('".Egw::link('/index.php',array('menuaction' => 'achelper.achelper_testml.edit'),false)."',850,600,'_blank')"
+				//'link' =>  "javascript:egw.openPopup('".Egw::link('/index.php',array('menuaction' => 'acclients.acclients_orders.view','id'=> 1),false)."',850,600,'_blank')"
+				'link' =>  "javascript:egw.openPopup('".Egw::link('/index.php',array('menuaction' => 'addressbook.addressbook_ui.edit','contact_id'=> 1),false)."',850,600,'_blank')"
+			];
+
 			display_sidebox($appname,lang('Admin'),$file);
 			return;
 		}

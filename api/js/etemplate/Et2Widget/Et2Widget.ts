@@ -908,9 +908,11 @@ const Et2WidgetMixin = <T extends Constructor>(superClass : T) =>
 			{
 				options.value = this.get_value();
 			}
+			/*
 			console.groupCollapsed("Deprecated widget.options use")
 			console.trace("Something called widget.options on ", this);
 			console.groupEnd();
+			*/
 			return options;
 		}
 

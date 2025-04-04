@@ -4158,29 +4158,15 @@ export class et2_nextmatch_header_bar extends et2_DOMWidget implements et2_INext
 					else
 					{
 						// Not null is easy, just get values, the nextmatch could be inside a grid that whz we use the find key function
+						const nmpath = header.nextmatch.getPath().concat(header.nextmatch.id);
 						const value = this.getInstanceManager().getValues(sub_header);
 
-						function findKey(obj: any, key: string): any | null {
-							if (typeof obj !== "object" || obj === null) return null;
-
-							if (obj.hasOwnProperty(key)) {
-								return obj[key]; // Return the value of the matched key
-							}
-
-							for (const k in obj) {
-								if (typeof obj[k] === "object") {
-									const result = findKey(obj[k], key);
-									if (result !== null) return result;
-								}
-							}
-
-							return null; // Return null if the key is not found
+						function getNestedValueByPath(obj: any, path: string[]): any {
+							return path.reduce((acc, part) => acc && acc[part], obj);
 						}
 
-						const filters = findKey(value, header.nextmatch.id);
-
+						const filters = getNestedValueByPath(value, nmpath);
 						header.nextmatch.applyFilters(filters);
-
 
 					}
 				}

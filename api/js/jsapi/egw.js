@@ -321,7 +321,7 @@ window.app = {classes: {}};
 
 		// set sidebox for tabed templates
 		var sidebox = egw_script.getAttribute('data-setSidebox') || jQuery('#late-sidebox').attr('data-setSidebox');
-		if (window.framework && sidebox && sidebox !== 'null')
+		if (window.framework && new URLSearchParams(window.location.search).has('iframe') === false && sidebox && sidebox !== 'null')
 		{
 			window.framework.setSidebox.apply(window.framework, JSON.parse(sidebox));
 		}

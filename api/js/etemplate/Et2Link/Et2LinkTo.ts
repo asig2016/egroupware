@@ -154,9 +154,14 @@ export class Et2LinkTo extends Et2InputWidget(LitElement)
 			{
 				if(files.length > 0 && !this.disabled && !this.readonly)
 				{
-					this.pasteButton.removeAttribute("disabled");
+					//this.pasteButton.removeAttribute("disabled");
 				}
 			});
+		}
+
+		if( !this.disabled && !this.readonly )
+		{
+			this.pasteButton?.removeAttribute("disabled");
 		}
 
 		return html`

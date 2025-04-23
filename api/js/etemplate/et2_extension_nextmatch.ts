@@ -2250,6 +2250,7 @@ export class et2_nextmatch extends et2_DOMWidget implements et2_IResizeable, et2
 				self.activeFilters.selectcols.push('lettersearch');
 			}
 			//self.getInstanceManager().submit();
+			self.applyFilters();
 
 			self.selectPopup = null;
 		};

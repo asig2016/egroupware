@@ -24,13 +24,14 @@ import {EgwAction} from "../../api/js/egw_action/EgwAction";
 import {EgwActionObject} from "../../api/js/egw_action/EgwActionObject";
 import type {Et2Button} from "../../api/js/etemplate/Et2Button/Et2Button";
 import {LitElement} from "lit";
+import {acApp} from "../../achelper/js/acapp";
 
 /**
  * UI for Admin
  *
  * @augments AppJS
  */
-class AdminApp extends EgwApp
+class AdminApp extends acApp
 	/**
 	 * @lends app.classes.admin
 	 */

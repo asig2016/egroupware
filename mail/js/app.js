@@ -30,6 +30,10 @@ import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import {Et2VfsSelectButton} from "../../api/js/etemplate/Et2Vfs/Et2VfsSelectButton";
 import {et2_nextmatch} from "../../api/js/etemplate/et2_extension_nextmatch";
 import {addAttachmentPlaceholder, preSetToggledOnActions, setPredefinedAddresses} from "./mailAppJsFunctions";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 /* required dependency, commented out because no module, but egw:uses is no longer parsed
 */
 var keepFromExpander;
@@ -479,8 +483,14 @@ app.classes.mail = AppJS.extend(
 				if (composeToolbar._actionManager.getActionById('smime_sign') &&
 						composeToolbar._actionManager.getActionById('smime_encrypt'))
 				{
-					if (smime_sign.getValue() == 'on') composeToolbar.checkbox('smime_sign', true);
-					if (smime_encrypt.getValue() == 'on') composeToolbar.checkbox('smime_encrypt', true);
+					if (smime_sign.getValue() == 'on')
+					{
+						composeToolbar.getWidgetById('smime_sign').value = true;
+					}
+					if (smime_encrypt.getValue() == 'on')
+					{
+						composeToolbar.getWidgetById('smime_encrypt').value = true;
+					}
 				}
 				break;
 			case 'mail.view':
@@ -491,8 +501,6 @@ app.classes.mail = AppJS.extend(
 		}
 		// set image_proxy for resolveExternalImages
 		this.image_proxy = this.et2.getArrayMgr('content').getEntry('image_proxy') || 'https://';
-
-		this.preSetToggledOnActions ();
 	},
 
 	/**
@@ -1262,7 +1270,10 @@ app.classes.mail = AppJS.extend(
 			dataElem.data = jQuery.extend(dataElem.data, content);
 
 			var toolbaractions = ((typeof dataElem != 'undefined' && typeof dataElem.data != 'undefined' && typeof dataElem.data.displayToolbaractions != 'undefined')?JSON.parse(dataElem.data.displayToolbaractions):undefined);
-			if (toolbaractions) this.et2.getWidgetById('displayToolbar').set_actions(toolbaractions);
+			if (toolbaractions)
+			{
+				this.et2.getWidgetById('displayToolbar').actions = toolbaractions;
+			}
 		}
 	},
 
@@ -5668,27 +5679,36 @@ app.classes.mail = AppJS.extend(
 	 */
 	compose_submitAction: function (_action)
 	{
-		if (this.compose_integrate_submit() && _action) return false;
+		let wait = Promise.resolve();
+		if (_action && (wait = this.compose_integrate_submit()) && wait === true)
+		{
+			return false;
+		}
 
 		if (this.mailvelope_editor)
 		{
 			var self = this;
-			this.mailvelopeGetCheckRecipients().then(function(_recipients)
+			wait = wait.then(() =>
 			{
-				return self.mailvelope_editor.encrypt(_recipients);
-			}).then(function(_armored)
-			{
-				self.et2.getWidgetById('mimeType').set_value(false);
-				self.et2.getWidgetById('mail_plaintext').set_disabled(false);
-				self.et2.getWidgetById('mail_plaintext').set_value(_armored);
-				self.et2._inst.submit();
-			}).catch(function(_err)
-			{
-				self.egw.message(_err.message, 'error');
+				this.mailvelopeGetCheckRecipients().then(function (_recipients)
+				{
+					return self.mailvelope_editor.encrypt(_recipients);
+				}).then(function (_armored)
+				{
+					self.et2.getWidgetById('mimeType').set_value(false);
+					self.et2.getWidgetById('mail_plaintext').set_disabled(false);
+					self.et2.getWidgetById('mail_plaintext').set_value(_armored);
+				}).catch(function (_err)
+				{
+					self.egw.message(_err.message, 'error');
+				});
 			});
 			return false;
 		}
-		this.et2._inst.submit(null, 'Please wait while sending your mail');
+		wait.then(() =>
+		{
+			this.et2._inst.submit(null, 'Please wait while sending your mail');
+		});
 	},
 
 	/**
@@ -5696,55 +5716,42 @@ app.classes.mail = AppJS.extend(
 	 * and takes care of mail integration modules to popup entry selection
 	 * dialog to give user a choice to which entry of selected app the compose
 	 * should be integereated.
-	 * @param {int|boolean} _integIndex
 	 *
-	 * @returns {Boolean} return true if to_tracker is checked otherwise false
+	 * @returns {Promise<void>}
 	 */
-	compose_integrate_submit: function (_integIndex)
+	compose_integrate_submit: async function ()
 	{
-		if (_integIndex == false) return false;
-		var index = _integIndex || 0;
-		var integApps = ['to_tracker', 'to_infolog', 'to_calendar'];
-		var subject = this.et2.getWidgetById('subject');
-		var toolbar = this.et2.getWidgetById('composeToolbar');
-		var to_integrate_ids = this.et2.getWidgetById('to_integrate_ids');
-		var integWidget= {};
-		var self = this;
+		const wait = [];
+		const integApps = ['to_tracker', 'to_infolog', 'to_calendar'];
+		const subject = this.et2.getWidgetById('subject');
+		const toolbar = this.et2.getWidgetById('composeToolbar');
+		const to_integrate_ids = this.et2.getWidgetById('to_integrate_ids');
+		let integWidget = {};
+		const self = this;
 
-		integWidget = this.et2.getWidgetById(integApps[index]??"");
-		if (toolbar.options.actions[integApps[index]] &&
-				typeof toolbar.options.actions[integApps[index]]['mail_import'] != 'undefined' &&
-				typeof toolbar.options.actions[integApps[index]]['mail_import']['app_entry_method'] != 'unefined')
+		for (let index = 0; index < integApps.length; index++)
 		{
-			var mail_import_hook = toolbar.options.actions[integApps[index]]['mail_import']['app_entry_method'];
-			if (integWidget.get_value() == 'on')
+			integWidget = index < integApps.length ? toolbar.getWidgetById(integApps[index]) : null;
+			const action = toolbar.actions.find((action) => action.id == integApps[index]);
+			if (integWidget && integWidget.value && action &&
+				typeof action.data['mail_import'] != 'undefined' &&
+				typeof action.data['mail_import']['app_entry_method'] != 'undefined')
 			{
-				var title = egw.lang('Select') + ' ' + egw.lang(integApps[index]) + ' ' + (egw.link_get_registry(integApps[index], 'entry') ? egw.link_get_registry(integApps[index], 'entry') : egw.lang('entry'));
-				this.integrate_checkAppEntry(title, integApps[index].substr(3), subject.get_value(), '', mail_import_hook , function (args){
+				const mail_import_hook = action.data['mail_import']['app_entry_method'];
+				const title = egw.lang('Select') + ' ' + egw.lang(integApps[index]) + ' ' + (egw.link_get_registry(integApps[index], 'entry') ? egw.link_get_registry(integApps[index], 'entry') : egw.lang('entry'));
 
-					var oldValue = to_integrate_ids.get_value() || [];
-					to_integrate_ids.set_value([integApps[index] + ":" + args.entryid, ...oldValue]);
-					index = index < integApps.length ? ++index : false;
-					self.compose_integrate_submit(index);
-				});
-				return true;
+				wait.push(new Promise((resolve) =>
+				{
+					this.integrate_checkAppEntry(title, integApps[index].substr(3), subject.get_value(), '', mail_import_hook, function (args)
+					{
+						const oldValue = to_integrate_ids.get_value() || [];
+						to_integrate_ids.set_value([integApps[index] + ":" + args.entryid, ...oldValue]);
+						resolve();
+					});
+				}));
 			}
 		}
-		// the to_tracker action might not be presented because lack of app permissions
-		else if(integApps[index] == "to_tracker" && !toolbar.options.actions[integApps[index]])
-		{
-			return false;
-		}
-		else if(index<integApps.length)
-		{
-			this.compose_integrate_submit(++index);
-		}
-		else
-		{
-			this.compose_submitAction(false);
-		}
-
-		return false;
+		return Promise.all(wait);
 	},
 
 	/**
@@ -6114,7 +6121,8 @@ app.classes.mail = AppJS.extend(
 			// disable the detials if there's no details
 			if (!content.ccaddress && !content.additionaltoaddress) $details.hide();
 
-			toolbar.set_actions(content.toolbar);
+			toolbar.readonly = false;
+			toolbar.actions = content.toolbar;
 			var toaddressdetails = self.et2_view.widgetContainer.getWidgetById('toaddressdetails');
 			if (toaddressdetails && content.additionaltoaddress)
 			{
@@ -6503,10 +6511,6 @@ app.classes.mail = AppJS.extend(
 		document.body.append(dialog);
 	},
 
-	/**
-	 * Pre set toggled actions
-	 */
-	preSetToggledOnActions: preSetToggledOnActions ,
 	/**
 	 * Set predefined addresses for compose dialog
 	 *

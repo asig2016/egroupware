@@ -99,6 +99,7 @@
                                         </et2-details>
                                     </et2-hbox>
                                 </et2-vbox>
+                                <template id="acemailstor.import.preview"/>
                             </et2-vbox>
                         </et2-hbox>
                     </et2-vbox>

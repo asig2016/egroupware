@@ -60,7 +60,7 @@ egw.extend('lang', egw.MODULE_GLOBAL, function()
 		 */
 		lang: function(_msg, _arg1)
 		{
-			if(_msg === null)
+			if( _msg === null || _msg === undefined )
 			{
 				return '';
 			}
@@ -70,6 +70,7 @@ egw.extend('lang', egw.MODULE_GLOBAL, function()
 				return _msg;
 			}
 			var translation = _msg;
+
 			_msg = _msg.toLowerCase();
 
 			// search apps in given order for a replacement

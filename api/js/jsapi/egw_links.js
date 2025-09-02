@@ -519,6 +519,8 @@ egw.extend('links', egw.MODULE_GLOBAL, function()
 		 */
 		unset_link_title: function(_app, _id)
 		{
+            console.log('unset link title called...:'+_app+_id);
+
 			if (typeof _id === 'undefined' || _id === null)
 			{
 				unset(title_cache[_app]);

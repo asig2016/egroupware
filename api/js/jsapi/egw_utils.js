@@ -346,7 +346,7 @@ egw.extend('utils', egw.MODULE_GLOBAL, function()
 		async hashString(string)
 		{
 			const data = (new TextEncoder()).encode(string);
-			const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+			const hashBuffer = await crypto.subtle?.digest('SHA-256', data);
 			const hashArray = Array.from(new Uint8Array(hashBuffer));
 			const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
 			return hashHex;

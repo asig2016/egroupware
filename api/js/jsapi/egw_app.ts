@@ -394,7 +394,7 @@ export abstract class EgwApp
 			this.groups || this.nm;	// groups is a hack to get app-toolbar for groups in admin working :(
 		if (!nm) return;
 
-		const filters = {};
+        const filters = { ...this.nm.activeFilters};
 		switch(_widget.id)
 		{
 			case 'filter':
@@ -404,7 +404,7 @@ export abstract class EgwApp
 				filters[_widget.id] = _widget.value;
 				break;
 			default:
-				filters.col_filter = {};
+                if (!filters.col_filter) filters.col_filter = {};
 				filters.col_filter[_widget.id] = _widget.value;
 		}
 		nm.applyFilters(filters);

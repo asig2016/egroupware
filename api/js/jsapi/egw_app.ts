@@ -385,7 +385,7 @@ export abstract class EgwApp
 	{
 		if (!this.nm || !_widget.id) return;
 
-		const filters = {};
+        const filters = { ...this.nm.activeFilters};
 		switch(_widget.id)
 		{
 			case 'filter':
@@ -395,7 +395,7 @@ export abstract class EgwApp
 				filters[_widget.id] = _widget.value;
 				break;
 			default:
-				filters.col_filter = {};
+                if (!filters.col_filter) filters.col_filter = {};
 				filters.col_filter[_widget.id] = _widget.value;
 		}
 		this.nm && this.nm.applyFilters(filters);

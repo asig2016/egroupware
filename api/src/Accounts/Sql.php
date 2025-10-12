@@ -105,7 +105,7 @@ class Sql
 	{
 		$this->frontend = $frontend;
 
-		if (is_object($GLOBALS['egw_setup']->db))
+		if ( isset($GLOBALS['egw_setup']) && is_object($GLOBALS['egw_setup']->db) )
 		{
 			$this->db = $GLOBALS['egw_setup']->db;
 		}

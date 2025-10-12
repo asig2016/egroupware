@@ -1034,6 +1034,8 @@ abstract class Merge
 	 */
 	public function &merge_string($_content, $ids, &$err, $mimetype, array $fix = null, $charset = null)
 	{
+		// switch off the execution time limit, as it's for big selections to small
+		@set_time_limit(0);
 		// performance optimization: if there's nothing looking like a placeholder, just return it without any processing
 		if (empty($_content) || strpos($_content, '$$') === false && strpos($_content, '{{') === false &&
 			($mimetype !== 'application/rtf' || strpos($_content, '\\{\\{') === false))
@@ -2248,6 +2250,7 @@ abstract class Merge
 	 */
 	public function merge_file($document, $ids, &$name = '', $dirs = '', &$header = null)
 	{
+		@set_time_limit(0);
 		//error_log(__METHOD__."('$document', ".array2string($ids).", '$name', dirs='$dirs') ->".function_backtrace());
 		if(($error = $this->check_document($document, $dirs)))
 		{

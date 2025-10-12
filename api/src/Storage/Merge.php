@@ -2664,6 +2664,8 @@ abstract class Merge
 	 */
 	public static function merge_entries(array $ids = null, Merge &$document_merge = null, $options = [], bool $return = null)
 	{
+		// switch off the execution time limit, as it's for big selections to small
+		@set_time_limit(0);
 		// Setup & get what we need
 		if(is_null($document_merge) && class_exists($_REQUEST['merge']) && is_subclass_of($_REQUEST['merge'], 'EGroupware\\Api\\Storage\\Merge'))
 		{

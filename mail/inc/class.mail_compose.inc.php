@@ -279,16 +279,6 @@ class mail_compose
 			}
 			unset($actions['pgp']);
 		}
-		$toggledOnActions = is_array($GLOBALS['egw_info']['user']['preferences']['mail']['toggledOnActions']) ?
-			$GLOBALS['egw_info']['user']['preferences']['mail']['toggledOnActions'] :
-			explode(',', $GLOBALS['egw_info']['user']['preferences']['mail']['toggledOnActions']);
-		foreach($toggledOnActions as $action)
-		{
-			if($actions[$action]['checkbox'])
-			{
-				$actions[$action]['checked'] = true;
-			}
-		}
 		if (!empty($GLOBALS['egw_info']['server']['disable_pgp_encryption'])) unset($actions['pgp']);
 		// remove vfs actions if the user has no run access to filemanager
 		if (empty($GLOBALS['egw_info']['user']['apps']['filemanager']))
@@ -488,7 +478,7 @@ class mail_compose
 		}
 		//error_log(__METHOD__.__LINE__.array2string($_content));
 		if (!empty($_content['serverID']) && $_content['serverID'] != $this->mail_bo->profileID &&
-			($_content['composeToolbar']['action'] === 'send' || $_content['button']['saveAsDraft'] || $_content['button']['saveAsDraftAndPrint'])
+			($_content['composeToolbar'] === 'send' || $_content['button']['saveAsDraft']||$_content['button']['saveAsDraftAndPrint'])
 		)
 		{
 			$this->changeProfile($_content['serverID']);
@@ -498,11 +488,7 @@ class mail_compose
 		// at several locations and not necessary initialized before
 		$acc = Mail\Account::read($composeProfile);
 		$buttonClicked = false;
-		if (!is_array($_content['composeToolbar']))
-		{
-			$_content['composeToolbar'] = empty($_content['composeToolbar']) ? [] : json_decode($_content['composeToolbar']);
-		}
-		if(($_content['composeToolbar']['action']??null) === 'send')
+		if (!empty($_content['composeToolbar']) && $_content['composeToolbar'] === 'send')
 		{
 			$buttonClicked = $suppressSigOnTop = true;
 			$sendOK = true;
@@ -2003,13 +1989,13 @@ class mail_compose
 		//$this->sessionData['forwardedUID']=$_uid;
 		if  ($this->mailPreferences['message_forwarding'] == 'asmail') {
 			$this->sessionData['mimeType']  = $this->mailPreferences['composeOptions'];
-			if($headers['SIZE'])
+			if(!empty($headers['SIZE']))
 				$size				= $headers['SIZE'];
 			else
 				$size				= lang('unknown');
 
 			$this->addMessageAttachment($_uid, $_partID, $_folder,
-				$mail_bo->decode_header(($headers['SUBJECT']?$headers['SUBJECT']:lang('no subject'))).'.eml',
+				$mail_bo->decode_header((!empty($headers['SUBJECT'])?$headers['SUBJECT']:lang('no subject'))).'.eml',
 				'MESSAGE/RFC822', $size);
 		}
 		else
@@ -2022,7 +2008,7 @@ class mail_compose
 				if(($attachments = $mail_bo->getMessageAttachments($_uid,$_partID,null,true,false,false))) {
 					//error_log(__METHOD__.__LINE__.':'.array2string($attachments));
 					foreach($attachments as $attachment) {
-						if (!($attachment['cid'] && preg_match("/image\//",$attachment['mimeType'])) || $attachment['disposition'] == 'attachment')
+						if (!(!empty($attachment['cid']) && preg_match("/image\//",$attachment['mimeType'])) || $attachment['disposition'] == 'attachment')
 						{
 							$this->addMessageAttachment($_uid, $attachment['partID'],
 								$_folder,
@@ -2277,8 +2263,8 @@ class mail_compose
 		//$headers	= $mail_bo->getMessageHeader($_uid, $_partID, true, true, $_folder);
 		$this->sessionData['uid'] = $_uid;
 		$this->sessionData['messageFolder'] = $_folder;
-		$this->sessionData['in-reply-to'] = ($headers['IN-REPLY-TO']?$headers['IN-REPLY-TO']:$headers['MESSAGE_ID']);
-		$this->sessionData['references'] = ($headers['REFERENCES']?$headers['REFERENCES']:$headers['MESSAGE_ID']);
+		$this->sessionData['in-reply-to'] = $headers['IN-REPLY-TO'] ?? $headers['MESSAGE_ID'];
+		$this->sessionData['references'] = $headers['REFERENCES'] ?? $headers['MESSAGE_ID'];
 
 		// break reference into multiple lines if they're greater than 998 chars
 		// and remove comma seperation. Fix error serer does not support binary
@@ -2292,13 +2278,13 @@ class mail_compose
 		// thread-topic is a proprietary microsoft header and deprecated with the current version
 		// horde does not support the encoding of thread-topic, and probably will not no so in the future
 		//if ($headers['THREAD-TOPIC']) $this->sessionData['thread-topic'] = $headers['THREAD-TOPIC'];
-		if ($headers['THREAD-INDEX']) $this->sessionData['thread-index'] = $headers['THREAD-INDEX'];
-		if ($headers['LIST-ID']) $this->sessionData['list-id'] = $headers['LIST-ID'];
+		if (!empty($headers['THREAD-INDEX'])) $this->sessionData['thread-index'] = $headers['THREAD-INDEX'];
+		if (!empty($headers['LIST-ID'])) $this->sessionData['list-id'] = $headers['LIST-ID'];
 		//error_log(__METHOD__.__LINE__.' Mode:'.$_mode.':'.array2string($headers));
 		// check for Reply-To: header and use if available
 		if(!empty($headers['REPLY-TO']) && ($headers['REPLY-TO'] != $headers['FROM'])) {
 			foreach($headers['REPLY-TO'] as $val) {
-				if(!$foundAddresses[$val]) {
+				if(empty($foundAddresses[$val])) {
 					$oldTo[] = $val;
 					$foundAddresses[$val] = true;
 				}
@@ -2306,7 +2292,7 @@ class mail_compose
 			$oldToAddress	= (is_array($headers['REPLY-TO'])?$headers['REPLY-TO'][0]:$headers['REPLY-TO']);
 		} else {
 			foreach($headers['FROM'] as $val) {
-				if(!$foundAddresses[$val]) {
+				if(empty($foundAddresses[$val])) {
 					$oldTo[] = $val;
 					$foundAddresses[$val] = true;
 				}
@@ -2325,7 +2311,7 @@ class mail_compose
 					if($this->testIfOneKeyInArrayDoesExistInString($userEMailAddresses,$val)) {
 						continue;
 					}
-					if(!$foundAddresses[$val]) {
+					if(empty($foundAddresses[$val])) {
 						$this->sessionData['cc'][] = $val;
 						$foundAddresses[$val] = true;
 					}
@@ -2338,7 +2324,7 @@ class mail_compose
 					if($this->testIfOneKeyInArrayDoesExistInString($userEMailAddresses,$val)) {
 						continue;
 					}
-					if(!$foundAddresses[$val]) {
+					if(empty($foundAddresses[$val])) {
 						$this->sessionData['to'][] = $val;
 						$foundAddresses[$val] = true;
 					}
@@ -3146,10 +3132,7 @@ class mail_compose
 		$inline_images = $this->createMessage($mail, $_formData, $identity);
 		// remember the identity
 		/** @noinspection MissingIssetImplementationInspection */
-		if(!empty($mail->From) && ($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']))
-		{
-			$fromAddress = $mail->From;
-		}//$mail->FromName.($mail->FromName?' <':'').$mail->From.($mail->FromName?'>':'');
+		if (!empty($mail->From) && ($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on')) $fromAddress = $mail->From;//$mail->FromName.($mail->FromName?' <':'').$mail->From.($mail->FromName?'>':'');
 		#print "<pre>". $mail->getMessageHeader() ."</pre><hr><br>";
 		#print "<pre>". $mail->getMessageBody() ."</pre><hr><br>";
 		#exit;
@@ -3265,7 +3248,7 @@ class mail_compose
 		if ($folderOnMailAccount) $folderOnMailAccount = array_unique($folderOnMailAccount);
 		if (($this->mailPreferences['sendOptions'] != 'send_only' && $sentFolder != 'none') &&
 			!( count($folder) > 0) &&
-			!($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']))
+			!($_formData['to_infolog']=='on' || $_formData['to_tracker']=='on'))
 		{
 			$this->errorInfo = lang("Error: ").lang("No Folder destination supplied, and no folder to save message or other measure to store the mail (save to infolog/tracker) provided, but required.").($this->errorInfo?' '.$this->errorInfo:'');
 			#error_log($this->errorInfo);
@@ -3328,7 +3311,7 @@ class mail_compose
 		if(count((array)$this->sessionData['to']) > 0 || count((array)$this->sessionData['cc']) > 0 || count((array)$this->sessionData['bcc']) > 0) {
 			try {
 				// do no close the session before sending, if we have to store the send text for infolog or other integration in the session
-				if(!($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']))
+				if (!($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' ))
 				{
 					$GLOBALS['egw']->session->commit_session();
 				}
@@ -3360,7 +3343,7 @@ class mail_compose
 			#error_log("(re)opened Connection");
 		}
 		// if copying mail to folder, or saving mail to infolog, we need to gather the needed information
-		if(count($folder) > 0 || $_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']) {
+		if (count($folder) > 0 || $_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on') {
 			//error_log(__METHOD__.__LINE__.array2string($this->sessionData['bcc']));
 
 			// normaly Bcc is only added to recipients, but not as header visible to all recipients
@@ -3458,7 +3441,7 @@ class mail_compose
 			try
 			{
 				if ($this->sessionData['lastDrafted'] != ($this->sessionData['uid']??null) || !($_formData['mode']=='composefromdraft' &&
-						($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']) && $this->sessionData['attachments']))
+					($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' )&&$this->sessionData['attachments']))
 				{
 					//error_log(__METHOD__.__LINE__."#".$lastDrafted['uid'].'#'.$lastDrafted['folder'].array2string($_formData));
 					//error_log(__METHOD__.__LINE__."#".array2string($_formData));
@@ -3487,7 +3470,7 @@ class mail_compose
 				try // message may be deleted already, as it maybe done by autosave
 				{
 					if ($_formData['mode']=='composefromdraft' &&
-						!(($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']) && $this->sessionData['attachments']))
+						!(($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on') && $this->sessionData['attachments']))
 					{
 						//error_log(__METHOD__.__LINE__."#".$this->sessionData['uid'].'#'.$this->sessionData['messageFolder']);
 						$mail_bo->deleteMessages(array($this->sessionData['uid']),$this->sessionData['messageFolder'], 'remove_immediately');
@@ -3534,14 +3517,14 @@ class mail_compose
 		if (is_array($this->sessionData['bcc'])) $mailaddresses['bcc'] = $this->sessionData['bcc'];
 		if (!empty($mailaddresses) && !empty($fromAddress)) $mailaddresses['from'] = Mail\Html::decodeMailHeader($fromAddress);
 
-		if($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar'])
+		if ($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' )
 		{
 			$this->sessionData['attachments'] = array_merge((array)$this->sessionData['attachments'], (array)$inline_images);
 
 			foreach(array('to_infolog','to_tracker','to_calendar') as $app_key)
 			{
-				list(, $entryid) = explode(":", $_formData['to_integrate_ids'][0]) ?? null;
-				if($_formData['composeToolbar'][$app_key])
+				list(, $entryid) = explode(":", $_formData['to_integrate_ids'][0])+[null, null];
+				if (($_formData[$app_key]??null) === 'on')
 				{
 					$app_name = substr($app_key,3);
 					// Get registered hook data of the app called for integration

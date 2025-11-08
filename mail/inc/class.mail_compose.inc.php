@@ -478,7 +478,7 @@ class mail_compose
 		}
 		//error_log(__METHOD__.__LINE__.array2string($_content));
 		if (!empty($_content['serverID']) && $_content['serverID'] != $this->mail_bo->profileID &&
-			($_content['composeToolbar'] === 'send' || $_content['button']['saveAsDraft']||$_content['button']['saveAsDraftAndPrint'])
+			($_content['composeToolbar']['action'] === 'send' || $_content['button']['saveAsDraft'] || $_content['button']['saveAsDraftAndPrint'])
 		)
 		{
 			$this->changeProfile($_content['serverID']);
@@ -488,7 +488,11 @@ class mail_compose
 		// at several locations and not necessary initialized before
 		$acc = Mail\Account::read($composeProfile);
 		$buttonClicked = false;
-		if (!empty($_content['composeToolbar']) && $_content['composeToolbar'] === 'send')
+		if (!is_array($_content['composeToolbar']))
+		{
+			$_content['composeToolbar'] = empty($_content['composeToolbar']) ? [] : json_decode($_content['composeToolbar']);
+		}
+		if(($_content['composeToolbar']['action']??null) === 'send')
 		{
 			$buttonClicked = $suppressSigOnTop = true;
 			$sendOK = true;
@@ -3132,7 +3136,10 @@ class mail_compose
 		$inline_images = $this->createMessage($mail, $_formData, $identity);
 		// remember the identity
 		/** @noinspection MissingIssetImplementationInspection */
-		if (!empty($mail->From) && ($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on')) $fromAddress = $mail->From;//$mail->FromName.($mail->FromName?' <':'').$mail->From.($mail->FromName?'>':'');
+		if(!empty($mail->From) && ($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']))
+		{
+			$fromAddress = $mail->From;
+		}//$mail->FromName.($mail->FromName?' <':'').$mail->From.($mail->FromName?'>':'');
 		#print "<pre>". $mail->getMessageHeader() ."</pre><hr><br>";
 		#print "<pre>". $mail->getMessageBody() ."</pre><hr><br>";
 		#exit;
@@ -3248,7 +3255,7 @@ class mail_compose
 		if ($folderOnMailAccount) $folderOnMailAccount = array_unique($folderOnMailAccount);
 		if (($this->mailPreferences['sendOptions'] != 'send_only' && $sentFolder != 'none') &&
 			!( count($folder) > 0) &&
-			!($_formData['to_infolog']=='on' || $_formData['to_tracker']=='on'))
+			!($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']))
 		{
 			$this->errorInfo = lang("Error: ").lang("No Folder destination supplied, and no folder to save message or other measure to store the mail (save to infolog/tracker) provided, but required.").($this->errorInfo?' '.$this->errorInfo:'');
 			#error_log($this->errorInfo);
@@ -3311,7 +3318,7 @@ class mail_compose
 		if(count((array)$this->sessionData['to']) > 0 || count((array)$this->sessionData['cc']) > 0 || count((array)$this->sessionData['bcc']) > 0) {
 			try {
 				// do no close the session before sending, if we have to store the send text for infolog or other integration in the session
-				if (!($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' ))
+				if(!($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']))
 				{
 					$GLOBALS['egw']->session->commit_session();
 				}
@@ -3343,7 +3350,7 @@ class mail_compose
 			#error_log("(re)opened Connection");
 		}
 		// if copying mail to folder, or saving mail to infolog, we need to gather the needed information
-		if (count($folder) > 0 || $_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on') {
+		if(count($folder) > 0 || $_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker']) {
 			//error_log(__METHOD__.__LINE__.array2string($this->sessionData['bcc']));
 
 			// normaly Bcc is only added to recipients, but not as header visible to all recipients
@@ -3441,7 +3448,7 @@ class mail_compose
 			try
 			{
 				if ($this->sessionData['lastDrafted'] != ($this->sessionData['uid']??null) || !($_formData['mode']=='composefromdraft' &&
-					($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' )&&$this->sessionData['attachments']))
+						($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']) && $this->sessionData['attachments']))
 				{
 					//error_log(__METHOD__.__LINE__."#".$lastDrafted['uid'].'#'.$lastDrafted['folder'].array2string($_formData));
 					//error_log(__METHOD__.__LINE__."#".array2string($_formData));
@@ -3470,7 +3477,7 @@ class mail_compose
 				try // message may be deleted already, as it maybe done by autosave
 				{
 					if ($_formData['mode']=='composefromdraft' &&
-						!(($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on') && $this->sessionData['attachments']))
+						!(($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar']) && $this->sessionData['attachments']))
 					{
 						//error_log(__METHOD__.__LINE__."#".$this->sessionData['uid'].'#'.$this->sessionData['messageFolder']);
 						$mail_bo->deleteMessages(array($this->sessionData['uid']),$this->sessionData['messageFolder'], 'remove_immediately');
@@ -3517,14 +3524,14 @@ class mail_compose
 		if (is_array($this->sessionData['bcc'])) $mailaddresses['bcc'] = $this->sessionData['bcc'];
 		if (!empty($mailaddresses) && !empty($fromAddress)) $mailaddresses['from'] = Mail\Html::decodeMailHeader($fromAddress);
 
-		if ($_formData['to_infolog'] == 'on' || $_formData['to_tracker'] == 'on' || $_formData['to_calendar'] == 'on' )
+		if($_formData['composeToolbar']['to_infolog'] || $_formData['composeToolbar']['to_tracker'] || $_formData['composeToolbar']['to_calendar'])
 		{
 			$this->sessionData['attachments'] = array_merge((array)$this->sessionData['attachments'], (array)$inline_images);
 
 			foreach(array('to_infolog','to_tracker','to_calendar') as $app_key)
 			{
-				list(, $entryid) = explode(":", $_formData['to_integrate_ids'][0])+[null, null];
-				if (($_formData[$app_key]??null) === 'on')
+				list(, $entryid) = explode(":", $_formData['to_integrate_ids'][0]) ?? null;
+				if($_formData['composeToolbar'][$app_key])
 				{
 					$app_name = substr($app_key,3);
 					// Get registered hook data of the app called for integration

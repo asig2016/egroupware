@@ -2,7 +2,7 @@
   "name": "EGroupware",
   "description": "EGroupware is a groupware suite in PHP and Javascript: https://www.egroupware.org/",
   "license": "GPL-2.0",
-  "version": "23.1.20251119",
+  "version": "23.1.20251222",
   "repository": {},
   "scripts": {
     "build": "rollup -c",
@@ -33,7 +33,7 @@
     "@web/test-runner-commands": "^0.9.0",
     "@web/test-runner-playwright": "^0.11.0",
     "browser-sync": "^3.0.2",
-    "cem": "^1.0.4",
+    "cem": "^1.0.2",
     "change-case": "^4.1.2",
     "custom-element-jet-brains-integration": "^1.2.1",
     "custom-element-vs-code-integration": "^1.2.1",
@@ -85,7 +85,6 @@
     "@rollup/plugin-commonjs": "^24.0.1",
     "@shoelace-style/shoelace": "2.18.0",
     "@types/jquery": "^3.5.29",
-    "@types/pako": "^2.0.3",
     "blueimp-gallery": "^3.4.0",
     "bootstrap-icons": "^1.11.3",
     "colortranslator": "^1.9.2",
@@ -95,7 +94,6 @@
     "imask": "^7.6.1",
     "lit": "^2.7.5",
     "lit-flatpickr": "^0.3.0",
-    "pako": "^2.1.0",
     "shortcut-buttons-flatpickr": "^0.4.0",
     "sortablejs": "^1.14.0"
   },

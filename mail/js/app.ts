@@ -20,6 +20,10 @@ import {
 } from "../../api/js/egw_action/egw_action_constants";
 import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import {et2_nextmatch} from "../../api/js/etemplate/et2_extension_nextmatch";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 import {MailCompose} from "./compose";
 import {egw} from "../../api/js/jsapi/egw_global";
 import {Et2Details} from "../../api/js/etemplate/Layout/Et2Details/Et2Details";
@@ -105,6 +109,11 @@ export class MailApp extends EgwApp
 	 */
 	push_active : any = {};
 
+	/**
+	 * ac-mail object
+	 */
+	acemailarch_obj: any = false;
+
 	private _compose : MailCompose;
 	/**
 	 * Compose functions sub-object (gets automatic instanciated, if used)
@@ -143,6 +152,11 @@ export class MailApp extends EgwApp
 				},
 				this
 			);
+
+		// outside the is_popup() guard on purpose: compose.xet runs in a popup and uses it too
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
+		}
 	}
 
 	/**
@@ -1317,6 +1331,8 @@ export class MailApp extends EgwApp
 					data.attachmentsBlock[0].filename == "winmail.dat"))
 			{
 				attachmentsBlock.getDOMNode().classList.add('loading');
+				// jQuery.proxy() binds the callback's this to data, so keep a handle on the app
+				const self = this;
 				this.egw.jsonq('mail.mail_ui.ajax_resolveWinmail',[rowId], jQuery.proxy(function(_data){
 					attachmentsBlock.getDOMNode().classList.remove('loading');
 					if (typeof _data == 'object')
@@ -1325,7 +1341,13 @@ export class MailApp extends EgwApp
 						data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 						// Update client cache to avoid resolving winmail.dat attachment again
 						egw.dataStoreUID(data.uid, data);
-						if (!egwIsMobile() && mailPreview) mailPreview.set_value({content:data});
+						if (!egwIsMobile() && mailPreview)
+						{
+							mailPreview.set_value({content:data});
+							// set_value() destroyed and recreated the embedded acemailstor import
+							// panel, so the mail_id filled on selection is gone - initialize it again
+							self.acemailarch_obj.fillInMailApp_initimportsettings([rowId], mailPreview, rowId);
+						}
 					}
 					else
 					{
@@ -1408,6 +1430,7 @@ export class MailApp extends EgwApp
 				{
 					self.resolveExternalImages (this.contentWindow.document);
 				}, {once: true});
+				self.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 			}, 300));
 		}
 

@@ -20,6 +20,10 @@ import {
 } from "../../api/js/egw_action/egw_action_constants";
 import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import {et2_nextmatch} from "../../api/js/etemplate/et2_extension_nextmatch";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 import {MailCompose} from "./compose";
 import {egw} from "../../api/js/jsapi/egw_global";
 
@@ -102,6 +106,11 @@ export class MailApp extends EgwApp
 	 */
 	push_active : any = {};
 
+	/**
+	 * ac-mail object
+	 */
+	acemailarch_obj: any = false;
+
 	private _compose : MailCompose;
 	/**
 	 * Compose functions sub-object (gets automatic instanciated, if used)
@@ -140,6 +149,11 @@ export class MailApp extends EgwApp
 				},
 				this
 			);
+
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
+		}
+
 	}
 
 	/**
@@ -1383,6 +1397,7 @@ export class MailApp extends EgwApp
 				console.log(rowId);
 				// Request email body from server
 				IframeHandle.set_src(egw.link('/index.php',{menuaction:'mail.mail_ui.loadEmailBody',_messageID:rowId}));
+				self.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 				IframeHandle.getDOMNode().addEventListener("load", function (e)
 				{
 					self.resolveExternalImages (this.contentWindow.document);

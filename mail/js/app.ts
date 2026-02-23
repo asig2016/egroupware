@@ -22,6 +22,10 @@ import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import type {Et2DatagridUpdateType} from "../../api/js/etemplate/Et2Datagrid/Et2Datagrid.types";
 import {Et2DatagridUpdateTypes} from "../../api/js/etemplate/Et2Datagrid/Et2Datagrid.types";
 import type {Et2Nextmatch} from "../../api/js/etemplate/Et2Nextmatch/Et2Nextmatch";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 import {MailCompose} from "./compose";
 import {isPreferenceOn, JmapBodyResult, JmapMessageReference, JmapUserError, MailJmap} from "./jmap";
 import {renderAttachmentIndex} from "./attachmentIndex";
@@ -118,6 +122,11 @@ export class MailApp extends EgwApp
 	 */
 	push_active : any = {};
 
+	/**
+	 * ac-mail object
+	 */
+	acemailarch_obj: any = false;
+
 	private _compose : MailCompose;
 	private _jmap : MailJmap;
 
@@ -196,6 +205,11 @@ export class MailApp extends EgwApp
 			// Let mail's direct-JMAP path (see jmap.ts) answer NextMatch's regular row-fetch itself for Stalwart-backed accounts, instead of round-tripping through get_rows.
 			// Not from a popup: it shares this dataRegister with the window that opened it.
 			this.egw.dataRegisterFetch('mail', this.jmap.fetchRows, this.jmap);
+		}
+
+		// outside the is_popup() guard on purpose: compose.xet runs in a popup and uses it too
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
 		}
 	}
 
@@ -1512,7 +1526,13 @@ export class MailApp extends EgwApp
 					data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 					// Update client cache to avoid resolving winmail.dat attachment again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data});
+					if (!egwIsMobile() && template && stillDisplayed())
+					{
+						template.set_value({content:data});
+						// set_value() destroyed and recreated the embedded acemailstor import
+						// panel, so the mail_id filled on selection is gone - initialize it again
+						this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+					}
 				}
 				else
 				{
@@ -1538,7 +1558,13 @@ export class MailApp extends EgwApp
 					this.setupViewAttachmentActions(data, sel_options);
 					// Update client cache to avoid re-fetching the attachment block again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data, sel_options:sel_options});
+					if (!egwIsMobile() && template && stillDisplayed())
+					{
+						template.set_value({content:data, sel_options:sel_options});
+						// set_value() destroyed and recreated the embedded acemailstor import
+						// panel, so the mail_id filled on selection is gone - initialize it again
+						this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+					}
 					// body may have already finished loading (empty) before this resolved -
 					// retry the auto-index now that attachmentsBlock is known, but only into
 					// the iframe still actually showing this row (loadMessageBody() marks it)
@@ -1700,6 +1726,7 @@ export class MailApp extends EgwApp
 					this.resolveExternalImages(doc);
 					renderAttachmentIndex(doc, data.attachmentsBlock, this.egw);
 				}, controller.signal);
+				this.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 			}, 300));
 		}
 

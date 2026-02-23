@@ -22,6 +22,10 @@ import {loadWebComponent} from "../../api/js/etemplate/Et2Widget/Et2Widget";
 import type {Et2DatagridUpdateType} from "../../api/js/etemplate/Et2Nextmatch/Et2Datagrid.types";
 import {Et2DatagridUpdateTypes} from "../../api/js/etemplate/Et2Nextmatch/Et2Datagrid.types";
 import type {Et2Nextmatch} from "../../api/js/etemplate/Et2Nextmatch/Et2Nextmatch";
+import "../../achelper/js/Widget/Et2actree";
+import "../../achelper/js/Widget/Et2acselect";
+import "../../achelper/js/Widget/Et2actimer";
+import {acemailarch} from "../../acemailstor/js/app";
 import {MailCompose} from "./compose";
 import {JmapBodyResult, JmapMessageReference, MailJmap} from "./jmap";
 import {egw, egw_getFramework} from "../../api/js/jsapi/egw_global";
@@ -113,6 +117,11 @@ export class MailApp extends EgwApp
 	 */
 	push_active : any = {};
 
+	/**
+	 * ac-mail object
+	 */
+	acemailarch_obj: any = false;
+
 	private _compose : MailCompose;
 	private _jmap : MailJmap;
 	et2_obj: etemplate2;
@@ -174,6 +183,10 @@ export class MailApp extends EgwApp
 		// Let mail's direct-JMAP path (see jmap.ts) answer NextMatch's regular row-fetch
 		// itself for Stalwart-backed accounts, instead of round-tripping through get_rows
 		this.egw.dataRegisterFetch('mail', this.jmap.fetchRows, this.jmap);
+
+		if( this.acemailarch_obj === false ){
+			this.acemailarch_obj = new acemailarch();
+		}
 	}
 
 	/**
@@ -1668,6 +1681,7 @@ export class MailApp extends EgwApp
 			this.W_TIMEOUTS.push(window.setTimeout(function(){
 
 				self.loadMessageBody(IframeHandle, rowId, (doc) => self.resolveExternalImages(doc));
+				self.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
 			}, 300));
 		}
 

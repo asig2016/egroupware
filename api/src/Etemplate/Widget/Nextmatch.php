@@ -1205,7 +1205,9 @@ class Nextmatch extends Etemplate\Widget
 			// Columns included in submit, preference might not be updated yet
 			$cols = $value['selectcols'];
 			$GLOBALS['egw']->preferences->read_repository(true);
-			$GLOBALS['egw']->preferences->add($app,$pref_name,is_array($cols) ? implode(',',$cols) : $cols, $pref_level);
+			if(!in_array($app,['acerp','acactivity2','actpm','acilog'])){
+				$GLOBALS['egw']->preferences->add($app,$pref_name,is_array($cols) ? implode(',',$cols) : $cols, $pref_level);
+			}
 
 			// Autorefresh
 			$refresh = $value['nm_autorefresh'];

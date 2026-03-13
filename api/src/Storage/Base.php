@@ -1038,7 +1038,9 @@ class Base
 			{
 				if ($this->db->Type == 'mysql' && (float)$this->db->ServerInfo['version'] >= 4.0)
 				{
-					$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
+					//$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
+					$this->total = $this->db->select($this->table_name,'COUNT(*)',$query,__LINE__,__FILE__,false,'',$this->app,0,$join)->fetchColumn();
+
 				}
 				elseif (!$need_full_no_count && (!$join || stripos($join,'LEFT JOIN')!==false))
 				{

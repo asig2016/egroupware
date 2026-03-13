@@ -154,7 +154,11 @@ class Storage
 		{
 			if(self::$db->Type == 'mysql' && (float)self::$db->ServerInfo['version'] >= 4.0)
 			{
-				$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
+				//$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
+				self::$row_count = self::$db->select(
+					self::TABLE, 'COUNT(*)', $query, __LINE__, __FILE__, false, $order ? " ORDER BY $order" : '', false, 0
+				)->fetchColumn();
+
 			}
 			else    // can't do a count, have to run the query without limit
 			{

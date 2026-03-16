@@ -1038,8 +1038,9 @@ class Base
 			{
 				if ($this->db->Type == 'mysql' && (float)$this->db->ServerInfo['version'] >= 4.0)
 				{
-					//$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
-					$this->total = $this->db->select($this->table_name,'COUNT(*)',$query,__LINE__,__FILE__,false,'',$this->app,0,$join)->fetchColumn();
+					$mysql_calc_rows = 'SQL_CALC_FOUND_ROWS ';
+					//$append = stripos($order_by,'GROUP BY')!==false && preg_match('/^(.*?)(?=\bORDER\s+BY\b)/is',$order_by,$m) ? trim($m[1]) : '';
+					//$this->total = $this->db->select($this->table_name,'COUNT(*) as group_by_column',$query,__LINE__,__FILE__,false,$append,$this->app,0,'')->fetchColumn();
 
 				}
 				elseif (!$need_full_no_count && (!$join || stripos($join,'LEFT JOIN')!==false))

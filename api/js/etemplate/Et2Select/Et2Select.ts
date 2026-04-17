@@ -1241,11 +1241,12 @@ export class Et2Select extends Et2WithSearchMixin(Et2WidgetWithSelect)
 	 *
 	 * @protected
 	 */
-	protected get shoelaceValue() : string | string[]
-	{
-		return Array.isArray(this.value) ?
-			   this.value.map(v => { return v.replaceAll(" ", "___"); }) :
-			   (typeof this.value == "string" ? this.value.replaceAll(" ", "___") : "");
+	protected get shoelaceValue(): string | string[] {
+		return Array.isArray(this.value)
+			? this.value.map(v => String(v).replaceAll(" ", "___"))
+			: (typeof this.value === "string"
+				? this.value.replaceAll(" ", "___")
+				: "");
 	}
 
 	public render()

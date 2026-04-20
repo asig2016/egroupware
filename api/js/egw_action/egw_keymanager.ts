@@ -61,9 +61,9 @@ function _egw_nodeIsInInput(_node)
 	if ((_node != null) && (_node != document))
 	{
 		const tagName = _node.tagName.toLowerCase();
-		if(typeof _node.implements === "function" && _node.implements("et2_IInput") ||
+		if( ( typeof _node.implements === "function" && _node.implements("et2_IInput")  ||
 			["input", "select", 'textarea', 'button'].indexOf(tagName) != -1 ||
-			['et2-textbox', 'et2-number', 'et2-searchbox', 'et2-select', 'et2-textarea', 'et2-button'].indexOf(tagName) != -1)
+			['et2-textbox', 'et2-number', 'et2-searchbox', 'et2-select', 'et2-textarea', 'et2-button', ].indexOf(tagName) != -1) && ['et2-tabbox'].indexOf(tagName) === -1 )
 		{
 			return true;
 		} else

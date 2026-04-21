@@ -56,24 +56,75 @@ export function egw_keycode_makeValid(_keyCode)
 	return -1;
 }
 
-function _egw_nodeIsInInput(_node)
+/**
+ * Determines whether a given DOM node is part of (or contained within)
+ * an input/control element.
+ *
+ * The check includes:
+ * - Standard HTML form elements (input, select, textarea, button)
+ * - Custom EGroupware et2 widgets (e.g. et2-textbox, et2-select, etc.)
+ * - Any node implementing the "et2_IInput" interface
+ *
+ * The function traverses up the DOM tree from the given node until it
+ * reaches the document root, returning true if any matching element is found.
+ *
+ * Note:
+ * - Nodes with tag names listed in `excludedTags` (e.g. "et2-tabbox")
+ *   are ignored for matching, but traversal continues upward.
+ *
+ * @param {Node|null|undefined} node - The starting DOM node to evaluate.
+ * @returns {boolean} True if the node is inside or is an input-like element,
+ *                    otherwise false.
+ *
+ * @example
+ * // Returns true if event target is inside an input field
+ * if (_egw_nodeIsInInput(event.target)) {
+ *   return; // skip global shortcut handling
+ * }
+ *
+ * @example
+ * // Direct input element
+ * _egw_nodeIsInInput(document.querySelector('input')); // true
+ *
+ * @example
+ * // Non-input element
+ * _egw_nodeIsInInput(document.body); // false
+ */
+function _egw_nodeIsInInput(node)
 {
-	if ((_node != null) && (_node != document))
+	const inputTags = new Set([
+		"input",
+		"select",
+		"textarea",
+		"button",
+		"et2-textbox",
+		"et2-number",
+		"et2-searchbox",
+		"et2-select",
+		"et2-textarea",
+		"et2-button"
+	]);
+
+	const excludedTags = new Set(["et2-tabbox"]);
+
+	while (node && node !== document)
 	{
-		const tagName = _node.tagName.toLowerCase();
-		if( ( typeof _node.implements === "function" && _node.implements("et2_IInput")  ||
-			["input", "select", 'textarea', 'button'].indexOf(tagName) != -1 ||
-			['et2-textbox', 'et2-number', 'et2-searchbox', 'et2-select', 'et2-textarea', 'et2-button', ].indexOf(tagName) != -1) && ['et2-tabbox'].indexOf(tagName) === -1 )
+		const tagName = node.tagName?.toLowerCase();
+
+		const isEt2Input =
+			typeof node.implements === "function" &&
+			node.implements("et2_IInput");
+
+		if (!excludedTags.has(tagName) && (isEt2Input || inputTags.has(tagName)))
 		{
 			return true;
-		} else
-		{
-			return _egw_nodeIsInInput(_node.parentNode);
 		}
-	} else
-	{
-		return false;
+
+		node = node.parentNode;
 	}
+
+	return false;
+
 }
 
 /**

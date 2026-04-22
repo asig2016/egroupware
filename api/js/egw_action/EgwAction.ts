@@ -391,9 +391,9 @@ export class EgwAction {
         if (!Array.isArray(_action.data.disableClass)) {
             _action.data.disableClass = [_action.data.disableClass];
         }
-        if (_target.iface.getDOMNode()) {
+        if (_target?.iface.getDOMNode()) {
             return !Array.from((_target.iface.getDOMNode()).classList).filter(name => _action.data.disableClass.includes(name)).length;
-        } else if (_target.id) {
+        } else if (_target?.id) {
             // Checking on a something that doesn't have a DOM node, like a nm row
             // that's not currently rendered
             const data = window.egw.dataGetUIDdata(_target.id);

@@ -1179,24 +1179,45 @@ export class EgwFrameworkApp extends LitElement
 	{
 		return html`
             ${this._filterButtonTemplate()}
-            <et2-button-icon nosubmit name="arrow-clockwise"
-                             label=${this.egw.lang("Reload %1", this.egw.lang(this.name))}
-                             statustext=${this.egw.lang("Reload %1", this.egw.lang(this.name))}
-                             @click=${this._refresh}
-            ></et2-button-icon>
-            <et2-button-icon nosubmit name="printer" class="egw_fw_app--no_mobile"
-                             label=${this.egw.lang("Print")}
-                             statustext=${this.egw.lang("Print")}
-                             @click=${this.framework.print}
-            ></et2-button-icon>
-            <sl-dropdown class="egw_fw_app__menu" title="${this.egw.lang("Menu")}">
-                <div slot="trigger">
-                    <et2-button-icon name="chevron-double-down"
-                                     label="${this.egw.lang("Application menu")}"
-                    ></sl-icon-button>
-                </div>
-                <sl-menu part="app-menu">
-                    ${!this.egw.user('apps')['preferences'] || !this.features.preferences ? nothing : html`
+			${!['acactions',
+				'acactivity2',
+				'acadmin',
+				'acagreements',
+				'acclients',
+				'acdms',
+				'acemailstor',
+				'acerp',
+				'acgroups',
+				'achelper',
+				'acilog',
+				'aclaf',
+				'acmailprotocol',
+				'acorders',
+				'acpay',
+				'acreports',
+				'actaskman',
+				'actele',
+				'actmclients',
+				'actmentries',
+				'actpm'
+				].includes(this.__name) ? html`
+			<et2-button-icon nosubmit name="arrow-clockwise"
+				label=${this.egw.lang("Reload %1", this.egw.lang(this.name))}
+				statustext=${this.egw.lang("Reload %1", this.egw.lang(this.name))}
+				@click=${this._refresh}
+			></et2-button-icon>
+			<et2-button-icon nosubmit name="printer" class="egw_fw_app--no_mobile"
+				label=${this.egw.lang("Print")}
+				statustext=${this.egw.lang("Print")}
+				@click=${this.framework.print}
+			></et2-button-icon><sl-dropdown class="egw_fw_app__menu" title="${this.egw.lang("Menu")}">
+				<div slot="trigger">
+					<et2-button-icon name="chevron-double-down"
+					                 label="${this.egw.lang("Application menu")}"
+					></sl-icon-button>
+				</div>
+				<sl-menu part="app-menu">
+					${!this.egw.user('apps')['preferences'] || !this.features.preferences ? nothing : html`
                         <sl-menu-item
                                 @click=${() => this.egw.show_preferences('prefs', [this.name])}
                         >
@@ -1204,7 +1225,7 @@ export class EgwFrameworkApp extends LitElement
                             ${this.egw.lang("Preferences")}
                         </sl-menu-item>
                     `}
-                    ${!this.egw.user('apps')['preferences'] || !this.features.aclRights ? nothing : html`
+					${!this.egw.user('apps')['preferences'] || !this.features.aclRights ? nothing : html`
                         <sl-menu-item
                                 @click=${() => this.egw.show_preferences('acl', [this.name])}
                         >
@@ -1212,21 +1233,58 @@ export class EgwFrameworkApp extends LitElement
                             ${this.egw.lang("Access")}
                         </sl-menu-item>
                     `}
-                    ${!this.egw.user('apps')['preferences'] || !this.features.categories ? nothing : html`
+					${!this.egw.user('apps')['preferences'] || !this.features.categories ? nothing : html`
                         <sl-menu-item
                                 @click=${() => this.features.categories == "1" ?
-                                               this.egw.show_preferences('cats', [this.name]) :
-                                               this.egw.open_link(<string>this.features.categories, this.name)
-                                }
+						this.egw.show_preferences('cats', [this.name]) :
+						this.egw.open_link(<string>this.features.categories, this.name)
+					}
                         >
                             <sl-icon slot="prefix" name="tag"></sl-icon>
                             ${this.egw.lang("Categories")}
                         </sl-menu-item>
                     `}
-                    ${this._applicationMenuTemplate()}
-                </sl-menu>
-            </sl-dropdown>
-            <slot name="header-actions"></slot>
+					${this._applicationMenuTemplate()}
+				</sl-menu>
+			</sl-dropdown><slot name="header-actions"></slot>` : html `<slot name="header-actions"></slot><sl-dropdown class="egw_fw_app__menu" title="${this.egw.lang("Menu")}">
+				<div slot="trigger">
+					<et2-button-icon name="chevron-double-down"
+					                 label="${this.egw.lang("Application menu")}"
+					></sl-icon-button>
+				</div>
+				<sl-menu part="app-menu">
+					${!this.egw.user('apps')['preferences'] || !this.features.preferences ? nothing : html`
+                        <sl-menu-item
+                                @click=${() => this.egw.show_preferences('prefs', [this.name])}
+                        >
+                            <sl-icon slot="prefix" name="gear"></sl-icon>
+                            ${this.egw.lang("Preferences")}
+                        </sl-menu-item>
+                    `}
+					${!this.egw.user('apps')['preferences'] || !this.features.aclRights ? nothing : html`
+                        <sl-menu-item
+                                @click=${() => this.egw.show_preferences('acl', [this.name])}
+                        >
+                            <sl-icon slot="prefix" name="lock"></sl-icon>
+                            ${this.egw.lang("Access")}
+                        </sl-menu-item>
+                    `}
+					${!this.egw.user('apps')['preferences'] || !this.features.categories ? nothing : html`
+                        <sl-menu-item
+                                @click=${() => this.features.categories == "1" ?
+						this.egw.show_preferences('cats', [this.name]) :
+						this.egw.open_link(<string>this.features.categories, this.name)
+					}
+                        >
+                            <sl-icon slot="prefix" name="tag"></sl-icon>
+                            ${this.egw.lang("Categories")}
+                        </sl-menu-item>
+                    `}
+					${this._applicationMenuTemplate()}
+				</sl-menu>
+			</sl-dropdown>` }
+            
+            
             ${this.hasContextMenu ? html`
                 <et2-button-icon name="three-dots-vertical" class="egw_fw_app--only_mobile"
                                  nosubmit
@@ -1248,13 +1306,21 @@ export class EgwFrameworkApp extends LitElement
 		let button : symbol | TemplateResult = nothing;
 		if(this.hasSlotController.test("filter"))
 		{
+			const formatted = new Intl.NumberFormat('el-GR', {
+  maximumFractionDigits: 0
+}).format(Number(this.rowCount));
+
 			button = html`
-                <et2-button-icon nosubmit
-                                 name=${info.icon}
-                                 label=${this.egw.lang("Filters")}
-                                 statustext=${info.tooltip}
-                                 @click=${this.handleFilterButtonClick}
-                ></et2-button-icon>`;
+				<et2-hbox>
+					<et2-button-icon nosubmit
+					                 name=${info.icon}
+					                 label=${this.egw.lang("Filters")}
+					                 statustext=${info.tooltip}
+					                 @click=${this.handleFilterButtonClick}
+					></et2-button-icon>
+					<et2-description value="${formatted}" style="font-size: var(--sl-font-size-small);"/>
+				</et2-hbox>
+			`;
 		}
 
 		// Need hoist to get correct placement

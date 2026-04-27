@@ -1456,7 +1456,7 @@ abstract class Merge
 					}
 					else
 					{
-						$time = $value;
+						//$time = $value;
 						/*
 						$time = Api\DateTime::createFromFormat('+' . Api\DateTime::$user_dateformat . '*' . Api\DateTime::$user_timeformat . '*', $value) ?:
 							new Api\DateTime($value, Api\DateTime::$user_timezone);

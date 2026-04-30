@@ -322,7 +322,7 @@ const Et2InputWidgetMixin = <T extends Constructor<LitElement>>(superclass : T) 
 			this.et2HandleFocus = this.et2HandleFocus.bind(this);
 			this.et2HandleBlur = this.et2HandleBlur.bind(this);
 			this.handleSlChange = this.handleSlChange.bind(this);
-			this.autocomplete = 'on';
+			this.autocomplete = 'off';
 		}
 
 		connectedCallback()

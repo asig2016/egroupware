@@ -245,7 +245,7 @@ const Et2InputWidgetMixin = <T extends Constructor<LitElement>>(superclass : T) 
 		autofocus : boolean;
 
 		@property({type: String})
-		autocomplete : string = 'on';
+		autocomplete : string = 'off';
 
 		@property()
 		ariaLabel : string;

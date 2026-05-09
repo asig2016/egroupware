@@ -24,6 +24,7 @@ import {MIME_REGEX} from "../../api/js/etemplate/Expose/ExposeMixin";
 import {egwAction} from "../../api/js/egw_action/egw_action";
 import type {Et2VfsUpload} from "../../api/js/etemplate/Et2Vfs/Et2VfsUpload";
 import {Et2Button} from "../../api/js/etemplate/Et2Button/Et2Button";
+import {et2_widget} from "../../api/js/etemplate/et2_core_widget";
 
 /**
  * UI for filemanager
@@ -1180,7 +1181,8 @@ export class filemanagerAPP extends EgwApp
 		// Current directory
 		let current_dir = this.get_path();
 		let dir = egw.dataGetUIDdata('filemanager::'+current_dir);
-		let path_widget = etemplate2.getById('filemanager-index').widgetContainer.getWidgetById('button[createdir]');
+		//let path_widget = etemplate2.getById('filemanager-index').widgetContainer.getWidgetById('button[createdir]');
+		let path_widget = <et2_widget><unknown>Object.entries(this.path_widget)[0];
 		actions.push({
 			id:_action.id+'_current', caption: current_dir, path: current_dir,
 			enabled: dir && dir.data && dir.data.class && dir.data.class.indexOf('noEdit') === -1 ||

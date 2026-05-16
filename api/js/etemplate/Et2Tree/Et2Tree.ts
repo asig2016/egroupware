@@ -599,7 +599,7 @@ export class Et2Tree extends Et2WidgetWithSelectMixin(LitElement) implements Fin
 	 */
 	setStyle(_id, _style)
 	{
-		const temp = this.getDomNode(_id).defaultSlot;
+		const temp = this.getDomNode(_id)?.defaultSlot;
 		if (!temp) return 0;
 			temp.setAttribute("style", _style);
 	}

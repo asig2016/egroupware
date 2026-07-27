@@ -6,11 +6,13 @@
  * styles directly or via import.
  *
  * @param {string} url
+ * @param {RequestInit} init additional fetch options, eg. {cache: "no-cache"} for a URL that
+ * 	carries no cache-buster and is served with a long max-age
  * @return {Promise<CSSStyleSheet | null>}
  */
-export async function loadStylesheet(url : string) : Promise<CSSStyleSheet | null>
+export async function loadStylesheet(url : string, init : RequestInit = {}) : Promise<CSSStyleSheet | null>
 {
-	const response = await fetch(url, {credentials: "same-origin"});
+	const response = await fetch(url, {credentials: "same-origin", ...init});
 
 	if(response.status === 404)
 	{

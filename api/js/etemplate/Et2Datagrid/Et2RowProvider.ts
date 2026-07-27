@@ -607,7 +607,13 @@ export class Et2RowProvider
 			const src = styleNode.getAttribute("src") || "";
 			if(src)
 			{
-				const sheet = await loadStylesheet(resolveEt2StylesSrc(src, this.host.egw?.(), templateUrl));
+				// {cache: "no-cache"}: the resolved src carries no cache-buster - unlike the
+				// template it sits in, which gets ?download=<buster> - so without revalidation
+				// an edited row stylesheet does not reach a browser that already cached it.
+				const sheet = await loadStylesheet(
+					resolveEt2StylesSrc(src, this.host.egw?.(), templateUrl),
+					{cache: "no-cache"}
+				);
 				if(sheet)
 				{
 					sheets.push(sheet);

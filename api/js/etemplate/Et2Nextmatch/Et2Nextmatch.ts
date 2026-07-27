@@ -2252,7 +2252,18 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 	private async _updateRowStylesheets()
 	{
 		const appName = this._getAppName();
-		this._appRowStylesheet = await loadStylesheet(this.egw().link(`/${appName}/templates/default/app.css`));
+		/*
+		 * {cache: "no-cache"}: unlike a template, which gets ?download=<buster> from
+		 * Et2Template.getUrl(), this URL carries no cache-buster - while app.css is served with
+		 * a long max-age (10 days here). Without revalidation a changed app.css therefore does
+		 * not reach a browser that already has it, and since this stylesheet is what styles the
+		 * rows inside the datagrid's shadow root, row styling silently keeps using the old file.
+		 * The request is conditional, so an unchanged file costs one 304 per nextmatch.
+		 */
+		this._appRowStylesheet = await loadStylesheet(
+			this.egw().link(`/${appName}/templates/default/app.css`),
+			{cache: "no-cache"}
+		);
 		await this.updateComplete;
 		this._syncDatagridRowStylesheets();
 	}

@@ -1126,15 +1126,26 @@ export class et2_customfields_list extends et2_valueWidget implements et2_IDetac
 	{
 		for(let name in _fields)
 		{
-			if(this.rows[this.options.prefix + name])
+			const cell = this.rows[this.options.prefix + name];
+			if(cell)
 			{
+				/*
+				 * rows[] holds the cell the field's own widget went into, not the row: for
+				 * everything but customfields-list the label lives in a second cell of the same
+				 * row, which getDOMNode() hands out as rows[id].prev("td"). Hiding just the field
+				 * cell therefore left the label of a field that is not meant to be shown - and for
+				 * customfields-list it left an empty row behind. Toggle the row instead, which is
+				 * also what setDetachedAttributes() does for the nextmatch rows.
+				 */
+				const row = typeof cell.closest === "function" ? (cell.closest('tr') || cell) : cell;
+
 				if(_fields[name])
 				{
-					jQuery(this.rows[this.options.prefix+name]).show();
+					jQuery(row).show();
 				}
 				else
 				{
-					jQuery(this.rows[this.options.prefix+name]).hide();
+					jQuery(row).hide();
 				}
 			}
 			this.options.fields[name] = _fields[name];

@@ -38,6 +38,35 @@ class OpenAPI
 	const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
 
 	/**
+	 * Collect the OpenAPI description files to merge
+	 *
+	 * Two locations are supported:
+	 * - doc/openapi/<app>.json      the central directory, app taken from the file name
+	 * - <app>/doc/openapi/*.json    shipped with the app, app taken from the directory
+	 *
+	 * The second lets an app carry its own description instead of having to patch a file outside
+	 * itself, which matters for apps maintained in their own repository. Because the app is the
+	 * directory there, an app may also split its description over several files.
+	 *
+	 * @return \Generator<array{0:string,1:string}> [app-name, full path]
+	 */
+	protected static function descriptionFiles(): \Generator
+	{
+		foreach(scandir($base_dir = EGW_SERVER_ROOT.'/doc/openapi') ?: [] as $file)
+		{
+			if (str_ends_with($file, ".json"))
+			{
+				yield [basename($file, '.json'), $base_dir.'/'.$file];
+			}
+		}
+		// the central directory is not matched by this pattern, so nothing is included twice
+		foreach(glob(EGW_SERVER_ROOT.'/*/doc/openapi/*.json') ?: [] as $app_path)
+		{
+			yield [basename(dirname($app_path, 3)), $app_path];
+		}
+	}
+
+	/**
 	 * Scan directory for app-specific JSON files and merge them into a single OpenAPI spec
 	 *
 	 * @param bool $inline_parameters true: replace parameter references with the actual data
@@ -90,17 +119,19 @@ class OpenAPI
 		];
 
 		$operationIds = [];
-		foreach(scandir($base_dir = EGW_SERVER_ROOT.'/doc/openapi') as $file)
+		foreach(self::descriptionFiles() as [$app, $file_path])
 		{
-			if (str_ends_with($file, ".json"))
+			// the file-name test that used to open this block moved into descriptionFiles();
+			// the block itself is kept so the merge below stays byte-identical and this patch
+			// does not turn into 60 lines of re-indentation
 			{
 				// if we're authenticated only show API's of apps the user has access too or are independent of an app like "links.json"
-				if (isset($GLOBALS['egw_info']['apps'][$app=basename($file, '.json')]) &&
+				if (isset($GLOBALS['egw_info']['apps'][$app]) &&
 					isset($GLOBALS['egw_info']['user']['apps']) && !isset($GLOBALS['egw_info']['user']['apps'][$app]))
 				{
 					continue;
 				}
-				$app_json = json_decode(file_get_contents($base_dir.'/'.$file), true);
+				$app_json = json_decode(file_get_contents($file_path), true);
 
 				foreach($app_json['paths'] as $path => &$methods)
 				{

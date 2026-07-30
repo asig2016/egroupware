@@ -2793,6 +2793,47 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	}
 
 	/**
+	 * Give a select in a row the options belonging to the field it shows.
+	 *
+	 * A select resolves its own options through findSelectOptions(), which looks them up by the
+	 * widget's id. A row widget has no id to look up by: its template id is a row-value binding
+	 * ("$[htype_id]"), which hydration consumes to set the *value*, leaving id empty. So the
+	 * lookup found nothing and every et2-select in a nextmatch row rendered an empty cell while
+	 * holding the right value - visible wherever a list shows a type, a status or a company.
+	 *
+	 * The field name is still in that binding, and its options are in the sel_options manager the
+	 * template set up and Et2NextmatchDataProvider keeps refreshed, so the two are matched up here.
+	 * Deliberately narrow:
+	 *  - only widgets that actually take options are touched;
+	 *  - only when the manager really has an entry for that field, so widgets resolving their own
+	 *    labels (accounts, links) are left alone rather than handed an empty option set.
+	 *
+	 * @param element row widget being hydrated
+	 * @param stored its template attributes, as recorded by Et2RowProvider
+	 */
+	private _applyRowSelectOptions(element : any, stored : Record<string, any> | undefined)
+	{
+		if(typeof element?.set_select_options !== "function")
+		{
+			return;
+		}
+		// "$[htype_id]", "${row}[htype_id]" and "$row_cont[htype_id]" all name the same field
+		const field = String(stored?.id ?? "")
+			.match(/^\$(?:\{row}|row_cont)?\[([a-zA-Z0-9_#\-]+)]$/)?.[1];
+		if(!field)
+		{
+			return;
+		}
+		const manager = this.getArrayMgr?.("sel_options");
+		const options = manager?.getEntry?.(field) || manager?.getRoot?.()?.getEntry?.(field);
+
+		if(options && options.length)
+		{
+			element.set_select_options(options);
+		}
+	}
+
+	/**
 	 * Request one page from provider and merge rows preserving uniqueness.
 	 */
 	private async _fetchPage(start : number, requestedCount : number = 0, requestKey : string = "")
@@ -4450,6 +4491,9 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 							element.setAttribute(attr, mgr.expandName(String(value)));
 						});
 					}
+					// after the value: setting it rebuilds the widget's options from what it can
+					// resolve, which for a row select is nothing - so the real options go on last
+					this._applyRowSelectOptions(element, stored);
 				}
 				catch(e)
 				{

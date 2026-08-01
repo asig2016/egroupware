@@ -35,6 +35,7 @@ import interact from "@interactjs/interactjs";
 import type {InteractEvent} from "@interactjs/core/InteractEvent";
 import {et2_arrayMgr} from "../et2_core_arrayMgr";
 import {et2_compileLegacyJS} from "../et2_core_legacyJSFunctions";
+import {isPhysicalAKey} from "./Et2DatagridKeyboard";
 
 interface Et2DatagridCustomfieldColumnState
 {
@@ -5333,7 +5334,11 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 				return;
 			}
 		}
-		if(!["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "a", "A"].includes(key))
+		// Asked by key POSITION, not by character: with a Greek or Cyrillic layout the A key reports
+		// key = "α" / "ф", so testing the character here silently disabled Ctrl+A for anyone not
+		// typing Latin - see Et2DatagridKeyboard.ts
+		const isAKey = isPhysicalAKey(event);
+		if(!["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(key) && !isAKey)
 		{
 			return;
 		}
@@ -5380,7 +5385,7 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 			this._toggleSelectionOnActiveRow();
 			return;
 		}
-		if((key === "a" || key === "A") && (event.ctrlKey || event.metaKey))
+		if(isAKey && (event.ctrlKey || event.metaKey))
 		{
 			if(this.selectionMode === "multiple")
 			{

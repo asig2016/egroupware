@@ -244,8 +244,22 @@ export default css`
 			border-bottom: 0;
 		}
 
+		/*
+		 * Selected rows need a tone that is actually visible against an unselected row.
+		 *
+		 * This used to be --sl-color-primary-50 with #eef5ff as the fallback. The fallback is a
+		 * perfectly good highlight, but it never applies: themes DO define primary-50, and being the
+		 * lightest step of the ramp it lands around 98% lightness - hsl(204, 33%, 98%) in the default
+		 * EGroupware theme, which is rgb(248, 250, 252). Rows are transparent over a white surface,
+		 * so "selected" painted the row roughly 2% darker than "not selected": selection worked in
+		 * every respect except being possible to see, which reads as select-all doing nothing at all.
+		 *
+		 * primary-200 is two steps darker and stays theme-aware (it inverts with a dark palette,
+		 * unlike a hard-coded colour). --dg-row-selected-background is there so an app or theme can
+		 * override just this without moving the whole primary ramp.
+		 */
 		tbody > *[aria-selected="true"] {
-			background: var(--sl-color-primary-50, #eef5ff);
+			background: var(--dg-row-selected-background, var(--sl-color-primary-200, #cfe0f5));
 		}
 
 		tbody > [data-row-id].dg-row-active {
@@ -470,8 +484,9 @@ export default css`
 		overflow: hidden;
 	}
 
+	/* same token as the table view above, so both views highlight identically */
 	.dg-tile-grid > [data-row-id][aria-selected="true"] {
-		background: var(--sl-color-primary-50, #eef5ff);
+		background: var(--dg-row-selected-background, var(--sl-color-primary-200, #cfe0f5));
 	}
 
 	.dg-tile-grid > [data-row-id].dg-row-active {

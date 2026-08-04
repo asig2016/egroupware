@@ -1456,13 +1456,17 @@ abstract class Merge
 					}
 					else
 					{
-						$time = $value;
-						/*
-						$time = Api\DateTime::createFromFormat('+' . Api\DateTime::$user_dateformat . '*' . Api\DateTime::$user_timeformat . '*', $value) ?:
-							new Api\DateTime($value, Api\DateTime::$user_timezone);
-						*/
+						// value is already formatted by the app, it can be date+time, date-only or even something
+						// unparsable --> try the user-format(s) first and never let a failed parse throw
+						try {
+							$time = Api\DateTime::createFromUserFormat($value);
+						}
+						catch(\Throwable $e) {
+							$time = null;
+						}
 					}
-					$replacements['$$' . $field . '/date$$'] = $time ? $time->format(Api\DateTime::$user_dateformat) : '';
+					$replacements['$$' . $field . '/date$$'] = $time ? $time->format(Api\DateTime::$user_dateformat) :
+						(is_scalar($value) ? (string)$value : '');
 					$replacements['$$' . $field . '/time$$'] = $time ? $time->format(Api\DateTime::$user_timeformat) : '';
 				}
 			}

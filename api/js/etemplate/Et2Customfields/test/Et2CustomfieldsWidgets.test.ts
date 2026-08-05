@@ -776,6 +776,7 @@ describe("Et2Customfields webcomponents", () =>
 			cf_select: {label: "Select", type: "select", values: {open: "Open", closed: "Closed"}, rows: 0},
 			cf_check: {label: "Done", type: "checkbox"},
 			cf_date: {label: "Date", type: "date"},
+			cf_price: {label: "Price", type: "float"},
 			cf_file: {label: "File", type: "filemanager"},
 			cf_heading: {label: "Heading", type: "label"}
 		};
@@ -801,12 +802,22 @@ describe("Et2Customfields webcomponents", () =>
 		);
 		const date = widgetOf("cf_date");
 		assert.equal(date?.localName, "et2-date-range", "date customfields should filter with a from/to range");
+		const price = widgetOf("cf_price");
+		assert.isTrue(price?.classList?.contains("customfields-filters__range"), "float customfields should filter with a from/to pair");
+		const bounds = price?.querySelectorAll("et2-number") ?? [];
+		assert.equal(bounds.length, 2, "float filter should be two number inputs");
+		assert.equal(bounds[0]?.label, "Price", "the from side carries the field's label");
+		assert.notOk(bounds[1]?.label, "the to side does not repeat it");
 		assertNoElement(element.querySelector("[data-field='cf_file']"), "filemanager customfields should not render as filters");
 		assertNoElement(element.querySelector("[data-field='cf_heading']"), "display-only label customfields should not render as filters");
 
 		// An empty range reports "" rather than null: a null filter value blanks the kdots
 		// filter indicator, which walks the values with Object.values()
-		assert.strictEqual(element.getValue()["#cf_date"], "", "an empty filter should report an empty string");
+		const filters = <any>element;
+		assert.strictEqual(filters.getValue()["#cf_date"], "", "an empty filter should report an empty string");
+		assert.strictEqual(filters.getValue()["#cf_price"], "", "an untouched from/to pair does not filter");
+		bounds[0].value = "10";
+		assert.deepEqual(filters.getValue()["#cf_price"], {from: "10", to: ""}, "a bound set on one side reports the pair");
 	});
 
 	it("supports type_filter previous across widget instances", async() =>

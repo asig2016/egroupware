@@ -207,6 +207,15 @@ export class Et2CustomfieldsBase extends Et2Widget(LitElement)
 		return this._controller?.getVisibleFieldNames() || [];
 	}
 
+	/**
+	 * Whether tab placement should be ignored when resolving field visibility.
+	 * Filter widgets override this - see Et2CustomfieldsFilters.
+	 */
+	protected get ignoreTabVisibility() : boolean
+	{
+		return false;
+	}
+
 	protected _recomputeVisibility()
 	{
 		this._controller = new Et2CustomfieldsController({
@@ -214,7 +223,8 @@ export class Et2CustomfieldsBase extends Et2Widget(LitElement)
 			fields: this.fields || {},
 			exclude: this.exclude,
 			typeFilter: this.typeFilter,
-			tab: this.tab
+			tab: this.tab,
+			ignoreTabs: this.ignoreTabVisibility
 		});
 		this._visibleFields = this._controller.getVisibleMap();
 	}

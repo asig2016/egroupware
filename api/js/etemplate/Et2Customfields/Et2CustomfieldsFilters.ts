@@ -12,19 +12,61 @@ import type {Et2CustomfieldWidgetMapping} from "./Et2CustomfieldWidgetMapper";
 // The generated controls are created by tag name, so the ones a filter can map to must be defined
 import "../Et2Link/Et2LinkEntry";
 import "../Et2Date/Et2DateRange";
+// float filters render as an et2-number from/to pair - without the definition the mapper falls back to et2-description
+import "../Et2Textbox/Et2Number";
 
 import styles from "./Et2CustomfieldsFilters.styles";
 /**
  * @summary Renders customfield filter controls.
  *
  * Every customfield a filter can express a value for renders: select-style and app-backed
- * fields as multi-selects, a checkbox as a Yes/No select, a date as a from/to range, and the
- * rest (text, int, float, url, ...) with their edit widget.  Only types with nothing to filter
+ * fields as multi-selects, a checkbox as a Yes/No select, a date and a float as a from/to range,
+ * and the rest (text, int, url, ...) with their edit widget.  Only types with nothing to filter
  * on - filemanager, button, passwd, htmlarea, serial and captions - are skipped.
  *
  * @csspart base - Container around all customfield filter controls.
  * @csspart field - Container for one rendered customfield filter.
  */
+/**
+ * A from/to pair of generated controls answering as one filter, see _rangeWidgetTemplate().
+ *
+ * It sits in the widgets map like a single control, so the et2_IInput methods below treat it the
+ * same way: the value is `{from, to}`, or "" when neither side is set so nothing filters.
+ */
+class Et2CustomfieldsRangeFilter
+{
+	from? : any;
+	to? : any;
+
+	private _sides() : any[]
+	{
+		return [this.from, this.to].filter(Boolean);
+	}
+
+	getValue() : {from : any, to : any} | ""
+	{
+		const valueOf = (widget : any) => (typeof widget?.getValue === "function" ? widget.getValue() : widget?.value) ?? "";
+		const from = valueOf(this.from);
+		const to = valueOf(this.to);
+		return from !== "" || to !== "" ? {from, to} : "";
+	}
+
+	isDirty() : boolean
+	{
+		return this._sides().some((widget) => typeof widget.isDirty === "function" && widget.isDirty());
+	}
+
+	resetDirty() : void
+	{
+		this._sides().forEach((widget) => widget.resetDirty?.());
+	}
+
+	isValid(messages : string[]) : boolean
+	{
+		return this._sides().every((widget) => typeof widget.isValid !== "function" || widget.isValid(messages));
+	}
+}
+
 @customElement("et2-customfields-filters")
 export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 {
@@ -87,6 +129,10 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 		{
 			return html``;
 		}
+		if(mapping.range)
+		{
+			return this._rangeWidgetTemplate(fieldName, mapping);
+		}
 		const tag = unsafeStatic(mapping.tagName);
 		return staticHtml`
 			<${tag}
@@ -123,6 +169,72 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 		this._valued.add(element);
 		applyCustomfieldWidgetMapping(element, {tagName: mapping.tagName, attrs});
 		this.widgets[fieldName] = element;
+	}
+
+	/**
+	 * A from/to pair of the mapped widget, e.g. float filters - value is {from, to}.
+	 *
+	 * The field's label goes on the from side only, where it lines up with the other filters; the
+	 * stylesheet widens that side by the label column so the two inputs still come out equal.
+	 */
+	private _rangeWidgetTemplate(fieldName : string, mapping : Et2CustomfieldWidgetMapping)
+	{
+		const tag = unsafeStatic(mapping.tagName);
+		return staticHtml`
+			<div class="customfields-filters__range">
+				<${tag} data-range="from"
+					${ref((element) => this._adoptRangeSide(fieldName, element, mapping, "from"))}
+				></${tag}>
+				<${tag} data-range="to"
+					${ref((element) => this._adoptRangeSide(fieldName, element, mapping, "to"))}
+				></${tag}>
+			</div>
+		`;
+	}
+
+	/**
+	 * Keep hold of one side of a generated from/to pair, see _adoptFilterWidget() for the rest.
+	 *
+	 * @param {string} fieldName Unprefixed customfield name.
+	 * @param {Element} element The generated control, or undefined when it was removed.
+	 * @param {Et2CustomfieldWidgetMapping} mapping Tag and attributes for the pair.
+	 * @param {"from"|"to"} side Which bound this control is.
+	 */
+	private _adoptRangeSide(fieldName : string, element : Element | undefined, mapping : Et2CustomfieldWidgetMapping, side : "from" | "to")
+	{
+		const range : Et2CustomfieldsRangeFilter = this.widgets[fieldName] instanceof Et2CustomfieldsRangeFilter
+			? this.widgets[fieldName] : new Et2CustomfieldsRangeFilter();
+		if(!element)
+		{
+			delete range[side];
+			if(!range.from && !range.to)
+			{
+				delete this.widgets[fieldName];
+			}
+			return;
+		}
+		(<any>element)._parent = this;
+		const value = mapping.attrs.value && typeof mapping.attrs.value === "object" ? mapping.attrs.value : {};
+		const attrs : Record<string, any> = {
+			...mapping.attrs,
+			id: (mapping.attrs.id || "") + "[" + side + "]",
+			value: value[side] ?? ""
+		};
+		if(side === "to")
+		{
+			delete attrs.label;
+		}
+		if(this._valued.has(element))
+		{
+			delete attrs.value;
+		}
+		this._valued.add(element);
+		applyCustomfieldWidgetMapping(element, {tagName: mapping.tagName, attrs});
+		// translate through the child widget's egw, like Et2DateRange does -
+		// the app-scoped egw of this widget may miss the api phrases
+		(<any>element).placeholder = (<any>element).egw?.()?.lang?.(side === "from" ? "From" : "To") || side;
+		range[side] = element;
+		this.widgets[fieldName] = range;
 	}
 
 	/**

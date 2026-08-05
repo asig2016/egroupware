@@ -421,7 +421,10 @@ class Nextmatch extends Etemplate\Widget
 		if (($template = Template::instance(self::$request->template['name'], self::$request->template['template_set'],
 			self::$request->template['version'], self::$request->template['load_via'])))
 		{
-			$template = $template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch');
+			// legacy tag-name first, then the web-component one, as templates use either of them
+			$widget_type = strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch';
+			$template = $template->getElementById($form_name, $widget_type) ??
+				$template->getElementById($form_name, 'et2-'.$widget_type);
 			$expand = array(
 				'cont' => array($form_name => $filters),
 			);

@@ -32,6 +32,13 @@ export interface Et2CustomfieldsControllerOptions
 	typeFilter? : string | string[] | "previous" | null;
 	tab? : string | null;
 	defaultTabMatch? : "" | "-private" | "-non-private" | null;
+	/**
+	 * Ignore tab placement when resolving default visibility.
+	 *
+	 * Filter widgets set this: a customfield being shown on an edit-dialog tab
+	 * is no reason to hide its filter.
+	 */
+	ignoreTabs? : boolean;
 }
 
 /**
@@ -112,6 +119,7 @@ export class Et2CustomfieldsController
 	private readonly defaultTabMatch : "" | "-private" | "-non-private" | null;
 	private readonly exclude : Set<string>;
 	private readonly typeFilter : string[] | null;
+	private readonly ignoreTabs : boolean;
 	/**
 	 * Normalized sparse allow-list from `options.fields`.
 	 *
@@ -134,6 +142,7 @@ export class Et2CustomfieldsController
 		this.defaultTabMatch = options.defaultTabMatch ?? null;
 		this.exclude = this._normalizeExclude(options.exclude);
 		this.typeFilter = this._normalizeTypeFilter(options.typeFilter ?? null);
+		this.ignoreTabs = options.ignoreTabs === true;
 		this.explicitFields = this._normalizeExplicitFields(options.fields);
 		this.visibility = this._resolveInitialVisibility();
 	}
@@ -182,10 +191,7 @@ export class Et2CustomfieldsController
 	isAllowedFilterField(field : Et2CustomfieldDefinition, apps : Record<string, any>) : boolean
 	{
 		const type = String(field?.type || "");
-		return type.startsWith("select") || (
-			type !== "filemanager" &&
-			typeof apps[type] !== "undefined"
-		);
+		return ["filemanager", "button", "passwd", "htmlarea", "serial", "label"].indexOf(type) === -1;
 	}
 
 	private _normalizeExplicitFields(fields : Record<string, boolean> | string | null | undefined) : Record<string, boolean>
@@ -376,6 +382,11 @@ export class Et2CustomfieldsController
 				if(this.exclude.has(fieldName))
 				{
 					visible = false;
+				}
+				else if(this.ignoreTabs)
+				{
+					// filters show every field regardless of tab placement,
+					// matching legacy customfields-filters behaviour
 				}
 				else if(field.tab)
 				{

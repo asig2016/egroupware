@@ -868,32 +868,50 @@ export class Et2Date extends Et2InputWidget(LitFlatpickr)
 		if(parsedDate)
 		{
 			const formattedDate = flatpickr.formatDate(parsedDate, this.getOptions().altFormat)
-			if(value === formattedDate &&
+			/*
+			 * flatpickr parses leniently, so every keystroke on the way to a complete date gives a
+			 * date: halfway through "2026-08-01 12:00" it happily reads "2026-08-0" as one. Only a
+			 * complete value formats back to exactly what is in the field - anything else is still
+			 * being typed and must not be pushed into the widget, or the field shows a date that
+			 * flatpickr never selected, so modelValue stays empty and a filled-in required date
+			 * reports "Field must not be empty" on save.
+			 */
+			if(value === formattedDate)
+			{
+				// _inputNode is flatpickr's data input, it holds dateFormat - NOT the displayed altFormat
+				const dataValue = flatpickr.formatDate(parsedDate, this.getOptions().dateFormat);
+				let changed = false;
 				// Avoid infinite loop of setting the same value back triggering another change
-				this._instance.input.value !== flatpickr.formatDate(parsedDate, this.getOptions().dateFormat))
-			{
-				try
+				if(this._instance.input.value !== dataValue)
 				{
-					// Can error for time-only due to missing calendar
-					this._instance.setDate(value, true, this._instance.config.altFormat)
+					try
+					{
+						// Can error for time-only due to missing calendar
+						this._instance.setDate(value, true, this._instance.config.altFormat)
+					}
+					catch(e)
+					{
+						// Just do it again, it works the second time
+						this._instance.setDate(value, true, this._instance.config.altFormat);
+					}
+					changed = true;
 				}
-				catch(e)
+				if(this._inputNode.value !== dataValue)
 				{
-					// Just do it again, it works the second time
-					this._instance.setDate(value, true, this._instance.config.altFormat);
+					// Update the et2-textbox so it has current value for any (required) validation
+					this._inputNode.value = dataValue;
+					// @ts-ignore
+					this._inputNode.validate && (<Et2Textbox>this._inputNode).validate();
+					changed = true;
 				}
-			}
-			if(this._inputNode.value !== formattedDate)
-			{
-				// Update the et2-textbox so it has current value for any (required) validation
-				this._inputNode.value = formattedDate;
-				// @ts-ignore
-				this._inputNode.validate && (<Et2Textbox>this._inputNode).validate();
-				this.updateComplete.then(() =>
+				if(changed)
 				{
-					this.dispatchEvent(new Event("change", {bubbles: true}));
-				});
-				return;
+					this.updateComplete.then(() =>
+					{
+						this.dispatchEvent(new Event("change", {bubbles: true}));
+					});
+					return;
+				}
 			}
 		}
 		this.dispatchEvent(new Event("input", {bubbles: true}));

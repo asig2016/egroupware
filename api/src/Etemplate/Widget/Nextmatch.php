@@ -413,7 +413,7 @@ class Nextmatch extends Etemplate\Widget
 			$filters['col_filter'] = array_filter($filters['col_filter'], fn($key) => !is_int($key), ARRAY_FILTER_USE_KEY);
 		}
 		// remove non-string search patterns not used in UI
-		if (!is_string($filters['search']))
+		if (empty($filters['search']) || !is_string($filters['search']))
 		{
 			unset($filters['search']);
 		}
@@ -421,9 +421,10 @@ class Nextmatch extends Etemplate\Widget
 		if (($template = Template::instance(self::$request->template['name'], self::$request->template['template_set'],
 			self::$request->template['version'], self::$request->template['load_via'])))
 		{
-			$nm_template = $template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'et2-nextmatch') ??
-				$template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch');
-			$template = $nm_template;
+			// legacy tag-name first, then the web-component one, as templates use either of them
+			$widget_type = strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch';
+			$template = $template->getElementById($form_name, $widget_type) ??
+				$template->getElementById($form_name, 'et2-'.$widget_type);
 			$expand = array(
 				'cont' => array($form_name => $filters),
 			);

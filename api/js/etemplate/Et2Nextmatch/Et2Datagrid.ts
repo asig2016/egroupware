@@ -1145,6 +1145,19 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		{
 			virtualizer.connected();
 		}
+		/*
+		 * Related wedge: the virtualizer measured its viewport while an ancestor still had no
+		 * height (appbox content loading into a tabbox that only later gets its fixed height) and
+		 * kept the 0-height result - range stays -1..-1 and no row is ever realized, although the
+		 * scroller has real size by now. It re-measures on scroll, so give it exactly that nudge
+		 * once rows and a sized scroller are there. Bounded: it only fires while the realized
+		 * range is empty, and a correctly-empty grid has no rows to trigger it.
+		 */
+		else if(virtualizer && this.isConnected && virtualizer._first === -1 && this.rows.length &&
+			(this.shadowRoot?.querySelector(".dg-body") as HTMLElement)?.clientHeight > 0)
+		{
+			this.shadowRoot.querySelector(".dg-body").dispatchEvent(new Event("scroll"));
+		}
 
 		// Include new row stylesheet(s)
 		if(changedProperties.has("rowStylesheets"))

@@ -9,13 +9,18 @@ import {
 	mapCustomfieldToWidget
 } from "./Et2CustomfieldWidgetMapper";
 import type {Et2CustomfieldWidgetMapping} from "./Et2CustomfieldWidgetMapper";
+// The generated controls are created by tag name, so the ones a filter can map to must be defined
+import "../Et2Link/Et2LinkEntry";
+import "../Et2Date/Et2DateRange";
 
 import styles from "./Et2CustomfieldsFilters.styles";
 /**
- * @summary Renders customfield filter selectboxes.
+ * @summary Renders customfield filter controls.
  *
- * Only legacy filter-eligible customfields render: select-style fields and
- * app-backed link-entry fields. Filemanager and non-select fields are skipped.
+ * Every customfield a filter can express a value for renders: select-style and app-backed
+ * fields as multi-selects, a checkbox as a Yes/No select, a date as a from/to range, and the
+ * rest (text, int, float, url, ...) with their edit widget.  Only types with nothing to filter
+ * on - filemanager, button, passwd, htmlarea, serial and captions - are skipped.
  *
  * @csspart base - Container around all customfield filter controls.
  * @csspart field - Container for one rendered customfield filter.
@@ -135,7 +140,9 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 		{
 			if(typeof widget?.getValue === "function")
 			{
-				value[CUSTOMFIELD_PREFIX + fieldName] = widget.getValue();
+				// null (e.g. an empty date-range) crashes downstream Object.values() consumers,
+				// such as the kdots filter indicator - report an empty filter as ""
+				value[CUSTOMFIELD_PREFIX + fieldName] = widget.getValue() ?? "";
 			}
 		}
 		return value;

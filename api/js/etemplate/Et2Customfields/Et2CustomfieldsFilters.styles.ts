@@ -27,4 +27,22 @@ export default css`
 	et2-customfields-filters .customfields-filters__field > * {
 		min-width: 0;
 	}
+
+	/*
+	 * A from/to pair, eg. a float filter.  Only the from side carries the label (et2-label-fixed,
+	 * so a --label-width column), so it gets that much more room and the two inputs come out equal.
+	 */
+	et2-customfields-filters .customfields-filters__range {
+		display: flex;
+		gap: var(--sl-spacing-2x-small, 0.25rem);
+	}
+
+	et2-customfields-filters .customfields-filters__range > * {
+		flex: 1 1 calc(50% - var(--label-width, 8em) / 2);
+		min-width: 0;
+	}
+
+	et2-customfields-filters .customfields-filters__range > [data-range="from"] {
+		flex-basis: calc(50% + var(--label-width, 8em) / 2);
+	}
 `;

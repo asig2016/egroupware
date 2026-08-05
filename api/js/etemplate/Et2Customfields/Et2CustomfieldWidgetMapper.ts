@@ -24,6 +24,8 @@ export interface Et2CustomfieldWidgetMapping
 {
 	tagName : string;
 	attrs : Record<string, any>;
+	/** Render as a from/to pair of tagName widgets, value = {from, to} */
+	range? : boolean;
 }
 
 /**
@@ -117,7 +119,12 @@ export function mapCustomfieldToWidget(
 			// a single date can only match exactly - filter with a from/to range
 			return finalizeMapping("date-range", attrs);
 		}
-		// other types (text, int, float, ...) filter with their edit widget
+		else if(filterType === "float")
+		{
+			// a float value rarely matches exactly - filter with a from/to range
+			return {...finalizeMapping("number", attrs), range: true};
+		}
+		// other types (text, int, ...) filter with their edit widget
 	}
 
 	const sourceType = String(field?.type || "text").replace(/_/g, "-");

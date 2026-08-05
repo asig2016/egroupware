@@ -255,6 +255,7 @@ describe("Et2Customfields webcomponents", () =>
 			cf_select: {label: "Select", type: "select", values: {open: "Open", closed: "Closed"}},
 			cf_check: {label: "Done", type: "checkbox"},
 			cf_date: {label: "Date", type: "date"},
+			cf_price: {label: "Price", type: "float"},
 			cf_file: {label: "File", type: "filemanager"},
 			cf_heading: {label: "Heading", type: "label"}
 		};
@@ -281,6 +282,9 @@ describe("Et2Customfields webcomponents", () =>
 		);
 		const date = widgetOf("cf_date");
 		assert.equal(date?.localName, "et2-date-range", "date customfields should filter with a from/to range");
+		const price = widgetOf("cf_price");
+		assert.isTrue(price?.classList?.contains("customfields-filters__range"), "float customfields should filter with a from/to pair");
+		assert.equal(price?.querySelectorAll("et2-number").length, 2, "float filter should be two number inputs");
 		assert.isNull(element.querySelector("[data-field='cf_file']"), "filemanager customfields should not render as filters");
 		assert.isNull(element.querySelector("[data-field='cf_heading']"), "display-only label customfields should not render as filters");
 	});

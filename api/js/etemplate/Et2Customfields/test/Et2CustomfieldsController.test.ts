@@ -94,6 +94,7 @@ describe("Et2CustomfieldsController", () =>
 		assert.isTrue(controller.isAllowedFilterField(sampleCustomfields.cf_project, {project: true}), "app-backed fields should be allowed as filters");
 		assert.isTrue(controller.isAllowedFilterField({type: "select"}, {}), "select fields should be allowed as filters");
 		assert.isFalse(controller.isAllowedFilterField(sampleCustomfields.cf_file, {filemanager: true}), "filemanager should not be allowed as a filter");
+		assert.isFalse(controller.isAllowedFilterField({type: "label"}, {}), "display-only label cfs should not be allowed as filters");
 	});
 
 	it("applies tab limits to default visibility", () =>
@@ -108,6 +109,28 @@ describe("Et2CustomfieldsController", () =>
 			cf_private: true,
 			cf_file: true
 		}, "tab-specific customfields should be hidden when their tab does not match");
+	});
+
+	it("ignores tab placement when ignoreTabs is set (filters mode)", () =>
+	{
+		const controller = new Et2CustomfieldsController({
+			customfields: sampleCustomfields,
+			ignoreTabs: true
+		});
+		assert.deepEqual(controller.getVisibleMap(), {
+			cf_text: true,
+			cf_project: true,
+			cf_private: true,
+			cf_file: true
+		}, "filters should show tab-assigned customfields too");
+
+		const excluded = new Et2CustomfieldsController({
+			customfields: sampleCustomfields,
+			ignoreTabs: true,
+			exclude: "cf_text"
+		});
+		assert.isFalse(excluded.getVisibleMap().cf_text, "exclude should still apply in filters mode");
+		assert.isTrue(excluded.getVisibleMap().cf_project, "tab-assigned fields should stay visible in filters mode");
 	});
 
 	it("normalizes array-shaped customfields by field name for chooser labels", () =>

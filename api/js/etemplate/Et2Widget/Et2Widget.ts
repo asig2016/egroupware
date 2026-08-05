@@ -121,6 +121,15 @@ const Et2WidgetMixin = <T extends Constructor>(superClass : T) =>
 						display: none;
 					}
 
+					/*
+					 * The UA stylesheet's [hidden]{display:none} is beaten by any author ":host{display:...}",
+					 * which nearly every widget sets - without this rule "hidden" marks a widget hidden
+					 * without ever taking it off the screen.
+					 */
+					:host([hidden]) {
+						display: none;
+					}
+
 					/* CSS to align internal inputs according to box alignment */
 
 					:host([align="center"]) .input-group__input {
@@ -1995,6 +2004,13 @@ function transformAttributes(widget, mgr : et2_arrayMgr, attributes)
 					continue;
 
 				default:
+					// A boolean attribute is false by being absent - writing "false" leaves it present,
+					// so eg. hidden="false" still reads as hidden.
+					if(attrValue === false && (typeof property === "object" ? property.type : property) === Boolean)
+					{
+						widget.removeAttribute(attribute);
+						break;
+					}
 					// Set as attribute (reflected in DOM)
 					widget.setAttribute(attribute, attrValue === true ? "" : attrValue);
 					break;			}

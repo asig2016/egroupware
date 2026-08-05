@@ -27,4 +27,14 @@ export default css`
 		min-width: 0;
 		width: 100%;
 	}
+
+	.customfields-filters__range {
+		display: flex;
+		gap: var(--sl-spacing-2x-small, 0.25rem);
+	}
+
+	.customfields-filters__range > * {
+		flex: 1 1 50%;
+		min-width: 0;
+	}
 `;

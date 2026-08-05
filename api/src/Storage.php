@@ -881,23 +881,32 @@ class Storage extends Storage\Base
 					{
 						if (is_array($val) && (array_key_exists('from', $val) || array_key_exists('to', $val)))
 						{
-							// from/to range from date(-time) cf filters: bounds inclusive, either side optional.
-							// Stored values mix formats ("2019-06-30" vs "2019-06-30T00:00:00Z"), so
-							// compare on the Y-m-d prefix, which is identical in all of them.
-							// (Limitation: a date cf with a custom non-ISO values[format] is not comparable this way.)
+							// from/to range from date(-time) and float cf filters: bounds inclusive, either side optional
+							$is_date = in_array($this->customfields[$cf_name]['type'], array('date', 'date-time'));
 							$conditions = array();
 							foreach(array('from' => '>=', 'to' => '<=') as $side => $op)
 							{
-								if (empty($val[$side])) continue;
-								try
+								// 0 is a real numeric bound, only ''/null/false mean "no bound"
+								if (!isset($val[$side]) || $val[$side] === '' || $val[$side] === false) continue;
+								if ($is_date)
 								{
-									$bound = (new DateTime($val[$side]))->format('Y-m-d');
+									// Stored values mix formats ("2019-06-30" vs "2019-06-30T00:00:00Z"), so
+									// compare on the Y-m-d prefix, which is identical in all of them.
+									// (Limitation: a date cf with a custom non-ISO values[format] is not comparable this way.)
+									try
+									{
+										$bound = (new DateTime($val[$side]))->format('Y-m-d');
+									}
+									catch (\Exception $e)
+									{
+										continue;
+									}
+									$conditions[] = 'LEFT(extra_filter.' . $this->extra_value . ',10)' . $op . $this->db->quote($bound);
 								}
-								catch (\Exception $e)
+								elseif (is_numeric($val[$side]))
 								{
-									continue;
+									$conditions[] = $this->db->to_double('extra_filter.' . $this->extra_value) . $op . (double)$val[$side];
 								}
-								$conditions[] = 'LEFT(extra_filter.' . $this->extra_value . ',10)' . $op . $this->db->quote($bound);
 							}
 							if (!$conditions)
 							{

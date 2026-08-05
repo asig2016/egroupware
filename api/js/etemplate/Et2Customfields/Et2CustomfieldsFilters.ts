@@ -11,12 +11,15 @@ import {
 } from "./Et2CustomfieldWidgetMapper";
 import type {Et2CustomfieldWidgetMapping} from "./Et2CustomfieldWidgetMapper";
 import "../Et2Link/Et2LinkEntry";
+import "../Et2Date/Et2DateRange";
 
 /**
- * @summary Renders customfield filter selectboxes.
+ * @summary Renders customfield filter widgets.
  *
- * Only legacy filter-eligible customfields render: select-style fields and
- * app-backed link-entry fields. Filemanager and non-select fields are skipped.
+ * Every filterable customfield renders, regardless of edit-dialog tab placement:
+ * selects and app-backed fields as multi-selects, checkboxes as Yes/No selects,
+ * the rest with their edit widget. Only types that cannot filter are skipped
+ * (filemanager, button, passwd, htmlarea, serial).
  *
  * @csspart base - Container around all customfield filter controls.
  * @csspart field - Container for one rendered customfield filter.
@@ -36,15 +39,24 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 				.customfields-filters {
 					display: flex;
 					flex-direction: column;
-					gap: var(--sl-spacing-2x-small, 0.25rem);
+					gap: var(--sl-spacing-x-small, 0.5rem);
 				}
 
 				.customfields-filters__field {
 					min-width: 0;
+					display: flex;
+					flex-direction: column;
+					align-items: stretch;
+					gap: 2px;
 				}
 
-				.customfields-filters__field > * {
+				.customfields-filters__label {
+					line-height: 1.3;
+				}
+
+				.customfields-filters__field > *:not(label) {
 					min-width: 0;
+					width: 100%;
 				}
 			`
 		];
@@ -53,6 +65,59 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 	protected createRenderRoot()
 	{
 		return this;
+	}
+
+	/**
+	 * A customfield living on an edit-dialog tab is still filterable -
+	 * legacy customfields-filters showed every field regardless of tab.
+	 */
+	protected get ignoreTabVisibility() : boolean
+	{
+		return true;
+	}
+
+	private _dirtySnapshot : string | null = null;
+
+	/**
+	 * Collect current filter values from the rendered field widgets.
+	 *
+	 * The mapper-created child widgets are not part of the etemplate widget
+	 * tree, so etemplate2.getValues() cannot reach them - this widget answers
+	 * for them instead (getValue/isDirty/resetDirty/isValid make it count as
+	 * et2_IInput).
+	 */
+	getValue() : Record<string, any>
+	{
+		const result : Record<string, any> = {};
+		for(const wrapper of Array.from(this.querySelectorAll("[data-field]")))
+		{
+			const fieldName = wrapper.getAttribute("data-field");
+			const widget = wrapper.querySelector(":scope > :not(label)") as any;
+			if(!fieldName || !widget)
+			{
+				continue;
+			}
+			// null (e.g. an empty date-range) crashes downstream Object.values() consumers
+			result[CUSTOMFIELD_PREFIX + fieldName] = (typeof widget.getValue === "function"
+				? widget.getValue()
+				: widget.value) ?? "";
+		}
+		return result;
+	}
+
+	isDirty() : boolean
+	{
+		return this._dirtySnapshot !== JSON.stringify(this.getValue());
+	}
+
+	resetDirty()
+	{
+		this._dirtySnapshot = JSON.stringify(this.getValue());
+	}
+
+	isValid() : boolean
+	{
+		return true;
 	}
 
 	private _fieldValue(fieldName : string)
@@ -74,12 +139,18 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 
 	private _fieldWidgetMapping(fieldName : string, field : Record<string, any>, value : any) : Et2CustomfieldWidgetMapping | null
 	{
-		return mapCustomfieldToWidget(fieldName, field, value, {
+		const mapping = mapCustomfieldToWidget(fieldName, field, value, {
 			context: "filters",
 			readonly: false,
 			apps: this._apps(),
 			prefix: CUSTOMFIELD_PREFIX
 		});
+		if(mapping)
+		{
+			// the label renders on its own line above the widget, see render()
+			delete mapping.attrs.label;
+		}
+		return mapping;
 	}
 
 	private _fieldWidgetTemplate(mapping : Et2CustomfieldWidgetMapping)
@@ -107,15 +178,24 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 				et2-customfields-filters .customfields-filters {
 					display: flex;
 					flex-direction: column;
-					gap: var(--sl-spacing-2x-small, 0.25rem);
+					gap: var(--sl-spacing-x-small, 0.5rem);
 				}
 
 				et2-customfields-filters .customfields-filters__field {
 					min-width: 0;
+					display: flex;
+					flex-direction: column;
+					align-items: stretch;
+					gap: 2px;
 				}
 
-				et2-customfields-filters .customfields-filters__field > * {
+				et2-customfields-filters .customfields-filters__label {
+					line-height: 1.3;
+				}
+
+				et2-customfields-filters .customfields-filters__field > *:not(label) {
 					min-width: 0;
+					width: 100%;
 				}
 			</style>
 		`;
@@ -138,6 +218,7 @@ export class Et2CustomfieldsFilters extends Et2CustomfieldsBase
 					}
 					return html`
 						<div class="customfields-filters__field" data-field=${fieldName} part="field">
+							<label class="customfields-filters__label" part="label">${field.label || fieldName}</label>
 							${this._fieldWidgetTemplate(mapping)}
 						</div>
 					`;

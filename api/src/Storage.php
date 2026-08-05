@@ -860,11 +860,43 @@ class Storage extends Storage\Base
 						unset($filter[$name]);
 						continue;    // ignore unavailable CF
 					}
-					if (!empty($val))    // empty -> dont filter
+					// empty -> dont filter, but 0 / "0" are real filter values (int/float cfs)
+					if ($val !== '' && $val !== null && $val !== false && $val !== array())
 					{
-						if ($val[0] === '!')    // negative filter
+						if (is_array($val) && (array_key_exists('from', $val) || array_key_exists('to', $val)))
 						{
-							$sql_filter = 'extra_filter.' . $this->extra_value . '!=' . $this->db->quote(substr($val, 1));
+							// from/to range from date(-time) cf filters: bounds inclusive, either side optional.
+							// Stored values mix formats ("2019-06-30" vs "2019-06-30T00:00:00Z"), so
+							// compare on the Y-m-d prefix, which is identical in all of them.
+							// (Limitation: a date cf with a custom non-ISO values[format] is not comparable this way.)
+							$conditions = array();
+							foreach(array('from' => '>=', 'to' => '<=') as $side => $op)
+							{
+								if (empty($val[$side])) continue;
+								try
+								{
+									$bound = (new DateTime($val[$side]))->format('Y-m-d');
+								}
+								catch (\Exception $e)
+								{
+									continue;
+								}
+								$conditions[] = 'LEFT(extra_filter.' . $this->extra_value . ',10)' . $op . $this->db->quote($bound);
+							}
+							if (!$conditions)
+							{
+								unset($filter[$name]);
+								continue;
+							}
+							$sql_filter = implode(' AND ', $conditions);
+						}
+						elseif (is_string($val) && $val[0] === '!')    // negative filter
+						{
+							// a LEFT JOIN with "!=" in its ON clause never removes rows - negate as an
+							// anti-join instead: LEFT JOIN on the positive value and keep only rows
+							// without a match, which also matches entries that never stored the cf
+							$sql_filter = 'extra_filter.' . $this->extra_value . '=' . $this->db->quote(substr($val, 1));
+							$filter[] = 'extra_filter' . $extra_filter . '.' . $this->extra_key . ' IS NULL';
 						}
 						else
 						{
@@ -879,9 +911,12 @@ class Storage extends Storage\Base
 							}
 							elseif ($this->customfields[$cf_name]['type'] == 'text')
 							{
+								// a text cf used as filter (not search, which passes its own wildcard)
+								// matches substrings - an exact-only match makes the filter useless
+								$text_wildcard = $wildcard !== '' ? $wildcard : '%';
 								$sql_filter = str_replace($this->extra_value, 'extra_filter.' . $this->extra_value,
 									$this->db->expression($this->extra_table, array(
-										$this->extra_value . ' ' . $this->db->capabilities[Db::CAPABILITY_CASE_INSENSITIV_LIKE] . ' ' . $this->db->quote($wildcard . $val . $wildcard)
+										$this->extra_value . ' ' . $this->db->capabilities[Db::CAPABILITY_CASE_INSENSITIV_LIKE] . ' ' . $this->db->quote($text_wildcard . $val . $text_wildcard)
 									))
 								);
 							}
@@ -892,7 +927,7 @@ class Storage extends Storage\Base
 							}
 						}
 						// need to use a LEFT JOIN for negative search or to allow NULL values
-						$need_left_join = $val[0] === '!' || strpos($sql_filter, 'IS NULL') !== false ? ' LEFT ' : '';
+						$need_left_join = (is_string($val) && $val[0] === '!') || strpos($sql_filter, 'IS NULL') !== false ? ' LEFT ' : '';
 						$join .= str_replace('extra_filter', 'extra_filter' . $extra_filter, $need_left_join . $this->extra_join_filter .
 							' AND extra_filter.' . $this->extra_key . '=' . $this->db->quote($cf_name) .
 							' AND ' . $sql_filter);

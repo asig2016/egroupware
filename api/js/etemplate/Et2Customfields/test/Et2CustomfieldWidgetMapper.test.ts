@@ -22,6 +22,7 @@ import {
 	"et2-date_ro",
 	"et2-date-time",
 	"et2-date-time_ro",
+	"et2-date-range",
 	"et2-url",
 	"et2-url_ro",
 	"et2-link",
@@ -151,7 +152,11 @@ describe("Et2CustomfieldWidgetMapper", () =>
 
 		assert.isTrue(isAllowedCustomfieldFilter({type: "select"}));
 		assert.isTrue(isAllowedCustomfieldFilter({type: "project"}, {project: true}));
+		assert.isTrue(isAllowedCustomfieldFilter({type: "text"}), "text fields filter by substring");
+		assert.isTrue(isAllowedCustomfieldFilter({type: "checkbox"}), "a checkbox filters as Yes/No");
 		assert.isFalse(isAllowedCustomfieldFilter({type: "filemanager"}, {filemanager: true}));
+		assert.isFalse(isAllowedCustomfieldFilter({type: "label"}), "a caption has nothing to filter on");
+		assert.isFalse(isAllowedCustomfieldFilter({type: "htmlarea"}), "rich text has nothing to filter on");
 	});
 
 	it("applies filter defaults and skips disallowed filters", () =>
@@ -170,9 +175,29 @@ describe("Et2CustomfieldWidgetMapper", () =>
 		});
 		assert.notProperty(filter?.attrs || {}, "rows", "filter widgets should not keep rows");
 
+		const text = mapCustomfieldToWidget("cf_text", {type: "text", rows: 5}, "", {context: "filters"});
+		assert.equal(text?.tagName, "et2-textbox", "a text field filters with a single-line textbox, whatever its rows");
+		assert.notProperty(text?.attrs || {}, "multiple", "only select-likes filter as multiple");
+
+		const check = mapCustomfieldToWidget("cf_check", {type: "checkbox"}, "", {context: "filters"});
+		assert.equal(check?.tagName, "et2-select", "a checkbox filters as a Yes/No select");
+		assert.deepEqual((check?.attrs.select_options || []).map((o) => o.value), ["1", "!1"]);
+		assert.notProperty(check?.attrs || {}, "multiple", "the Yes/No select is single-select");
+
+		assert.equal(
+			mapCustomfieldToWidget("cf_date", {type: "date"}, "", {context: "filters"})?.tagName,
+			"et2-date-range",
+			"a date filters with a from/to range"
+		);
+		assert.equal(
+			mapCustomfieldToWidget("cf_int", {type: "int"}, "", {context: "filters"})?.tagName,
+			"et2-number",
+			"a number keeps its edit widget"
+		);
+
 		assert.isNull(
-			mapCustomfieldToWidget("cf_text", {type: "text"}, "", {context: "filters"}),
-			"non-select non-app fields should not render in filter mode"
+			mapCustomfieldToWidget("cf_file", {type: "filemanager"}, "", {context: "filters"}),
+			"a filemanager field has nothing to filter on"
 		);
 	});
 

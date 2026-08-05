@@ -1133,6 +1133,20 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	{
 		super.updated(changedProperties);
 
+		/*
+		 * A connected grid must have a connected virtualizer, or it silently renders zero rows
+		 * with the data sitting right there in this.rows. The virtualize directive tracks
+		 * connection through lit's part tree, and a DOM move of an ancestor mid-load (eg.
+		 * Et2AppBox re-slotting the freshly loaded etemplate in a popup) can leave it
+		 * disconnected while the element itself is back in the document - nothing re-renders
+		 * afterwards, so it never recovers on its own.
+		 */
+		const virtualizer = this._virtualize as any;
+		if(virtualizer && this.isConnected && virtualizer._connected === false)
+		{
+			virtualizer.connected();
+		}
+
 		// Include new row stylesheet(s)
 		if(changedProperties.has("rowStylesheets"))
 		{

@@ -766,24 +766,47 @@ describe("Et2Customfields webcomponents", () =>
 		);
 	});
 
-	it("renders customfields filters as selectboxes and skips non-filter fields", async() =>
+	it("renders customfields filters and skips only non-filterable fields", async() =>
 	{
 		const element = await fixture<Et2CustomfieldsBase>(html`
 			<et2-customfields-filters></et2-customfields-filters>
 		`);
 		element.customfields = {
-			cf_text: {label: "Text", type: "text"},
-			cf_select: {label: "Select", type: "select", values: {open: "Open", closed: "Closed"}},
-			cf_file: {label: "File", type: "filemanager"}
+			cf_text: {label: "Text", type: "text", rows: 5},
+			cf_select: {label: "Select", type: "select", values: {open: "Open", closed: "Closed"}, rows: 0},
+			cf_check: {label: "Done", type: "checkbox"},
+			cf_date: {label: "Date", type: "date"},
+			cf_file: {label: "File", type: "filemanager"},
+			cf_heading: {label: "Heading", type: "label"}
 		};
 		await element.updateComplete;
 
-		const select = element.querySelector("[data-field='cf_select'] > *") as any;
+		const widgetOf = (name : string) => element.querySelector(`[data-field='${name}'] > *`) as any;
+
+		const select = widgetOf("cf_select");
 		assert.equal(select?.localName, "et2-select", "select customfield filters should render as selectboxes");
 		assert.equal(select?.emptyLabel, "all", "filter selectbox should use the legacy empty label");
 		assert.isTrue(select?.multiple, "filter selectbox should be multiple");
-		assertNoElement(element.querySelector("[data-field='cf_text']"), "text customfields should not render as filters");
+		assert.equal(select?.label, "Select", "the filter should carry the field's label");
+		assert.isFalse(select?.hasAttribute("rows"), "a rows=0 definition must not collapse the selected tags");
+		const text = widgetOf("cf_text");
+		assert.equal(text?.localName, "et2-textbox", "text customfields should filter with a single-line textbox");
+		const check = widgetOf("cf_check");
+		assert.equal(check?.localName, "et2-select", "checkbox customfields should filter with a Yes/No selectbox");
+		assert.isNotTrue(check?.multiple, "checkbox filter selectbox should be single-select");
+		assert.deepEqual(
+			(check?.select_options || []).map(o => o.value),
+			["1", "!1"],
+			"checkbox filter should offer checked (1) and not-checked (!1) options"
+		);
+		const date = widgetOf("cf_date");
+		assert.equal(date?.localName, "et2-date-range", "date customfields should filter with a from/to range");
 		assertNoElement(element.querySelector("[data-field='cf_file']"), "filemanager customfields should not render as filters");
+		assertNoElement(element.querySelector("[data-field='cf_heading']"), "display-only label customfields should not render as filters");
+
+		// An empty range reports "" rather than null: a null filter value blanks the kdots
+		// filter indicator, which walks the values with Object.values()
+		assert.strictEqual(element.getValue()["#cf_date"], "", "an empty filter should report an empty string");
 	});
 
 	it("supports type_filter previous across widget instances", async() =>

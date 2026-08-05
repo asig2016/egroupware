@@ -89,10 +89,35 @@ export function mapCustomfieldToWidget(
 		{
 			return null;
 		}
-		attrs.emptyLabel = attrs.emptyLabel || "all";
 		attrs.needed = false;
-		attrs.multiple = true;
 		delete attrs.rows;
+		const filterType = String(field?.type || "text");
+		if(filterType.startsWith("select") || typeof apps[filterType] !== "undefined")
+		{
+			attrs.emptyLabel = attrs.emptyLabel || "all";
+			attrs.multiple = true;
+		}
+		else if(filterType === "checkbox")
+		{
+			// a checkbox on its own can't express "don't filter":
+			// use a select instead - "!1" negates server-side
+			attrs.emptyLabel = attrs.emptyLabel || "all";
+			attrs.select_options = [
+				{value: "1", label: egwLang("Yes")},
+				{value: "!1", label: egwLang("No")}
+			];
+			return finalizeMapping("select", attrs);
+		}
+		else if(filterType === "radio")
+		{
+			attrs.emptyLabel = attrs.emptyLabel || "all";
+		}
+		else if(filterType === "date" || filterType === "date-time")
+		{
+			// a single date can only match exactly - filter with a from/to range
+			return finalizeMapping("date-range", attrs);
+		}
+		// other types (text, int, float, ...) filter with their edit widget
 	}
 
 	const sourceType = String(field?.type || "text").replace(/_/g, "-");
@@ -126,9 +151,10 @@ export function mapCustomfieldToWidget(
 	switch(sourceType)
 	{
 		case "text":
-			widgetType = Number(field.rows) > 1 ? "textarea" : "textbox";
+			// a rows>1 textarea is an edit-dialog setting, a filter stays single-line
+			widgetType = Number(field.rows) > 1 && context !== "filters" ? "textarea" : "textbox";
 			attrs.noAiTools = true;
-			if(Number(field.rows) > 1)
+			if(widgetType === "textarea")
 			{
 				attrs.rows = field.rows;
 			}
@@ -280,6 +306,11 @@ export function mapCustomfieldToWidget(
 	{
 		applyValueSettingsToAttrs(field, attrs, widgetType);
 	}
+	if(context === "filters")
+	{
+		// a rows limit is an edit-dialog setting, legacy filters always dropped it
+		delete attrs.rows;
+	}
 	return finalizeMapping(widgetType, attrs);
 }
 
@@ -288,11 +319,10 @@ export function isAllowedCustomfieldFilter(
 	apps : Record<string, any> = {}
 ) : boolean
 {
+	// A deny-list: everything a filter can express a value for renders, only the types that
+	// have nothing to filter on (files, buttons, passwords, rich text, serials, captions) don't
 	const type = String(field?.type || "");
-	return type.startsWith("select") || (
-		type !== "filemanager" &&
-		typeof apps[type] !== "undefined"
-	);
+	return ["filemanager", "button", "passwd", "htmlarea", "serial", "label", "header"].indexOf(type) === -1;
 }
 
 export function normalizeCustomfieldOptions(source : any) : Array<{value : string; label : string}>
@@ -321,6 +351,20 @@ export function normalizeCustomfieldOptions(source : any) : Array<{value : strin
 			value: key,
 			label: String(source[key])
 		}));
+}
+
+function egwLang(phrase : string) : string
+{
+	try
+	{
+		const egw = (globalThis as any).egw;
+		const egwInstance = typeof egw === "function" ? egw() : egw;
+		return egwInstance?.lang?.(phrase) || phrase;
+	}
+	catch(e)
+	{
+		return phrase;
+	}
 }
 
 function defaultLinkApps() : Record<string, any>
@@ -388,7 +432,9 @@ export function applyCustomfieldWidgetMapping(element : Element | undefined, map
 
 function applySelectSettings(field : Record<string, any>, attrs : Record<string, any>)
 {
-	if(typeof field.rows !== "undefined")
+	// rows "0"/null must not become a rows attribute: Et2Select limits its
+	// tag area to calc(var(--rows) * ...), so rows="0" collapses it to 0px
+	if(Number(field.rows) > 0)
 	{
 		attrs.rows = field.rows;
 	}

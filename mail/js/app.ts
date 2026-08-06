@@ -1555,7 +1555,13 @@ export class MailApp extends EgwApp
 					data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 					// Update client cache to avoid resolving winmail.dat attachment again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content:data});
+					if (!egwIsMobile() && template)
+					{
+						template.set_value({content:data});
+						// set_value() destroyed and recreated the embedded acemailstor import
+						// panel, so the mail_id filled on selection is gone - initialize it again
+						this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+					}
 				}
 				else
 				{
@@ -1581,7 +1587,13 @@ export class MailApp extends EgwApp
 					this.setupViewAttachmentActions(data, sel_options);
 					// Update client cache to avoid re-fetching the attachment block again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content:data, sel_options:sel_options});
+					if (!egwIsMobile() && template)
+					{
+						template.set_value({content:data, sel_options:sel_options});
+						// set_value() destroyed and recreated the embedded acemailstor import
+						// panel, so the mail_id filled on selection is gone - initialize it again
+						this.acemailarch_obj.fillInMailApp_initimportsettings([rowId], template, rowId);
+					}
 				}
 			});
 		}

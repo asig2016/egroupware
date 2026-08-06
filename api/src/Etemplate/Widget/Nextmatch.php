@@ -128,6 +128,14 @@ class Nextmatch extends Etemplate\Widget
 			list($app) = explode('.', $this->attrs['template']);
 		}
 
+		// et2-nextmatch never receives get_rows, so default the client-side datastore prefix
+		// to the get_rows app here, or row-ids get prefixed with the current app instead when
+		// the template is embedded under another application's menuaction
+		if(empty($value['dataStorePrefix']) && !empty($app))
+		{
+			$value['dataStorePrefix'] = $app;
+		}
+
 		// et2-nextmatch does not run row/header templates server-side, so preload customfields metadata
 		// only when the configured row template actually uses a customfields header.
 		$rows_template = $value['template'] ?? $this->attrs['template'] ?? $this->attrs['options'] ?? null;

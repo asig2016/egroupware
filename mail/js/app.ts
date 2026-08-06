@@ -1364,6 +1364,7 @@ export class MailApp extends EgwApp
 		let attachmentsBlock = this.et2.getWidgetById('attachmentsBlock');
 		let mailPreview = this.et2.getWidgetById('mailPreview');
 		let previewPane = this.egw.preference('previewPane', 'mail')||'vertical';
+		var self = this;
 		// don't go further if the preview is supposed to be disabled and we're not in mobile view
 		if (previewPane == 'hide' && !egwIsMobile()) return;
 
@@ -1387,7 +1388,13 @@ export class MailApp extends EgwApp
 						data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 						// Update client cache to avoid resolving winmail.dat attachment again
 						egw.dataStoreUID(data.uid, data);
-						if (!egwIsMobile() && mailPreview) mailPreview.set_value({content:data});
+						if (!egwIsMobile() && mailPreview)
+						{
+							mailPreview.set_value({content:data});
+							// set_value() destroyed and recreated the embedded acemailstor import
+							// panel, so the mail_id filled on selection is gone - initialize it again
+							self.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
+						}
 					}
 					else
 					{
@@ -1412,7 +1419,13 @@ export class MailApp extends EgwApp
 						this.setupViewAttachmentActions(data, sel_options);
 						// Update client cache to avoid re-fetching the attachment block again
 						egw.dataStoreUID(data.uid, data);
-						if (!egwIsMobile() && mailPreview) mailPreview.set_value({content:data, sel_options:sel_options});
+						if (!egwIsMobile() && mailPreview)
+						{
+							mailPreview.set_value({content:data, sel_options:sel_options});
+							// set_value() destroyed and recreated the embedded acemailstor import
+							// panel, so the mail_id filled on selection is gone - initialize it again
+							this.acemailarch_obj.fillInMailApp_initimportsettings(selected, nextmatch, rowId);
+						}
 					}
 				});
 			}
@@ -1477,7 +1490,6 @@ export class MailApp extends EgwApp
 			{
 				this.mail_selectedMails.push(rowId);
 			}
-			var self = this;
 
 			// Try to avoid sending so many request when user tries to scroll on list
 			// via key up/down quite fast.

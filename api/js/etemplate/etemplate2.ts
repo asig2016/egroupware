@@ -804,6 +804,13 @@ export class etemplate2
 				// to run.
 				setTimeout(() =>
 				{
+					// The instance can be clear()ed before this timeout fires - eg. an Et2AppBox
+					// reloading its embedded etemplate for a new entry - leaving no container to
+					// finish up for.
+					if(!this._widgetContainer)
+					{
+						return;
+					}
 					this._widgetContainer.updateComplete.then(async() =>
 					{
 						// Clear dirty now that it's all loaded

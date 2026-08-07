@@ -1233,7 +1233,7 @@ export class Et2NextmatchActionController implements ReactiveController
 				}
 			// Fall through to egw_open for single-row long_task actions with egw_open.
 			case "egw_open":
-				this.executeEgwOpenAction(action, ids.providerIds, actionTarget);
+					this.executeEgwOpenAction(action, ids.serverIds, actionTarget);
 				break;
 
 			case "open_popup":
@@ -1260,12 +1260,18 @@ export class Et2NextmatchActionController implements ReactiveController
 		const providerIds = rawIds
 			.map((id) => provider?.toProviderRowId?.(id) || id)
 			.filter(Boolean);
+		// Legacy nm_action() semantics: $row_id is the full datastore uid including the
+		// app prefix (eg. "mail::8::48::SU5CT1g=::119848"), $id only its last "::" segment
+		const serverIds = rawIds
+			.map((id) => id.split("::").pop())
+			.filter(Boolean);
 		return {
 			rawIds,
 			providerIds,
+			serverIds,
 			all: selection.all === true,
-			rowIdsCsv: this.toCsv(providerIds),
-			idsCsv: this.toCsv(providerIds)
+			rowIdsCsv: this.toCsv(rawIds),
+			idsCsv: this.toCsv(serverIds)
 		};
 	}
 
@@ -1365,7 +1371,7 @@ export class Et2NextmatchActionController implements ReactiveController
 	 */
 	private executeLongTaskAction(action : EgwAction, ids : ReturnType<Et2NextmatchActionController["normalizeSelection"]>) : boolean
 	{
-		if(!ids.all && ids.providerIds.length <= 1 && typeof action.data?.egw_open !== "undefined")
+		if(!ids.all && ids.serverIds.length <= 1 && typeof action.data?.egw_open !== "undefined")
 		{
 			return false;
 		}
@@ -1374,8 +1380,8 @@ export class Et2NextmatchActionController implements ReactiveController
 		{
 			const datagrid = (this.host as any)._datagrid;
 			const total = Number(datagrid?.total || 0);
-			const fetchIds = total && ids.providerIds.length >= total
-			                 ? Promise.resolve(ids.providerIds)
+			const fetchIds = total && ids.serverIds.length >= total
+			                 ? Promise.resolve(ids.serverIds)
 			                 : this.host.fetchAllIds();
 			fetchIds.then((allIds) =>
 			{
@@ -1383,18 +1389,18 @@ export class Et2NextmatchActionController implements ReactiveController
 			}).catch(() => {});
 			return true;
 		}
-		dialog?.long_task?.(null, action.data?.message || (action as any).caption, action.data?.title, action.data?.menuaction, ids.providerIds);
+		dialog?.long_task?.(null, action.data?.message || (action as any).caption, action.data?.title, action.data?.menuaction, ids.serverIds);
 		return true;
 	}
 
 	/**
-	 * Execute an egw.open action with the selected provider row ids.
+	 * Execute an egw.open action with the selected server row ids.
 	 */
-	private executeEgwOpenAction(action : EgwAction, providerIds : string[], target : any)
+	private executeEgwOpenAction(action : EgwAction, serverIds : string[], target : any)
 	{
 		const spec = String(action.data?.egw_open || "");
 		const params = spec.split("-");
-		let egwOpenId = providerIds[0] || "";
+		let egwOpenId = serverIds[0] || "";
 		const type = params.shift();
 		const app = params.shift();
 		if(!type || !app)
@@ -1444,7 +1450,7 @@ export class Et2NextmatchActionController implements ReactiveController
 			{},
 			action.data || {},
 			{
-				selected: ids.providerIds,
+				selected: ids.serverIds,
 				select_all: ids.all,
 				checkboxes: checkboxValues
 			}

@@ -712,7 +712,13 @@ export class etemplate2
 			console.log("et2.load(): error loading lang-files and app.js: " + err.message);
 		}).then(() =>
 		{
-			this.clear();
+			// A re-load of the same server-side request must not destroy it: Request\Cache reuses
+			// the id across exec(), so the "old" session we would tear down here is the very one
+			// the incoming content belongs to, and the next submit gets redirected to the app
+			// index as an expired eT2 request. submit() unbinds the handler for its own
+			// round-trip, this covers the re-loads that do not go through submit().
+			const same_request = !!this._etemplate_exec_id && _data?.etemplate_exec_id === this._etemplate_exec_id;
+			this.clear(false, same_request);
 
 			// Initialize application js
 			let app_callback = null;

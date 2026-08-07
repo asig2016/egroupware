@@ -2815,4 +2815,46 @@ describe("Et2Nextmatch action setup", () =>
 			"visible selected rows should get action objects during selection sync"
 		);
 	});
+
+	/**
+	 * Contract under test:
+	 * - Action URL placeholders keep the legacy nm_action() id semantics: $row_id is
+	 *   the full datastore uid including the app prefix, $id only its last "::" segment.
+	 *   Mail row ids contain inner "::" separators (profile, folder), so stripping the
+	 *   prefix from $row_id shifts every segment and the server rejects the id.
+	 *
+	 * Setup strategy:
+	 * - Fake a data provider with the "mail" datastore prefix and normalize a
+	 *   mail-style uid through normalizeSelection()/buildActionUrl().
+	 *
+	 * Pass criteria:
+	 * - $row_id substitutes the full prefixed uid, $id only the message uid.
+	 */
+	it("keeps the app prefix in $row_id and only the last segment in $id", () =>
+	{
+		const prefix = "mail";
+		const controller : any = new Et2NextmatchActionController({
+			id: "nm_action_url_ids",
+			egw: () => egwStub,
+			getInstanceManager: () => ({app: prefix}),
+			_dataProvider: {
+				normalizeRowId: (id : string, ensurePrefix : boolean = false) =>
+					ensurePrefix && !String(id).startsWith(`${prefix}::`) ? `${prefix}::${id}` : String(id),
+				toProviderRowId: (id : string) =>
+					String(id).startsWith(`${prefix}::`) ? String(id).slice(prefix.length + 2) : String(id)
+			}
+		} as any);
+
+		const uid = "mail::8::48::SU5CT1g=::119848";
+		const ids = controller.normalizeSelection({ids: [uid], all: false});
+		const url = controller.buildActionUrl(
+			{data: {url: "menuaction=acemailstor.acemailstor_imp.import&id=$id&row_id=$row_id"}} as any,
+			ids
+		);
+
+		assert.equal(ids.rowIdsCsv, uid, "$row_id must keep the full datastore uid including the app prefix");
+		assert.equal(ids.idsCsv, "119848", "$id must be only the last :: segment of the uid");
+		assert.include(url, "id=119848");
+		assert.include(url, `row_id=${encodeURIComponent(uid)}`);
+	});
 });

@@ -1488,6 +1488,9 @@ export class MailApp extends EgwApp
 	{
 		const sel_options = {};
 		const attachmentsBlock = this.et2.getWidgetById('attachmentsBlock');
+		// the async re-renders below must not overwrite the preview once another row was selected
+		const isPreview = template && template === this.et2.getWidgetById('mailPreview');
+		const stillDisplayed = () => !isPreview || rowId === this.mail_currentlyFocussed;
 		data = data ?? egw.dataGetUIDdata(rowId).data ?? {};
 		data.emailTag = egw.preference('emailTag', 'mail') ?? 'onlyname';
 
@@ -1509,7 +1512,7 @@ export class MailApp extends EgwApp
 					data.attachmentsBlockTitle = _data.length > 1 ? `+${_data.length-1}` : '';
 					// Update client cache to avoid resolving winmail.dat attachment again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content:data});
+					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data});
 				}
 				else
 				{
@@ -1535,7 +1538,7 @@ export class MailApp extends EgwApp
 					this.setupViewAttachmentActions(data, sel_options);
 					// Update client cache to avoid re-fetching the attachment block again
 					egw.dataStoreUID(data.uid, data);
-					if (!egwIsMobile() && template) template.set_value({content:data, sel_options:sel_options});
+					if (!egwIsMobile() && template && stillDisplayed()) template.set_value({content:data, sel_options:sel_options});
 					// body may have already finished loading (empty) before this resolved -
 					// retry the auto-index now that attachmentsBlock is known, but only into
 					// the iframe still actually showing this row (loadMessageBody() marks it)
@@ -1836,6 +1839,9 @@ export class MailApp extends EgwApp
 	private loadMessageBody(iframeWidget: any, rowId: string, onLoad: (doc: Document) => void, signal?: AbortSignal): void
 	{
 		const iframe = iframeWidget.getDOMNode() as HTMLIFrameElement;
+		// when a row is focused inside the nextmatch shadow DOM, the nextmatch is the
+		// document-level active element - remember it to keep keyboard navigation alive
+		const nmHadFocus = this.nm && document.activeElement === (<any>this.nm);
 		this.jmap.fetchBody(rowId, undefined, signal).then((result) =>
 		{
 			// superseded by a newer selection while this request was in flight - drop it
@@ -1852,6 +1858,32 @@ export class MailApp extends EgwApp
 					doc.documentElement.dataset.rowId = rowId;
 					onLoad(doc);
 				}, {once: true});
+				if (nmHadFocus)
+				{
+					// the meeting-request etemplate inside the iframe focuses its first input on
+					// load, which kills further arrow-key navigation in the list - give focus back,
+					// unless the user meanwhile really clicked into the preview. Focus events don't
+					// cross the frame boundary, but the top window fires blur when the iframe's
+					// content takes focus.
+					const refocus = () =>
+					{
+						if (document.activeElement === iframe && rowId === this.mail_currentlyFocussed)
+						{
+							// pull frame-level focus back out of the iframe too, or real key
+							// events keep being routed into it
+							window.focus();
+							this.nm?.focusRowById?.(rowId);
+						}
+					};
+					const cancelRefocus = () =>
+					{
+						window.removeEventListener('blur', refocus);
+						document.removeEventListener('pointerdown', cancelRefocus, {capture: true});
+					};
+					window.addEventListener('blur', refocus, {once: true});
+					document.addEventListener('pointerdown', cancelRefocus, {once: true, capture: true});
+					window.setTimeout(cancelRefocus, 10000);
+				}
 				iframeWidget.set_src(egw.link('/index.php', {menuaction: 'mail.mail_ui.loadEmailBody', _messageID: rowId}));
 				return;
 			}

@@ -4521,6 +4521,21 @@ export class MailApp extends EgwApp
 	}
 
 	/**
+	 * Get the rendered nextmatch row node for a mail uid.
+	 *
+	 * et2-nextmatch has no legacy action-object manager, so the row node is looked
+	 * up by its data-row-id in the datagrid instead.
+	 *
+	 * @param {string} mail_uid datastore uid of the row ("mail::...")
+	 * @return {HTMLElement|null}
+	 */
+	private _mailRowNode(mail_uid : string) : HTMLElement | null
+	{
+		const grid : any = (<any>this.nm)?._datagrid;
+		return grid?.shadowRoot?.querySelector?.(`[data-row-id="${CSS.escape(mail_uid)}"]`) || null;
+	}
+
+	/**
 	 * mail_setRowClass
 	 *
 	 * @param {object} _actionObjects the senders
@@ -4575,11 +4590,11 @@ export class MailApp extends EgwApp
 				{
 					if (action.id === mail_uid) return action
 				});
-				if (action)
+				const nmNode = (action ? action.iface.getDOMNode() : null) || this._mailRowNode(mail_uid);
+				if (nmNode)
 				{
 					try
 					{
-						const nmNode = action.iface.getDOMNode();
 						if (_class === "unseen")
 						{
 							//image src usually comes from the server but can't anymore in this case so we set it directly
@@ -4667,11 +4682,11 @@ export class MailApp extends EgwApp
 					{
 						if (action.id === mail_uid) return action
 					});
-					if (action)
+					const nmNode = (action ? action.iface.getDOMNode() : null) || this._mailRowNode(mail_uid);
+					if (nmNode)
 					{
 						try
 						{
-							const nmNode = action.iface.getDOMNode();
 							nmNode.classList.remove(_class);
 							//we found the nm DOM node and removed the class from it
 							// that means we don't need to trigger a nm redraw

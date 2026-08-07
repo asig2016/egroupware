@@ -132,11 +132,16 @@ export class Et2DatagridSelectionController
 			// same as a plain click - so anything reacting to selection (e.g. a preview pane) keeps following the keyboard cursor.
 			// Must happen synchronously here, not via the capture-phase action-shortcut handler further up the dispatch chain
 			// that runs *before* moveActiveRow() above and would act on the row that was active before this keypress, one step behind.
-			this.allSelected = false;
-			this.selectedRowIds = new Set([this.activeRowId]);
+			// Nothing to do if that row is already the whole selection: re-emitting would make consumers
+			// reload (mail re-fetches the preview) for a selection that did not change.
+			if(this.allSelected || this.selectedRowIds.size !== 1 || !this.selectedRowIds.has(this.activeRowId))
+			{
+				this.allSelected = false;
+				this.selectedRowIds = new Set([this.activeRowId]);
+				this.syncRowAccessibilityState();
+				this.emitSelectionChanged(true);
+			}
 			this.anchorRowIndex = nextIndex;
-			this.syncRowAccessibilityState();
-			this.emitSelectionChanged(true);
 		}
 	}
 

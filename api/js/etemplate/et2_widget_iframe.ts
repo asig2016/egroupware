@@ -155,8 +155,10 @@ export class et2_iframe extends et2_valueWidget
 	{
 		if(_value.trim() != "")
 		{
+			// a leftover srcdoc attribute overrides src and suppresses the load event
 			if(_value.trim() == 'about:blank')
 			{
+				this.htmlNode.removeAttr("srcdoc");
 				this.htmlNode.attr("src", _value);
 			}
 			else
@@ -166,6 +168,7 @@ export class et2_iframe extends et2_valueWidget
 				this.htmlNode
 					.before(loader);
 				window.setTimeout(jQuery.proxy(function() {
+					this.htmlNode.removeAttr("srcdoc");
 					this.htmlNode.attr("src", _value)
 						.one('load',function() {
 							loader.remove();

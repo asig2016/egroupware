@@ -5529,6 +5529,36 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		{
 			this._selectRange(this.anchorRowIndex >= 0 ? this.anchorRowIndex : previous, nextIndex);
 		}
+		else if(!event.ctrlKey && !event.metaKey)
+		{
+			// Plain navigation selects the newly active row, like the legacy nextmatch
+			// (Ctrl+arrow keeps moving focus only, Space then toggles the selection)
+			this._selectActiveRowFromKeyboard();
+		}
+	}
+
+	/**
+	 * Replace the selection with the active row after plain keyboard navigation,
+	 * so onselect consumers (eg. mail's preview) follow the keyboard like they
+	 * follow pointer clicks.
+	 */
+	private _selectActiveRowFromKeyboard()
+	{
+		if(this.selectionMode === "none")
+		{
+			return;
+		}
+		const row = this._rowsByIndex[this.activeRowIndex];
+		// Unloaded virtualized rows select once navigation replays after the scroll/fetch
+		if(!row || this.selectedRowIds.size === 1 && this.selectedRowIds.has(row.id) && !this.allSelected)
+		{
+			return;
+		}
+		this.allSelected = false;
+		this.selectedRowIds = new Set([row.id]);
+		this.anchorRowIndex = this.activeRowIndex;
+		this._syncRowAccessibilityState();
+		this._emitSelectionChanged(true);
 	}
 
 	/**

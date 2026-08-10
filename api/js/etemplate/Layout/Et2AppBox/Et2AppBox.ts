@@ -97,6 +97,13 @@ export class Et2AppBox extends Et2Widget(LitElement)
 	@property({type: Function})
 	getNextmatch : () => et2_nextmatch = () : et2_nextmatch =>
 	{
+		// A migrated grid is the nextmatch itself - without this, callers checking
+		// this.nextmatch see null and fall back to a full load() on every re-visit
+		const nmElement = this.querySelector("et2-nextmatch");
+		if(nmElement)
+		{
+			return <any>nmElement;
+		}
 		let nm = null;
 		const nmDiv = this.querySelector(".et2_nextmatch");
 		if(nmDiv)

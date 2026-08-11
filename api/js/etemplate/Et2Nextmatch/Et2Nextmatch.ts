@@ -3513,9 +3513,12 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		{
 			return;
 		}
-		if(!event.defaultPrevented)
+		// typeof check, not just optional chaining: an onselect that could not be compiled to
+		// a function arrives as a non-callable (acemailstor's server-sent handler name ends up
+		// a boolean) and threw "legacyOnselect.call is not a function" on every click/arrow
+		if(!event.defaultPrevented && typeof this.legacyOnselect === "function")
 		{
-			this.legacyOnselect?.call(this, this.getSelection().ids, this);
+			this.legacyOnselect.call(this, this.getSelection().ids, this);
 		}
 	};
 

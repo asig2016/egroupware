@@ -75,6 +75,9 @@ function createFakeEgw(order : string[])
 function createHost(egwApi : any) : any
 {
 	const host = document.createElement("div") as any;
+	// The provider refuses to fetch for a disconnected host (a torn-down grid asking about an
+	// already-destroyed etemplate request), so the mock host has to be in the document
+	document.body.append(host);
 	host.id = "nm-retention";
 	host.settings = {};
 	host.activeFilters = {col_filter: {}};

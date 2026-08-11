@@ -4,6 +4,10 @@ import {Et2NextmatchDataProvider} from "../Et2NextmatchDataProvider";
 function createProviderHost(overrides : Record<string, any> = {}) : any
 {
 	const host = document.createElement("div") as any;
+	// The provider refuses to fetch for a disconnected host (a torn-down grid asking about an
+	// already-destroyed etemplate request used to end in the expired-session redirect), so the
+	// mock host has to be in the document like a real grid would be.
+	document.body.append(host);
 	host.id = overrides.id ?? "nm-test";
 	host.activeFilters = overrides.activeFilters ?? {col_filter: {}};
 	host.sortBy = overrides.sortBy ?? (() => {});

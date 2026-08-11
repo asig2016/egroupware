@@ -257,6 +257,12 @@ export class Et2NextmatchDataProvider implements Et2DatagridDataProvider
 			// Concurrent callers for the same row should observe the same result.
 			return existingRefresh;
 		}
+		if(this.host.isConnected === false)
+		{
+			// Same guard as _fetchPageWithRange(): don't ask the server about the request of a
+			// torn-down grid
+			return {rows: [], removedRowIds: []};
+		}
 
 		const bareRowId = this.toProviderRowId(normalizedId);
 		const refreshPromise = new Promise<Et2DatagridRefreshResult>((resolve, reject) =>
@@ -319,6 +325,18 @@ export class Et2NextmatchDataProvider implements Et2DatagridDataProvider
 	async fetchPage(start : number, pageSize : number) : Promise<Et2DatagridPageResult>
 	{
 		const {execId, widgetId, filters} = this._requestContext();
+		if(this.host.isConnected === false)
+		{
+			// A fetch for a torn-down nextmatch asks the server about an already-destroyed
+			// etemplate request (etemplate2.clear() removes it server-side, eg. an app-box
+			// re-load replacing the previous entry's instance while this provider's debounced
+			// fetch is still pending). The server used to treat that as an expired eT2 session
+			// and answer with a GLOBAL redirect, reloading the framework and losing all filters
+			// (now it answers empty, see Nextmatch::ajax_get_rows) - either way there is nothing
+			// valid to fetch for a disconnected grid, so don't ask.
+			this.host.egw?.()?.debug?.("warn", "Et2NextmatchDataProvider: skipping row fetch for a disconnected nextmatch", this.host.id || "");
+			return {rows: [], total: null};
+		}
 		const context = {prefix: this.getDataStorePrefix()};
 
 		return await new Promise((resolve, reject) =>

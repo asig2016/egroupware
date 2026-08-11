@@ -531,6 +531,22 @@ class Utils implements UtilsModule
 	 */
 	hashString = async (string : string) : Promise<string> =>
 	{
+		// crypto.subtle only exists in secure contexts (https / localhost); on a plain-http
+		// instance fall back to a non-cryptographic hash - callers only use this as a key
+		if(typeof crypto === "undefined" || !crypto.subtle)
+		{
+			// cyrb53 (public domain), split into two 32bit halves for a 64bit-ish key
+			let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+			for(let i = 0; i < string.length; i++)
+			{
+				const ch = string.charCodeAt(i);
+				h1 = Math.imul(h1 ^ ch, 2654435761);
+				h2 = Math.imul(h2 ^ ch, 1597334677);
+			}
+			h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+			h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+			return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+		}
 		const data = (new TextEncoder()).encode(string);
 		const hashBuffer = await crypto.subtle.digest('SHA-256', data);
 		const hashArray = Array.from(new Uint8Array(hashBuffer));

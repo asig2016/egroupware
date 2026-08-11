@@ -2853,9 +2853,13 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		{
 			return;
 		}
-		// "$[htype_id]", "${row}[htype_id]" and "$row_cont[htype_id]" all name the same field
-		const field = String(stored?.id ?? "")
-			.match(/^\$(?:\{row}|row_cont)?\[([a-zA-Z0-9_#\-]+)]$/)?.[1];
+		// "$[htype_id]", "${row}[htype_id]" and "$row_cont[htype_id]" all name the same field.
+		// Et2RowProvider's _normalizeLegacyRowExpressionShorthand() collapses the bracketed
+		// forms to the bare "$htype_id" before they reach the attrMap, so that shorthand is
+		// what usually arrives here ("$row"/"${row}" stay reserved for the whole row object).
+		const id = String(stored?.id ?? "");
+		const field = id.match(/^\$(?:\{row}|row_cont)?\[([a-zA-Z0-9_#\-]+)]$/)?.[1]
+			?? (id === "$row" ? undefined : id.match(/^\$([a-zA-Z_][a-zA-Z0-9_#\-]*)$/)?.[1]);
 		if(!field)
 		{
 			return;

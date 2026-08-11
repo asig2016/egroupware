@@ -401,7 +401,17 @@ class Nextmatch extends Etemplate\Widget
 	static public function ajax_get_rows($exec_id, array $queriedRange, array $filters = array(), $form_name='nm',
 		array $knownUids=null, $lastModified=null)
 	{
-		self::$request = Etemplate\Request::read($exec_id);
+		// handle a not found request ourselves: a data fetch racing the destruction of its
+		// etemplate request (eg. an app-box re-load destroyed the previous instance while its
+		// debounced fetch was already on the wire) must NOT trigger the expired-session GLOBAL
+		// redirect - that reloads the whole framework and the user loses all filters. The
+		// requesting list is gone client-side anyway, so an empty answer is the correct one.
+		if (!(self::$request = Etemplate\Request::read($exec_id, false)))
+		{
+			error_log(__METHOD__."('$exec_id', ...) request not found - answering empty instead of redirecting");
+			Api\Json\Response::get()->data(array('order' => array(), 'total' => 0));
+			return;
+		}
 		// fix for somehow empty etemplate request content
 		if (!is_array(self::$request->content))
 		{

@@ -1223,7 +1223,6 @@ export class EgwFrameworkApp extends LitElement
             ${this._filterButtonTemplate()}
 			${!['acactions',
 				'acactivity2',
-				'acadmin',
 				'acagreements',
 				'acclients',
 				'acdms',

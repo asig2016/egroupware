@@ -1181,6 +1181,18 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		}
 		this._requestQueue.dispose();
 		super.disconnectedCallback();
+		/*
+		 * Mirror of the forced connected() in updated(): the super call above is what normally
+		 * disconnects the virtualizer, through the same lit part-tree notification that can lose
+		 * sync in the first place. If it missed this teardown, disconnect the virtualizer
+		 * ourselves - otherwise the window scroll listener connected() attached would keep the
+		 * discarded grid subtree reachable.
+		 */
+		const virtualizer = this._virtualize as any;
+		if(virtualizer && virtualizer._connected === true)
+		{
+			virtualizer.disconnected();
+		}
 	}
 
 	/**
@@ -1479,8 +1491,39 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	updated(changedProperties : PropertyValues)
 	{
 		super.updated(changedProperties);
+		// A virtualizer left disconnected by a DOM move of an ancestor (eg. Et2AppBox re-slotting
+		// the freshly loaded etemplate in a popup) is woken up there, deferred and print-aware
 		this._reconnectStuckVirtualizer();
 		this._guardVirtualizerLayoutWhileHidden();
+
+		/*
+		 * Related wedge: the virtualizer measured its viewport while an ancestor still had no
+		 * height (appbox content loading into a tabbox that only later gets its fixed height) and
+		 * kept the 0-height result - range stays -1..-1 and no row is ever realized, although the
+		 * scroller has real size by now. It re-measures on scroll, so give it exactly that nudge
+		 * once rows and a sized scroller are there. Bounded: it only fires while the realized
+		 * range is empty, and a correctly-empty grid has no rows to trigger it. Print rows render
+		 * without the virtualizer on purpose, so they get no nudge either.
+		 *
+		 * The virtualizer's scroll handler is called directly rather than dispatching a "scroll"
+		 * event on the scroller: our own listener there counts real user scrolling
+		 * (_bodyScrollVersion), and a synthetic event would switch the initial-load prefetch
+		 * budget to the post-scroll one - see _tableOverhangPx().
+		 */
+		const virtualizer = this._virtualize as any;
+		if(virtualizer && this.isConnected && !this._printRows && virtualizer._connected === true &&
+			virtualizer._first === -1 && this.rows.length &&
+			(this.shadowRoot?.querySelector(".dg-body") as HTMLElement)?.clientHeight > 0)
+		{
+			if(typeof virtualizer._handleScrollEvent === "function")
+			{
+				virtualizer._handleScrollEvent();
+			}
+			else if(typeof virtualizer._updateLayout === "function")
+			{
+				virtualizer._updateLayout();
+			}
+		}
 
 		// Include new row stylesheet(s)
 		if(changedProperties.has("rowStylesheets"))

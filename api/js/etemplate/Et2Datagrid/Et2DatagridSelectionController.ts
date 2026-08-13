@@ -1,5 +1,6 @@
 import type {Et2Datagrid} from "./Et2Datagrid";
 import type {Et2DatagridSelectionDetail} from "./Et2Datagrid.types";
+import {isPhysicalAKey} from "./Et2DatagridKeyboard";
 
 /**
  * Owns row selection state (selected ids, select-all, active/anchor row) and
@@ -48,7 +49,11 @@ export class Et2DatagridSelectionController
 				return;
 			}
 		}
-		if(!["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "a", "A"].includes(key))
+		// Asked by key POSITION, not by character: with a Greek or Cyrillic layout the A key reports
+		// key = "α" / "ф", so testing the character here silently disabled Ctrl+A for anyone not
+		// typing Latin - see Et2DatagridKeyboard.ts
+		const isAKey = isPhysicalAKey(event);
+		if(!["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(key) && !isAKey)
 		{
 			return;
 		}
@@ -95,7 +100,7 @@ export class Et2DatagridSelectionController
 			this.toggleSelectionOnActiveRow();
 			return;
 		}
-		if((key === "a" || key === "A") && (event.ctrlKey || event.metaKey))
+		if(isAKey && (event.ctrlKey || event.metaKey))
 		{
 			if(this.host.selectionMode === "multiple")
 			{

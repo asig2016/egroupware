@@ -857,6 +857,18 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 			this._sparseVirtualizerLayoutFrame = null;
 		}
 		super.disconnectedCallback();
+		/*
+		 * Mirror of the forced connected() in updated(): the super call above is what normally
+		 * disconnects the virtualizer, through the same lit part-tree notification that can lose
+		 * sync in the first place. If it missed this teardown, disconnect the virtualizer
+		 * ourselves - otherwise the window scroll listener connected() attached would keep the
+		 * discarded grid subtree reachable.
+		 */
+		const virtualizer = this._virtualize as any;
+		if(virtualizer && virtualizer._connected === true)
+		{
+			virtualizer.disconnected();
+		}
 	}
 
 	/**
@@ -1131,6 +1143,33 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	updated(changedProperties : PropertyValues)
 	{
 		super.updated(changedProperties);
+
+		/*
+		 * A connected grid must have a connected virtualizer, or it silently renders zero rows
+		 * with the data sitting right there in this.rows. The virtualize directive tracks
+		 * connection through lit's part tree, and a DOM move of an ancestor mid-load (eg.
+		 * Et2AppBox re-slotting the freshly loaded etemplate in a popup) can leave it
+		 * disconnected while the element itself is back in the document - nothing re-renders
+		 * afterwards, so it never recovers on its own.
+		 */
+		const virtualizer = this._virtualize as any;
+		if(virtualizer && this.isConnected && virtualizer._connected === false)
+		{
+			virtualizer.connected();
+		}
+		/*
+		 * Related wedge: the virtualizer measured its viewport while an ancestor still had no
+		 * height (appbox content loading into a tabbox that only later gets its fixed height) and
+		 * kept the 0-height result - range stays -1..-1 and no row is ever realized, although the
+		 * scroller has real size by now. It re-measures on scroll, so give it exactly that nudge
+		 * once rows and a sized scroller are there. Bounded: it only fires while the realized
+		 * range is empty, and a correctly-empty grid has no rows to trigger it.
+		 */
+		else if(virtualizer && this.isConnected && virtualizer._first === -1 && this.rows.length &&
+			(this.shadowRoot?.querySelector(".dg-body") as HTMLElement)?.clientHeight > 0)
+		{
+			this.shadowRoot.querySelector(".dg-body").dispatchEvent(new Event("scroll"));
+		}
 
 		// Include new row stylesheet(s)
 		if(changedProperties.has("rowStylesheets"))

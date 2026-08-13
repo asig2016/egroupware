@@ -1035,6 +1035,21 @@ export class Et2RowProvider
 		{
 			element.setArrayMgr("modifications", modificationsMgr);
 		}
+		/*
+		 * A select in a row resolves its options through the sel_options manager:
+		 * findSelectOptions() starts with "if(widget.getArrayMgr('sel_options'))" and does nothing
+		 * at all without one, so a row widget that never got it renders an empty cell instead of
+		 * the option's label - which is what every et2-select in a nextmatch row did.
+		 *
+		 * The nextmatch's own manager is a namespaced perspective that does not hold the entries
+		 * itself; findSelectOptions() falls back to its root, which is where the options set up by
+		 * the template and refreshed by Et2NextmatchDataProvider live.
+		 */
+		const selOptionsMgr = this.host.getArrayMgr?.("sel_options");
+		if(selOptionsMgr && element.setArrayMgr)
+		{
+			element.setArrayMgr("sel_options", selOptionsMgr);
+		}
 	}
 
 	private _hasTemplateChildren(source : Element) : boolean

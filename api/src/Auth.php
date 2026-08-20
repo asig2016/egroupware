@@ -146,6 +146,173 @@ class Auth
 	}
 
 	/**
+	 * Name of the session-variable used to remember the language selected on the login-screen
+	 */
+	const LOGIN_LANG = 'egw_login_lang';
+
+	/**
+	 * Get the language selected on the login-screen, if it is a valid one
+	 *
+	 * @param bool $remembered =false true: fall back to the language remembered by login(), eg. after a SSO redirect
+	 * @return string|null 2-letter language-code or null, if none (valid) given
+	 */
+	public static function selectedLang(bool $remembered=false)
+	{
+		foreach([$_POST['lang'] ?? null, $_GET['lang'] ?? null,
+			$remembered && self::stashValid() ? $_SESSION[self::LOGIN_LANG] ?? null : null] as $lang)
+		{
+			if (!empty($lang) && is_string($lang) && preg_match('/^[a-z]{2}(-[a-z]{2})?$/', $lang))
+			{
+				return $lang;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Name of the session-variable used to remember the phpgw_* parameters of the login-request
+	 */
+	const LOGIN_PARAMS = 'egw_login_params';
+
+	/**
+	 * Most phpgw_* parameters loginParams() takes, and the longest value
+	 *
+	 * login() stores them in the session of a not yet authenticated request, so without a limit anyone
+	 * could have the server store as much as the request size allows.
+	 */
+	const LOGIN_PARAMS_MAX = 5;
+	const LOGIN_PARAMS_MAX_LENGTH = 4096;
+
+	/**
+	 * Name of the session-variable with the time login() remembered language and phpgw_* parameters
+	 */
+	const LOGIN_STASHED = 'egw_login_stashed';
+
+	/**
+	 * Seconds the remembered language and phpgw_* parameters stay valid
+	 *
+	 * They are only cleared by a successful login, so one of an abandoned SSO login would otherwise
+	 * still forward a much later login in the same browser session.
+	 */
+	const LOGIN_STASH_TTL = 900;
+
+	/**
+	 * Get the phpgw_* parameters (eg. phpgw_forward) of the login-request
+	 *
+	 * They are lost, if the login-form is submitted with GET (eg. by clicking a SSO discovery button), as
+	 * that replaces the query-part of the form-action, and again by the redirects to the IdP and back.
+	 *
+	 * @param bool $remembered =false true: fall back to the parameters remembered by login(), eg. after a SSO redirect
+	 * @return array name => value pairs, empty array if none given
+	 */
+	public static function loginParams(bool $remembered=false)
+	{
+		$params = [];
+		foreach($_REQUEST as $name => $value)
+		{
+			// strict name pattern: the name is later reflected into a hidden input, so it must not be able to
+			// break out of the attribute (PHP does NOT mangle ", < or > in parameter names)
+			if (is_string($value) && strlen($value) <= self::LOGIN_PARAMS_MAX_LENGTH &&
+				preg_match('/^phpgw_[a-z0-9_]+$/', $name))
+			{
+				$params[$name] = $value;
+				if (count($params) >= self::LOGIN_PARAMS_MAX) break;
+			}
+		}
+		if (!$params && $remembered && self::stashValid() && is_array($_SESSION[self::LOGIN_PARAMS] ?? null))
+		{
+			$params = $_SESSION[self::LOGIN_PARAMS];
+		}
+		return $params;
+	}
+
+	/**
+	 * Is the language and phpgw_* parameters login() remembered recent enough to be used
+	 */
+	protected static function stashValid() : bool
+	{
+		return isset($_SESSION[self::LOGIN_STASHED]) && time() - (int)$_SESSION[self::LOGIN_STASHED] <= self::LOGIN_STASH_TTL;
+	}
+
+	/**
+	 * Forget the language and phpgw_* parameters login() remembered
+	 */
+	public static function clearLoginStash() : void
+	{
+		unset($_SESSION[self::LOGIN_LANG], $_SESSION[self::LOGIN_PARAMS], $_SESSION[self::LOGIN_STASHED]);
+	}
+
+	/**
+	 * Check a phpgw_forward target stays on this server
+	 *
+	 * The target comes from the request, and a SSO login forwards to it without the user doing anything.
+	 * Only an absolute path ("/index.php?...") or a relative one ("index.php?...") is accepted:
+	 * Session::link() puts the webserver_url and a "/" in front of a relative target, and a browser reads
+	 * "/\host" as "//host" and drops tabs, newlines and leading spaces before it parses a URL. So neither
+	 * a backslash nor any control character or space is allowed in the path, and nothing like a scheme.
+	 *
+	 * @param string $forward
+	 * @return bool false for anything a browser could take as another host or scheme
+	 */
+	public static function isLocalForward(string $forward) : bool
+	{
+		if (preg_match('/[\x00-\x1f\x7f]/', $forward))
+		{
+			return false;
+		}
+		[$path] = explode('?', $forward, 2);
+
+		return strpos($path, '\\') === false && !preg_match('#^[a-z][a-z0-9+.-]*:#i', $path) &&
+			preg_match('#^(/(?!/)|[a-z0-9_.-])#i', $path);
+	}
+
+	/**
+	 * Where to go after a login: the phpgw_forward of the request, if it is local, or /index.php
+	 *
+	 * @return array [$url, $extra_vars] for Egw::redirect_link()
+	 */
+	public static function loginForward() : array
+	{
+		$forward = isset($_GET['phpgw_forward']) ? urldecode($_GET['phpgw_forward']) : $_POST['phpgw_forward'] ?? null;
+		if (!is_string($forward) || $forward === '' || !self::isLocalForward($forward))
+		{
+			return ['/index.php', 'cd=yes'];
+		}
+		[$forward, $extra_vars] = explode('?', $forward, 2) + [null, ''];
+		// only append cd=yes, if there is not already a cd value!
+		if (strpos($extra_vars, 'cd=') === false)
+		{
+			$extra_vars .= ($extra_vars ? '&' : '') . 'cd=yes';
+		}
+		return [$forward, $extra_vars];
+	}
+
+	/**
+	 * Finish a successful SSO login: apply what the login-screen selected, and tell where to go next
+	 *
+	 * The language and phpgw_* parameters are lost by the redirects to the IdP and back, login() remembered
+	 * them. Called from login.php and from api/oauth.php, where the providers with the EGroupware OAuth
+	 * proxy as redirect URL (Google, Microsoft) come back.
+	 *
+	 * @return array [$url, $extra_vars] for Egw::redirect_link()
+	 */
+	public static function finishSsoLogin() : array
+	{
+		if (($lang = self::selectedLang(true)) &&
+			$lang != ($GLOBALS['egw_info']['user']['preferences']['common']['lang'] ?? null))
+		{
+			$GLOBALS['egw']->preferences->add('common', 'lang', $lang, 'session');
+		}
+		$_GET += self::loginParams(true);
+		self::clearLoginStash();
+
+		// check if new translations are available
+		Translation::check_invalidate_cache();
+
+		return self::loginForward();
+	}
+
+	/**
 	 * Attempt a SSO login
 	 *
 	 * A different then the default backend can be selected by setting request parameter auth to the backend or
@@ -180,7 +347,23 @@ class Auth
 
 		$backend = self::backend($type ?? null, !empty($type));
 
-		return $backend instanceof  Auth\BackendSSO ? $backend->login() : null;
+		if (!($backend instanceof Auth\BackendSSO))
+		{
+			return null;
+		}
+		// remember language selected on the login-screen and phpgw_* parameters eg. phpgw_forward,
+		// as both are lost by the redirects to the IdP and back
+		if (($lang = self::selectedLang()))
+		{
+			$_SESSION[self::LOGIN_LANG] = $lang;
+			$_SESSION[self::LOGIN_STASHED] = time();
+		}
+		if (($params = self::loginParams()))
+		{
+			$_SESSION[self::LOGIN_PARAMS] = $params;
+			$_SESSION[self::LOGIN_STASHED] = time();
+		}
+		return $backend->login();
 	}
 
 	/**

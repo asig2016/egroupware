@@ -21,6 +21,7 @@
                 <div class="hiddenCredential">
                     <input type="hidden" name="passwd_type" value="text" />
                     <input type="hidden" name="account_type" value="u" />
+                    {hidden_vars}
                 </div>
 	            <!-- BEGIN discovery_block -->
 	            <div class="centered discovery_block">

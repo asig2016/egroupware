@@ -376,7 +376,7 @@ class Html
 			}
 			if (!$ignore_empty || $value && !($name == 'filter' && $value == 'none'))	// dont need to send all the empty vars
 			{
-				$html .= "<input type=\"hidden\" name=\"$name\" value=\"".self::htmlspecialchars($value)."\" />\n";
+				$html .= "<input type=\"hidden\" name=\"".self::htmlspecialchars($name)."\" value=\"".self::htmlspecialchars($value)."\" />\n";
 			}
 		}
 		return $html;

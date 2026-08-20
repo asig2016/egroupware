@@ -206,8 +206,12 @@ class Login
 			}
 		}
 
-		$tmpl->set_var('login_url', $GLOBALS['egw_info']['server']['webserver_url'] . '/login.php?' .
-			substr($extra_vars,$extra_vars[0] === '&' || [0] === '?' ? 1 : 0));
+		// htmlspecialchars(): $extra_vars carries request-supplied phpgw_* params into this form-action attribute
+		$tmpl->set_var('login_url', htmlspecialchars($GLOBALS['egw_info']['server']['webserver_url'] . '/login.php?' .
+			substr($extra_vars,$extra_vars[0] === '&' || [0] === '?' ? 1 : 0)));
+		// hidden fields for phpgw_* parameters eg. phpgw_forward, as submitting the form with GET
+		// (SSO discovery button/selection) replaces the query-part of the above action
+		$tmpl->set_var('hidden_vars', ($params = Api\Auth::loginParams()) ? Api\Html::input_hidden($params) : '');
 		$tmpl->set_var('version', $GLOBALS['egw_info']['server']['versions']['phpgwapi']);
 		$tmpl->set_var('login', htmlspecialchars($last_loginid));
 

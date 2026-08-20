@@ -146,6 +146,63 @@ class Auth
 	}
 
 	/**
+	 * Name of the session-variable used to remember the language selected on the login-screen
+	 */
+	const LOGIN_LANG = 'egw_login_lang';
+
+	/**
+	 * Get the language selected on the login-screen, if it is a valid one
+	 *
+	 * @param bool $remembered =false true: fall back to the language remembered by login(), eg. after a SSO redirect
+	 * @return string|null 2-letter language-code or null, if none (valid) given
+	 */
+	public static function selectedLang(bool $remembered=false)
+	{
+		foreach([$_POST['lang'] ?? null, $_GET['lang'] ?? null,
+			$remembered ? $_SESSION[self::LOGIN_LANG] ?? null : null] as $lang)
+		{
+			if (!empty($lang) && is_string($lang) && preg_match('/^[a-z]{2}(-[a-z]{2})?$/', $lang))
+			{
+				return $lang;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Name of the session-variable used to remember the phpgw_* parameters of the login-request
+	 */
+	const LOGIN_PARAMS = 'egw_login_params';
+
+	/**
+	 * Get the phpgw_* parameters (eg. phpgw_forward) of the login-request
+	 *
+	 * They are lost, if the login-form is submitted with GET (eg. by clicking a SSO discovery button), as
+	 * that replaces the query-part of the form-action, and again by the redirects to the IdP and back.
+	 *
+	 * @param bool $remembered =false true: fall back to the parameters remembered by login(), eg. after a SSO redirect
+	 * @return array name => value pairs, empty array if none given
+	 */
+	public static function loginParams(bool $remembered=false)
+	{
+		$params = [];
+		foreach($_REQUEST as $name => $value)
+		{
+			// strict name pattern: the name is later reflected into a hidden input, so it must not be able to
+			// break out of the attribute (PHP does NOT mangle ", < or > in parameter names)
+			if (is_string($value) && preg_match('/^phpgw_[a-z0-9_]+$/i', $name))
+			{
+				$params[$name] = $value;
+			}
+		}
+		if (!$params && $remembered && is_array($_SESSION[self::LOGIN_PARAMS] ?? null))
+		{
+			$params = $_SESSION[self::LOGIN_PARAMS];
+		}
+		return $params;
+	}
+
+	/**
 	 * Attempt a SSO login
 	 *
 	 * A different then the default backend can be selected by setting request parameter auth to the backend or
@@ -180,7 +237,21 @@ class Auth
 
 		$backend = self::backend($type ?? null, !empty($type));
 
-		return $backend instanceof  Auth\BackendSSO ? $backend->login() : null;
+		if (!($backend instanceof Auth\BackendSSO))
+		{
+			return null;
+		}
+		// remember language selected on the login-screen and phpgw_* parameters eg. phpgw_forward,
+		// as both are lost by the redirects to the IdP and back
+		if (($lang = self::selectedLang()))
+		{
+			$_SESSION[self::LOGIN_LANG] = $lang;
+		}
+		if (($params = self::loginParams()))
+		{
+			$_SESSION[self::LOGIN_PARAMS] = $params;
+		}
+		return $backend->login();
 	}
 
 	/**

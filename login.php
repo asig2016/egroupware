@@ -74,6 +74,22 @@ function parseForward(&$extra_vars)
 // SSO login: CAS, SAML, ...
 if (($GLOBALS['sessionid'] = Api\Auth::login()))
 {
+	// apply the language selected on the login-screen, a SSO login has no other way to get it
+	if (($lang = Api\Auth::selectedLang(true)))
+	{
+		if ($lang != $GLOBALS['egw_info']['user']['preferences']['common']['lang'])
+		{
+			$GLOBALS['egw']->preferences->add('common', 'lang', $lang, 'session');
+		}
+		unset($_SESSION[Api\Auth::LOGIN_LANG]);
+	}
+	// restore phpgw_* parameters eg. phpgw_forward, they are lost by the redirects to the IdP and back
+	$_GET += Api\Auth::loginParams(true);
+	unset($_SESSION[Api\Auth::LOGIN_PARAMS]);
+
+	// check if new translations are available
+	Api\Translation::check_invalidate_cache();
+
 	$forward = parseForward($extra_vars);
 	$GLOBALS['egw']->redirect_link($forward, $extra_vars);
 }
@@ -352,7 +368,7 @@ else
 	{
 		if(strpos($name,'phpgw_') !== false)
 		{
-			$extra_vars .= '&' . $name . '=' . urlencode($value);
+			$extra_vars .= '&' . urlencode($name) . '=' . urlencode($value);
 		}
 	}
 

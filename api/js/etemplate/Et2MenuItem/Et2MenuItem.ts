@@ -11,6 +11,10 @@ export class Et2MenuItem extends Et2Widget(SlMenuItem) implements et2_IInput
 		return [
 			super.styles,
 			css`
+				/* Et2Widget hides disabled hosts; a menu item is greyed out instead, like sl-menu-item */
+				:host([disabled]) {
+					display: block;
+				}
 				sl-popup::part(popup){
 					border: none;
 					border-radius: var(--sl-border-radius-medium) /*this is the radius sl-menu-item uses */

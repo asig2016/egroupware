@@ -726,7 +726,7 @@ export class EgwAction {
 
 
     set_hint(hint: string) {
-        
+        this.hint = hint;
     }
     public clone():EgwAction{
         const clone:EgwAction = Object.assign(Object.create(Object.getPrototypeOf(this)), this)

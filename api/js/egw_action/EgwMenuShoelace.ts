@@ -173,6 +173,8 @@ export class EgwMenuShoelace extends LitElement
 			}
 			menuItem.disabled = !_links[actionId].enabled;
 			menuItem.hidden = !_links[actionId].visible;
+			// Hints can change per context (e.g. why an action is disabled), keep the tooltip in sync
+			menuItem.title = _links[actionId].actionObj.hint || "";
 			if(!menuItem.disabled || !menuItem.hidden)
 			{
 				// Make sure the parents are visible too
@@ -359,6 +361,7 @@ export class EgwMenuShoelace extends LitElement
                     id=${id}
                     type="${item.checkbox ? "checkbox" : "normal"}"
                     data-action-id="${item.id}"
+                    title=${item.hint || nothing}
                     ?checked=${item.checkbox && item.checked}
                     ?disabled=${!item.enabled}
                     ?loading=${item.children.length > 0}

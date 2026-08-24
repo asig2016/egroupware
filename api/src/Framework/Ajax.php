@@ -744,46 +744,7 @@ abstract class Ajax extends Api\Framework
 					continue;
 				}
 
-				$var = array();
-				$var['icon_or_star'] = Api\Image::find('api', 'bullet');
-				$var['target'] = '';
-				$var['icon'] = 'bullet';
-				if(is_array($item_link))
-				{
-					if(isset($item_link['icon']))
-					{
-						$var['icon'] = $item_link['icon'];
-						$app = isset($item_link['app']) ? $item_link['app'] : $appname;
-						$var['icon_or_star'] = $item_link['icon'] ? Api\Image::find($app,$item_link['icon']) : False;
-					}
-					$var['lang_item'] = isset($item_link['no_lang']) && $item_link['no_lang'] ? $item_link['text'] : lang($item_link['text']);
-					$var['item_link'] = $item_link['link'];
-					if ($item_link['target'])
-					{
-						// we only support real targets not Api\Html markup with target in it
-						if (strpos($item_link['target'], 'target=') === false &&
-							strpos($item_link['target'], '"') === false)
-						{
-							$var['target'] = $item_link['target'];
-						}
-					}
-					if ($item_link['disableIfNoEPL'] && !$GLOBALS['egw_info']['apps']['stylite'])
-					{
-						$var['disableIfNoEPL'] = true;
-					}
-				}
-				else
-				{
-					$var['lang_item'] = lang($item_text);
-					$var['item_link'] = $item_link;
-				}
-				if($var['lang_item'] == '--')
-				{
-					unset($var['icon_or_star']);
-					$var['item_link'] = '';
-					$var['lang_item'] = '<hr />';
-				}
-				$current_menu['entries'][] = $var;
+				$current_menu['entries'][] = $this->sidebox_menu_entry($item_text, $item_link, $appname);
 			}
 
 			if ($file['sendToBottom'])
@@ -796,6 +757,69 @@ abstract class Ajax extends Api\Framework
 			}
 		}
 		return array_merge($data, $sendToBottom);
+	}
+
+	/**
+	 * Build one entry of a sidebox menu for get_sidebox()
+	 *
+	 * An entry with an 'entries' array of the same shape becomes a nested submenu
+	 * (rendered by the kdots application menu; other frameworks show it as plain text).
+	 *
+	 * @param int|string $item_text numeric index or text of the entry
+	 * @param array|string $item_link entry array or url
+	 * @param string $appname
+	 * @return array
+	 */
+	protected function sidebox_menu_entry($item_text, $item_link, $appname)
+	{
+		$var = array();
+		$var['icon_or_star'] = Api\Image::find('api', 'bullet');
+		$var['target'] = '';
+		$var['icon'] = 'bullet';
+		if(is_array($item_link))
+		{
+			if(isset($item_link['icon']))
+			{
+				$var['icon'] = $item_link['icon'];
+				$app = isset($item_link['app']) ? $item_link['app'] : $appname;
+				$var['icon_or_star'] = $item_link['icon'] ? Api\Image::find($app,$item_link['icon']) : False;
+			}
+			$var['lang_item'] = isset($item_link['no_lang']) && $item_link['no_lang'] ? $item_link['text'] : lang($item_link['text']);
+			$var['item_link'] = $item_link['link'] ?? false;
+			if ($item_link['target'])
+			{
+				// we only support real targets not Api\Html markup with target in it
+				if (strpos($item_link['target'], 'target=') === false &&
+					strpos($item_link['target'], '"') === false)
+				{
+					$var['target'] = $item_link['target'];
+				}
+			}
+			if ($item_link['disableIfNoEPL'] && !$GLOBALS['egw_info']['apps']['stylite'])
+			{
+				$var['disableIfNoEPL'] = true;
+			}
+			if (isset($item_link['entries']) && is_array($item_link['entries']))
+			{
+				$var['entries'] = [];
+				foreach($item_link['entries'] as $sub_text => $sub_link)
+				{
+					$var['entries'][] = $this->sidebox_menu_entry($sub_text, $sub_link, $appname);
+				}
+			}
+		}
+		else
+		{
+			$var['lang_item'] = lang($item_text);
+			$var['item_link'] = $item_link;
+		}
+		if($var['lang_item'] == '--')
+		{
+			unset($var['icon_or_star']);
+			$var['item_link'] = '';
+			$var['lang_item'] = '<hr />';
+		}
+		return $var;
 	}
 
 	/**

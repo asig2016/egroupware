@@ -1506,6 +1506,18 @@ export class EgwFrameworkApp extends LitElement
 			icon = html`
                 <sl-icon name=${item["icon"] ?? nothing} slot="prefix"></sl-icon>`;
 		}
+		// An entry with its own entries: a nested submenu
+		if(Array.isArray(item["entries"]) && item["entries"].length > 0)
+		{
+			return html`
+                <sl-menu-item exportparts="popup">
+                    ${icon}
+                    ${item["lang_item"]}
+                    <sl-menu slot="submenu">
+                        ${item["entries"].map((entry) => this._applicationSubMenuItemTemplate(entry))}
+                    </sl-menu>
+                </sl-menu-item>`;
+		}
 		return html`
             <sl-menu-item
                     ?disabled=${!item["item_link"]}

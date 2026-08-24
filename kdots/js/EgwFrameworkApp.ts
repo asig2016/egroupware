@@ -1603,9 +1603,9 @@ export class EgwFrameworkApp extends LitElement
 	/**
 	 * An individual sub-item in the application menu
 	 *
-	 * The tooltip is the entry's own 'hint' (Api\Framework\Ajax::get_sidebox() passes one through
-	 * when the app declares it), falling back to the label - which is what makes a truncated label
-	 * readable on hover.
+	 * The tooltip is the entry's own 'hint' (Api\Framework\Ajax::sidebox_menu_entry() passes one
+	 * through when the app declares it), falling back to the label - which is what makes a
+	 * truncated label readable on hover.
 	 *
 	 * @param item
 	 * @returns {TemplateResult<1>}
@@ -1622,6 +1622,18 @@ export class EgwFrameworkApp extends LitElement
 		{
 			icon = html`
                 <sl-icon name=${item["icon"] ?? nothing} slot="prefix"></sl-icon>`;
+		}
+		// An entry with its own entries: a nested submenu
+		if(Array.isArray(item["entries"]) && item["entries"].length > 0)
+		{
+			return html`
+                <sl-menu-item exportparts="popup" title=${item["hint"] || item["lang_item"] || nothing}>
+                    ${icon}
+                    ${item["lang_item"]}
+                    <sl-menu slot="submenu">
+                        ${item["entries"].map((entry) => this._applicationSubMenuItemTemplate(entry))}
+                    </sl-menu>
+                </sl-menu-item>`;
 		}
 		return html`
             <sl-menu-item

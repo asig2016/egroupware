@@ -122,6 +122,12 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 	// _templateValues's _pendingWidgetUpdates settles, not just until set_value() returns.
 	private _syncingFromNextmatch : boolean = false;
 	private _pendingWidgetUpdates : Promise<any> = Promise.resolve();
+	// this.value as it stood at the end of the last programmatic sync, serialised. The timing
+	// guard above cannot be airtight on its own: a widget dispatches its "change" only after its
+	// own updateComplete, which can settle LATER than the _pendingWidgetUpdates we waited on, so
+	// the echo arrives with the guard already down. Comparing values instead of racing clocks is
+	// what actually terminates it - see _isEchoOfLastSync().
+	private _syncedValue : string | null = null;
 
 	constructor()
 	{
@@ -295,8 +301,71 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 		this._pendingWidgetUpdates = Promise.all(apply());
 		this._pendingWidgetUpdates.finally(() =>
 		{
+			// Snapshot before dropping the guard: anything that still echoes after this point is
+			// recognisable as "the value we were just given", not as something the user changed.
+			this._syncedValue = this._serialiseValue(this.value);
 			this._syncingFromNextmatch = false;
 		});
+	}
+
+	/**
+	 * Is this change just our own programmatic sync coming back at us?
+	 *
+	 * A widget set to the value it already has still dispatches "change" (a select correcting
+	 * itself against its options on first render, for one), and that lands after the sync window
+	 * has closed. Left alone it goes handleFilterChange() -> applyFilters() -> nextmatch
+	 * applyFilters() -> "et2-filter" -> set value -> set_value() -> "change", forever - a
+	 * synchronous-looking freeze with no error and no failing request.
+	 *
+	 * Both re-entrancy guards in that cycle (this._syncingFromNextmatch here,
+	 * et2_nextmatch.update_in_progress there) only cover the synchronous part of it, so the
+	 * termination condition has to be the value itself: if nothing actually differs from what we
+	 * last synced in, there is nothing to push back out.
+	 */
+	private _isEchoOfLastSync() : boolean
+	{
+		// "{}" means we found no widgets to read, not "all filters empty" - never treat that as a
+		// match, or a filterbox that reads nothing would suppress every change instead of no-oping
+		if(this._syncedValue === null || this._syncedValue === "{}")
+		{
+			return false;
+		}
+		return this._serialiseValue(this.value) === this._syncedValue;
+	}
+
+	/**
+	 * Stable JSON for comparing two filter value snapshots
+	 *
+	 * Key order is sorted because the widgets are re-read each time and a template reload can
+	 * hand them back in a different order - the same filters must serialise identically.
+	 */
+	private _serialiseValue(value : any) : string
+	{
+		const stable = (v) =>
+		{
+			if(v === null || typeof v != "object")
+			{
+				return v;
+			}
+			if(Array.isArray(v))
+			{
+				return v.map(stable);
+			}
+			return Object.keys(v).sort().reduce((out, key) =>
+			{
+				out[key] = stable(v[key]);
+				return out;
+			}, {});
+		};
+		try
+		{
+			return JSON.stringify(stable(value)) ?? "{}";
+		}
+		catch(e)
+		{
+			// circular or otherwise unserialisable: fall back to "not an echo" rather than throw
+			return "";
+		}
 	}
 
 	/**
@@ -500,6 +569,14 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 		}
 		if(this.autoapply)
 		{
+			// Deliberately only on this path. The apply button and clearFilters() call
+			// applyFilters() directly and are explicit user intent, so they still always apply;
+			// it is only the automatic reaction to a widget's "change" that can be an echo.
+			if(this._isEchoOfLastSync())
+			{
+				return;
+			}
+			this._syncedValue = null;
 			event.stopPropagation();
 			this.applyFilters();
 		}

@@ -15,6 +15,7 @@ namespace EGroupware\Api\Etemplate\Widget;
 
 use EGroupware\Api;
 use EGroupware\Api\Etemplate;
+use EGroupware\Api\Storage\History;
 
 /**
  * eTemplate history log widget displays a list of changes to the current record.
@@ -105,6 +106,13 @@ class HistoryLog extends Etemplate\Widget
 		$value = self::get_array($content, $form_name);
 		$valid =& self::get_array($validated, $form_name, true);
 		if (true) $valid = $value;
+
+		// Nextmatch::ajax_get_rows() drops the client's get_rows and takes what the validated
+		// widget hands back instead. A nextmatch gets its own from the app's server-side content;
+		// a historylog never had one there - the callback is this widget's attribute, defaulted
+		// on the client - so without this every history log answers an empty list.
+		$valid['get_rows'] = $this->attrs['get_rows'] ?? History::class.'::get_rows';
+
 		return true;
 	}
 }

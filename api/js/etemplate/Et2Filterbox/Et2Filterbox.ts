@@ -79,6 +79,12 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 	} = {};
 	private _filterTemplateUpdateToken : number = 0;
 	private _activeFilterTemplate : HTMLElement | null = null;
+	// this.value as it stood at the end of the last programmatic sync, serialised. A widget
+	// dispatches its "change" only after its own updateComplete, ie. a later microtask than the
+	// synchronous set_value() calls handleNextmatchFilter() makes, so a re-entrancy flag would
+	// already be down by the time the echo arrives. Comparing values instead of racing clocks is
+	// what actually terminates the cycle - see _isEchoOfLastSync().
+	private _syncedValue : string | null = null;
 
 	constructor()
 	{
@@ -209,6 +215,65 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 				}
 			}, newValue, et2_IInput);
 		});
+	}
+
+	/**
+	 * Is this change just our own programmatic sync coming back at us?
+	 *
+	 * A widget set to the value it already has still dispatches "change" (a select correcting
+	 * itself against its options on first render, for one), and that lands after the sync window
+	 * has closed. Left alone it goes handleFilterChange() -> applyFilters() -> nextmatch
+	 * applyFilters() -> "et2-filter" -> set value -> set_value() -> "change", forever - a
+	 * synchronous-looking freeze with no error and no failing request.
+	 *
+	 * Any re-entrancy guard in that cycle (et2_nextmatch.update_in_progress, for one) only covers
+	 * the synchronous part of it, so the termination condition has to be the value itself: if
+	 * nothing actually differs from what we last synced in, there is nothing to push back out.
+	 */
+	private _isEchoOfLastSync() : boolean
+	{
+		// "{}" means we found no widgets to read, not "all filters empty" - never treat that as a
+		// match, or a filterbox that reads nothing would suppress every change instead of no-oping
+		if(this._syncedValue === null || this._syncedValue === "{}")
+		{
+			return false;
+		}
+		return this._serialiseValue(this.value) === this._syncedValue;
+	}
+
+	/**
+	 * Stable JSON for comparing two filter value snapshots
+	 *
+	 * Key order is sorted because the widgets are re-read each time and a template reload can
+	 * hand them back in a different order - the same filters must serialise identically.
+	 */
+	private _serialiseValue(value : any) : string
+	{
+		const stable = (v) =>
+		{
+			if(v === null || typeof v != "object")
+			{
+				return v;
+			}
+			if(Array.isArray(v))
+			{
+				return v.map(stable);
+			}
+			return Object.keys(v).sort().reduce((out, key) =>
+			{
+				out[key] = stable(v[key]);
+				return out;
+			}, {});
+		};
+		try
+		{
+			return JSON.stringify(stable(value)) ?? "{}";
+		}
+		catch(e)
+		{
+			// circular or otherwise unserialisable: fall back to "not an echo" rather than throw
+			return "";
+		}
 	}
 
 	/**
@@ -408,6 +473,14 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 	{
 		if(this.autoapply)
 		{
+			// Deliberately only on this path. The apply button and clearFilters() call
+			// applyFilters() directly and are explicit user intent, so they still always apply;
+			// it is only the automatic reaction to a widget's "change" that can be an echo.
+			if(this._isEchoOfLastSync())
+			{
+				return;
+			}
+			this._syncedValue = null;
 			event.stopPropagation();
 			this.applyFilters();
 		}
@@ -445,6 +518,9 @@ export class Et2Filterbox extends Et2InputWidget(LitElement)
 			return;
 		}
 		this.value = event.detail.activeFilters;
+		// Snapshot what we just pushed in: anything that echoes back after this point is
+		// recognisable as "the value we were just given", not as something the user changed.
+		this._syncedValue = this._serialiseValue(this.value);
 	}
 
 	private handleSlotChange(event)

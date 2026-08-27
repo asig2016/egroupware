@@ -1713,6 +1713,19 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		// override here would also clobber "delete" and "update-in-place", both documented as
 		// unconditional regardless of preference/sort.
 
+		// Legacy parity (et2_extension_nextmatch's id_loop): an "update" naming a row this grid
+		// does not hold is a new row in disguise - apps send refresh type "update" for a
+		// just-created entry too (achelper's basecf does, unconditionally), and an in-place
+		// update of a row that is not there is a silent no-op, so the new entry never appeared
+		// until a manual reload. Promote it to "add" ("edit", ie. a full reload, under the
+		// "exact" preference) exactly like the legacy nextmatch did.
+		if((_type == Et2DatagridUpdateTypes.UPDATE || _type == Et2DatagridUpdateTypes.UPDATE_IN_PLACE)
+			&& _row_ids.some((id) => !this._datagrid.hasRow(id)))
+		{
+			_type = update_pref == "exact" && !this._isSortedByModified()
+				? Et2DatagridUpdateTypes.EDIT : Et2DatagridUpdateTypes.ADD;
+		}
+
 		this._datagrid.refresh(_row_ids, _type).then(() =>
 		{
 			// Trigger an event so Mail app code can act on it - only Mail listens for this

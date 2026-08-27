@@ -6081,6 +6081,23 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	}
 
 	/**
+	 * Does the grid currently hold a materialized row for this id (row id or datastore uid)?
+	 *
+	 * Only materialized rows count - like the legacy controller's _indexMap, rows the virtual
+	 * scroller has not fetched are unknown here. Et2Nextmatch.refresh() uses this to spot an
+	 * "update" refresh naming a row that is actually new to the grid.
+	 *
+	 * A row held by an expanded child grid counts as held: refresh() passes its update on to
+	 * that grid, while an "add" would insert the row into this one as well.
+	 */
+	hasRow(rowId : string | number) : boolean
+	{
+		const dataStoreRowId = this._dataStoreRowIdFor(rowId, true);
+		return !!dataStoreRowId && (this.displayedRowIds.has(dataStoreRowId) ||
+			this._directEmbeddedChildGrids().some((childGrid) => childGrid.hasRow(dataStoreRowId)));
+	}
+
+	/**
 	 * Normalize refresh ids to the same datastore uid format used internally by rendered rows.
 	 */
 	private _normalizeRefreshRowIds(rowIds : string[]) : string[]

@@ -12,11 +12,17 @@ import {Et2Nextmatch} from "../Et2Nextmatch";
  * Setup strategy:
  * - Render a real `et2-nextmatch`, stub `egw().preference("lazy-update")` per case, and set
  *   `_filters.sort`/`modifiedDateField` to control `_isSortedByModified()`.
- * - Stub the real child datagrid's `refresh()` to capture the type it actually receives.
+ * - Stub the real child datagrid's `refresh()` to capture the type it actually receives, and
+ *   its `hasRow()` to control whether the grid "holds" the refreshed row - the docblock matrix
+ *   applies to rows the grid holds; an "update"/"update-in-place" naming a row it does NOT
+ *   hold is a new row in disguise (apps send "update" for a just-created entry too) and is
+ *   promoted to "add"/"edit" exactly like the legacy nextmatch's id_loop did.
  *
  * Pass criteria:
  * - The forwarded type matches the docblock's documented table for every
- *   (input type, preference, sorted) combination.
+ *   (input type, preference, sorted) combination when the grid holds the row.
+ * - For a row the grid does not hold, "update"/"update-in-place" forward as "add" ("edit"
+ *   under lazy-update=exact while not sorted by modified); other types are unaffected.
  */
 
 const egwStub = {
@@ -99,6 +105,8 @@ describe("Et2Nextmatch.refresh() type/preference/sort dispatch matrix", () =>
 			const datagrid = (el as any)._datagrid;
 			assert.isNotNull(datagrid, "test setup: real child datagrid should be rendered");
 			const refreshStub = sinon.stub(datagrid, "refresh").resolves();
+			// the docblock matrix is for rows the grid holds - unknown rows are covered below
+			const hasRowStub = sinon.stub(datagrid, "hasRow").returns(true);
 
 			try
 			{
@@ -120,6 +128,73 @@ describe("Et2Nextmatch.refresh() type/preference/sort dispatch matrix", () =>
 			{
 				liveEgw.preference = originalPreference;
 				refreshStub.restore();
+				hasRowStub.restore();
+				el.remove();
+			}
+		});
+	});
+});
+
+describe("Et2Nextmatch.refresh() promotion of updates naming a row the grid does not hold", () =>
+{
+	/**
+	 * [inputType, lazy-update pref, sortedByModified, expectedForwardedType]
+	 *
+	 * Legacy parity (et2_extension_nextmatch's id_loop): "update" AND "update-in-place" for an
+	 * unknown row become "add" - a just-created entry is announced with type "update" by apps
+	 * (achelper's basecf unconditionally), and an in-place update of a row that is not there
+	 * is a silent no-op, so without the promotion the new row never appeared. Under
+	 * lazy-update=exact while not sorted by modified, "add" itself means a full reload ("edit").
+	 */
+	const cases : Array<[string, string, boolean, string]> = [
+		["update", "lazy", true, "add"],
+		["update", "lazy", false, "add"],
+		["update", "exact", true, "add"],
+		["update", "exact", false, "edit"],	// already "edit" before the promotion is reached
+		["update-in-place", "lazy", true, "add"],
+		["update-in-place", "lazy", false, "add"],
+		["update-in-place", "exact", true, "add"],
+		["update-in-place", "exact", false, "edit"],
+		// unaffected types: the promotion only rewrites update/update-in-place
+		["add", "lazy", false, "add"],
+		["edit", "lazy", false, "edit"],
+		["delete", "lazy", false, "delete"]
+	];
+
+	cases.forEach(([inputType, pref, sorted, expectedType]) =>
+	{
+		it(`forwards "${inputType}" for an unknown row as "${expectedType}" when lazy-update=${pref}, sortedByModified=${sorted}`, async() =>
+		{
+			const el = await createReadyNextmatch();
+			el.modifiedDateField = "modified";
+			(el as any)._filters = sorted
+				? {sort: {id: "modified", asc: false}}
+				: {sort: {id: "other-field", asc: true}};
+
+			const liveEgw = (el as any).egw();
+			const originalPreference = liveEgw.preference;
+			liveEgw.preference = (key? : string) => key === "lazy-update" ? pref : null;
+
+			const datagrid = (el as any)._datagrid;
+			const refreshStub = sinon.stub(datagrid, "refresh").resolves();
+			const hasRowStub = sinon.stub(datagrid, "hasRow").returns(false);
+
+			try
+			{
+				el.refresh(["row-unknown"], inputType as any);
+
+				assert.isTrue(refreshStub.calledOnce, "datagrid.refresh should be called exactly once");
+				assert.equal(
+					refreshStub.firstCall.args[1],
+					expectedType,
+					`"${inputType}" for an unknown row (pref=${pref}, sorted=${sorted}) should forward as "${expectedType}"`
+				);
+			}
+			finally
+			{
+				liveEgw.preference = originalPreference;
+				refreshStub.restore();
+				hasRowStub.restore();
 				el.remove();
 			}
 		});

@@ -188,15 +188,18 @@ export class Et2Image extends Et2Widget(LitElement) implements et2_IDetachedDOM
 		const svgTagMatch = svg.match(/<svg\b[^>]*>/i);
 		if (!svgTagMatch) return svg; // not an SVG
 		let svgTag = svgTagMatch[0];
-		// 1) normalize existing width/height to 100%
-		svgTag = svgTag.replace(/\b(width|height)=(['"])[^'"]*\2/g, '$1="100%"');
+		// 1) normalize existing width/height to 100%.  (?<![-\w]) and not \b: a word boundary sits
+		// between the hyphen and the name of a presentation attribute too, so \bwidth= also matched
+		// stroke-width= and rewrote it to 100%, which drowned any stroke-drawn icon in one solid
+		// block of colour (and, carrying a width= of sorts, kept step 2 from adding the real one)
+		svgTag = svgTag.replace(/(?<![-\w])(width|height)=(['"])[^'"]*\2/g, '$1="100%"');
 		// 2) add missing width
-		if (!/\bwidth=/.test(svgTag))
+		if (!/(?<![-\w])width=/.test(svgTag))
 		{
 			svgTag = svgTag.replace(/^<svg\b/i, '<svg width="100%"');
 		}
 		// 3) add missing height
-		if (!/\bheight=/.test(svgTag))
+		if (!/(?<![-\w])height=/.test(svgTag))
 		{
 			svgTag = svgTag.replace(/^<svg\b/i, '<svg height="100%"');
 		}

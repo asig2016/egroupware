@@ -828,6 +828,9 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		this.removeEventListener("dragover", this._handleFileDragOver as EventListener, true);
 		this.removeEventListener("drop", this._handleFileDrop as EventListener, true);
 		this.removeEventListener("dragleave", this._handleFileDragLeave as EventListener, true);
+		// A hard reload can still be settling - do not leave its idle timer and the listeners
+		// it watches the datagrid with behind
+		this._disarmForceFreshKnownUids();
 		super.disconnectedCallback();
 	}
 
@@ -1740,6 +1743,13 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 	private _forceFreshKnownUidsIdleTimer : number | null = null;
 
 	/**
+	 * Takes the idle-watching listeners of the *current* arming back off the datagrid - see
+	 * _armForceFreshKnownUids(). Kept on the instance because only the closures that added
+	 * those listeners can remove them again, and the next arming has to be able to.
+	 */
+	private _forceFreshKnownUidsCleanup : (() => void) | null = null;
+
+	/**
 	 * How long to keep Et2NextmatchDataProvider's fresh-known-uids override on after the
 	 * datagrid last went idle, before assuming a hard reload's page-discovery is done.
 	 *
@@ -1765,16 +1775,24 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 	private _armForceFreshKnownUids() : void
 	{
 		this._dataProvider?.setForceFreshKnownUids?.(true);
-		if(this._forceFreshKnownUidsIdleTimer !== null)
-		{
-			window.clearTimeout(this._forceFreshKnownUidsIdleTimer);
-			this._forceFreshKnownUidsIdleTimer = null;
-		}
+		// Take whatever a previous arming installed back off first. Every call builds its own
+		// three closures, and only its own cleanup() can remove them again - which runs off the
+		// single shared idle timer below. An arming that lands before that timer has fired (two
+		// Reload clicks in a row, a reload while the last one is still settling) therefore used
+		// to orphan the earlier generation's three listeners for good: every later load kept
+		// running them, and only the newest generation ever cleaned itself up.
+		this._disarmForceFreshKnownUids();
+
+		// The listeners have to come off the same element they went on, even if the widget has
+		// rendered a new datagrid in between, so hold on to it rather than reading `this`
+		// again when cleaning up.
+		const datagrid = this._datagrid;
 		const cleanup = () =>
 		{
-			this._datagrid?.removeEventListener("et2-loading-done", scheduleOff);
-			this._datagrid?.removeEventListener("et2-loading-error", scheduleOff);
-			this._datagrid?.removeEventListener("et2-loading-start", cancelOff);
+			this._forceFreshKnownUidsCleanup = null;
+			datagrid?.removeEventListener("et2-loading-done", scheduleOff);
+			datagrid?.removeEventListener("et2-loading-error", scheduleOff);
+			datagrid?.removeEventListener("et2-loading-start", cancelOff);
 		};
 		const scheduleOff = () =>
 		{
@@ -1797,9 +1815,26 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 				this._forceFreshKnownUidsIdleTimer = null;
 			}
 		};
-		this._datagrid?.addEventListener("et2-loading-done", scheduleOff);
-		this._datagrid?.addEventListener("et2-loading-error", scheduleOff);
-		this._datagrid?.addEventListener("et2-loading-start", cancelOff);
+		this._forceFreshKnownUidsCleanup = cleanup;
+		datagrid?.addEventListener("et2-loading-done", scheduleOff);
+		datagrid?.addEventListener("et2-loading-error", scheduleOff);
+		datagrid?.addEventListener("et2-loading-start", cancelOff);
+	}
+
+	/**
+	 * Cancel a pending turn-off and take the idle-watching listeners back off the datagrid.
+	 *
+	 * Leaves the override itself as it is: the only caller that wants it off again is the idle
+	 * timer, which turns it off itself.
+	 */
+	private _disarmForceFreshKnownUids() : void
+	{
+		if(this._forceFreshKnownUidsIdleTimer !== null)
+		{
+			window.clearTimeout(this._forceFreshKnownUidsIdleTimer);
+			this._forceFreshKnownUidsIdleTimer = null;
+		}
+		this._forceFreshKnownUidsCleanup?.();
 	}
 
 	/**

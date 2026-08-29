@@ -1440,7 +1440,7 @@ export class EgwFrameworkApp extends LitElement
 			}
 		}
 		return html`
-            <sl-menu-item exportparts="popup">
+            <sl-menu-item exportparts="popup" title=${menu["hint"] || menu["title"] || nothing}>
                 ${menu["title"]}
                 ${menu["icon"] ? html`
                     <sl-icon slot="prefix" name="${menu["icon"]}"></sl-icon>` : nothing}
@@ -1455,6 +1455,11 @@ export class EgwFrameworkApp extends LitElement
 
 	/**
 	 * An individual sub-item in the application menu
+	 *
+	 * The tooltip is the entry's own 'hint' (Api\Framework\Ajax::sidebox_menu_entry() passes one
+	 * through when the app declares it), falling back to the label - which is what makes a
+	 * truncated label readable on hover.
+	 *
 	 * @param item
 	 * @returns {TemplateResult<1>}
 	 */
@@ -1475,7 +1480,7 @@ export class EgwFrameworkApp extends LitElement
 		if(Array.isArray(item["entries"]) && item["entries"].length > 0)
 		{
 			return html`
-                <sl-menu-item exportparts="popup">
+                <sl-menu-item exportparts="popup" title=${item["hint"] || item["lang_item"] || nothing}>
                     ${icon}
                     ${item["lang_item"]}
                     <sl-menu slot="submenu">
@@ -1485,6 +1490,7 @@ export class EgwFrameworkApp extends LitElement
 		}
 		return html`
             <sl-menu-item
+                    title=${item["hint"] || item["lang_item"] || nothing}
                     ?disabled=${!item["item_link"]}
                     data-link=${item["item_link"]}
                     ?data-target=${item["target"]}

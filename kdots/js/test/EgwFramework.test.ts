@@ -13,6 +13,10 @@ const egwStub = {
 		framework: null
 	},
 	lang: sinon.stub().callsFake(t => t),
+	// no user, no session tabs to restore
+	user: sinon.stub().returns({}),
+	getSessionItem: sinon.stub().returns(null),
+	setSessionItem: sinon.stub(),
 	preference: sinon.stub().resolves(""),
 	set_preference: sinon.stub(),
 	add_timer: sinon.stub(),

@@ -450,7 +450,12 @@ class Nextmatch extends Etemplate\Widget
 		if (($template = Template::instance(self::$request->template['name'], self::$request->template['template_set'],
 			self::$request->template['version'], self::$request->template['load_via'])))
 		{
-			$template = $template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch');
+			// try the web-component tag name first: an <et2-nextmatch> has type "et2-nextmatch",
+			// so looking only for "nextmatch" found nothing and every ajax row fetch of a migrated
+			// list died with "Unknown nextmatch/historylog widget". There is no et2-historylog on
+			// this branch, so only the nextmatch spelling needs the fallback.
+			$template = $template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'et2-nextmatch') ??
+				$template->getElementById($form_name, strpos($form_name, 'history') === 0 ? 'historylog' : 'nextmatch');
 		}
 		else
 		{

@@ -162,6 +162,10 @@ else
 	}
 
 	/* Create records for administrator account, with Admins as primary and Default as additional group */
+	// add_account() silently reuses an existing account (only resetting its password), so we have
+	// to look before, to be able to tell the user what actually happened
+	$GLOBALS['egw_setup']->setup_account_object();
+	$existing_account = (int)$GLOBALS['egw_setup']->accounts->name2id($username, 'account_lid', 'u');
 	$accountid = $GLOBALS['egw_setup']->add_account($username,$fname,$lname,$passwd,'Admins',True,$email);
 	if (!$accountid)
 	{
@@ -180,6 +184,12 @@ else
 
 	if (strpos($_SERVER['PHP_SELF'],'admin_account.php') !== false)
 	{
-		Header('Location: index.php');
+		// do NOT just redirect: the success- and the nothing-happened-case then look identical,
+		// which is why "it does not add an account" was so hard to tell from an existing account
+		echo '<p><b>'.($existing_account ?
+			lang('Account %1 already existed: password and admin rights updated, no new account created.',
+				htmlspecialchars($username)) :
+			lang('Admin account successful created.'))."</b></p>\n";
+		echo '<p>'.lang('click <a href="index.php">here</a> to return to setup.')."</p>\n";
 	}
 }

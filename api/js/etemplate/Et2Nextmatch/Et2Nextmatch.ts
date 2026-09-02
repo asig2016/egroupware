@@ -96,6 +96,24 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 	searchletter : string | false = false;
 
 	/**
+	 * The active letter, or false for "all letters".
+	 *
+	 * "No letter" is PHP false / 0 / "" on the server, and a setting that went through a string
+	 * on its way here (session state, URL, favorite) arrives as "false" or "0" - truthy strings,
+	 * which made an unset letter look like an active one: the A-Z bar appeared in lists that
+	 * switched it off (`lettersearch => false`), and searchletter="false" was sent to get_rows
+	 * as a filter.
+	 */
+	static normalizeSearchLetter(value : any) : string | false
+	{
+		if(!value || value === "false" || value === "0")
+		{
+			return false;
+		}
+		return String(value);
+	}
+
+	/**
 	 * Field / column that holds Modified date for entries.
 	 * Used for smart refresh.
 	 *
@@ -301,7 +319,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 		}
 		if(typeof attrs.searchletter !== "undefined")
 		{
-			attrs.searchletter = attrs.searchletter || false;
+			attrs.searchletter = Et2Nextmatch.normalizeSearchLetter(attrs.searchletter);
 		}
 		if(typeof attrs.lettersearch !== "undefined")
 		{
@@ -381,7 +399,13 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 		super.willUpdate(changedProperties);
 		if(changedProperties.has("searchletter"))
 		{
-			const nextValue = this.searchletter || false;
+			const nextValue = Et2Nextmatch.normalizeSearchLetter(this.searchletter);
+			if(this.searchletter !== nextValue)
+			{
+				// keep the property itself honest, so a favorite or an app reading it does not
+				// pick the string back up
+				this.searchletter = nextValue;
+			}
 			if(this._filters.searchletter !== nextValue)
 			{
 				this._filters.searchletter = nextValue;
@@ -782,12 +806,13 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 					}
 					continue;
 				}
-				if(activeFilters[key] !== set[key])
+				const value = key === "searchletter" ? Et2Nextmatch.normalizeSearchLetter(set[key]) : set[key];
+				if(activeFilters[key] !== value)
 				{
-					activeFilters[key] = set[key];
+					activeFilters[key] = value;
 					if(key === "searchletter")
 					{
-						this.searchletter = set[key] || false;
+						this.searchletter = <string | false>value;
 					}
 					changed = true;
 				}
@@ -849,9 +874,10 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 				this._filters[attribute] = value;
 			}
 		}
-		if(this.searchletter)
+		const searchletter = Et2Nextmatch.normalizeSearchLetter(this.searchletter);
+		if(searchletter)
 		{
-			this._filters.searchletter = this.searchletter;
+			this._filters.searchletter = searchletter;
 		}
 	}
 
@@ -1630,8 +1656,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 	 */
 	private _renderLetterSearch()
 	{
-		const currentLetterValue = this._filters.searchletter || this.searchletter || "";
-		const currentLetter = typeof currentLetterValue === "string" ? currentLetterValue : "";
+		const currentLetter = Et2Nextmatch.normalizeSearchLetter(this._filters.searchletter || this.searchletter) || "";
 		if(!this.lettersearch && !currentLetter)
 		{
 			return null;

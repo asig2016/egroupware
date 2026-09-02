@@ -1043,8 +1043,11 @@ class setup
 			if (!$config)
 			{
 				// load the configuration from the database
+				// install_id is required: Accounts and Auth key every Cache::(un)setCache() on it,
+				// so without it setup invalidates a different namespace than the running instance
+				// and eg. a password reset here keeps serving the cached old account/password
 				foreach($this->db->select($this->config_table,'config_name,config_value',
-					"config_name LIKE 'ads%' OR config_name LIKE 'ldap%' OR config_name LIKE 'account_%' OR config_name LIKE '%encryption%' OR config_name='auth_type'",
+					"config_name LIKE 'ads%' OR config_name LIKE 'ldap%' OR config_name LIKE 'account_%' OR config_name LIKE '%encryption%' OR config_name IN ('auth_type','install_id')",
 					__LINE__,__FILE__) as $row)
 				{
 					$GLOBALS['egw_info']['server'][$row['config_name']] = $config[$row['config_name']] = $row['config_value'];

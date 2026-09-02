@@ -41,7 +41,7 @@
           </tr>
           <tr>
             <td>{admin_all_apps}</td>
-            <td><input type="checkbox" name="admin_all_aps" /></td>
+            <td><input type="checkbox" name="admin_all_apps" /></td>
             <td >{all_apps_desc}</td>
           </tr>
           <tr>

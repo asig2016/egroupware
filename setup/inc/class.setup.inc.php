@@ -191,9 +191,17 @@ class setup
 		{
 			$this->cookie_domain = self::cookiedomain();
 		}
-		setcookie($cookiename, $cookievalue, $cookietime, '/', $this->cookie_domain,
+		setcookie($cookiename, $cookievalue, array(
+			'expires'  => $cookietime,
+			'path'     => '/',
+			'domain'   => $this->cookie_domain,
 			// if called via HTTPS, only send cookie for https and only allow cookie access via HTTP (true)
-			Api\Header\Http::schema() === 'https', true);
+			'secure'   => Api\Header\Http::schema() === 'https',
+			'httponly' => true,
+			// setup is never legitimately reached cross-site, and manageheader.php, schematoy.php
+			// and sqltoarray.php POST without a CSRF token
+			'samesite' => 'Strict',
+		));
 	}
 
 	/**
@@ -237,8 +245,14 @@ class setup
 
 	/**
 	 * Name of session cookie
+	 *
+	 * MUST differ from Api\Session::EGW_SESSION_NAME: setup and the regular EGroupware
+	 * session are distinct logins, but they run under the same cookie-domain and path.
+	 * Sharing one cookie-name made them share one PHP session, so logging in or out of
+	 * EGroupware (or its session timing out) in another tab silently wiped the setup
+	 * session -- the next setup POST then bounced to index.php without doing anything.
 	 */
-	const SESSIONID = 'sessionid';
+	const SESSIONID = 'sessionid_setup';
 
 	/**
 	 * Session timeout in secs (1200 = 20min)
@@ -261,9 +275,15 @@ class setup
 				if (headers_sent()) return true;
 				ini_set('session.use_cookie', true);
 				session_name(self::SESSIONID);
-				session_set_cookie_params(0, '/', self::cookiedomain(),
+				session_set_cookie_params(array(
+					'lifetime' => 0,
+					'path'     => '/',
+					'domain'   => self::cookiedomain(),
 					// if called via HTTPS, only send cookie for https and only allow cookie access via HTTP (true)
-					Api\Header\Http::schema() === 'https', true);
+					'secure'   => Api\Header\Http::schema() === 'https',
+					'httponly' => true,
+					'samesite' => 'Strict',
+				));
 
 				if (isset($_COOKIE[self::SESSIONID])) session_id($_COOKIE[self::SESSIONID]);
 
@@ -311,6 +331,21 @@ class setup
 				}
 				return false;
 			}
+			// a previous request dropped us here (eg. expired session): show it's message,
+			// as setup pages only do a bare "Location: index.php" and loose everything else.
+			// Only a known message-id is carried, never text: the *LoginMSG vars get rendered
+			// unescaped into login_stage_header.tpl / login_main.tpl.
+			if (!empty($_SESSION['egw_setup_login_msg']))
+			{
+				$msg_auth_type = $_SESSION['egw_setup_login_msg'][0] ?? null;
+				$msg_id        = $_SESSION['egw_setup_login_msg'][1] ?? null;
+				unset($_SESSION['egw_setup_login_msg']);
+				if ($msg_id === 'session-expired')
+				{
+					$GLOBALS['egw_info']['setup'][$msg_auth_type === 'config' ? 'ConfigLoginMSG' : 'HeaderLoginMSG'] =
+						lang('Session expired');
+				}
+			}
 			if (!isset($_POST['FormUser']) || !isset($_POST['FormPW']))
 			{
 				return false;
@@ -355,9 +390,15 @@ class setup
 		//error_log(__METHOD__."('$auth_type') \$_COOKIE['".self::SESSIONID."'] = ".array2string($_COOKIE[self::SESSIONID]).", \$_SESSION=".array2string($_SESSION));
 		if ($_SESSION['egw_last_action_time'] < time() - self::TIMEOUT)
 		{
-			$this->set_cookie(self::SESSIONID, '', time()-86400);
-			session_destroy();
-			$GLOBALS['egw_info']['setup'][$_SESSION['egw_setup_auth_type'] == 'config' ? 'ConfigLoginMSG' : 'HeaderLoginMSG'] =
+			$expired_auth_type = $_SESSION['egw_setup_auth_type'];
+			// drop the authentication, but keep the session to carry the message over the
+			// "Location: index.php" every setup page does on a failed auth (a successful
+			// login regenerates the session id below, so this is no session-fixation risk)
+			$_SESSION = array(
+				'ConfigLang' => $_SESSION['ConfigLang'] ?? null,
+				'egw_setup_login_msg' => array($expired_auth_type, 'session-expired'),
+			);
+			$GLOBALS['egw_info']['setup'][$expired_auth_type == 'config' ? 'ConfigLoginMSG' : 'HeaderLoginMSG'] =
 				lang('Session expired');
 			return false;
 		}

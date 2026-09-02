@@ -568,8 +568,18 @@ export class Et2RowProvider
 		let element : HTMLElement | typeof Et2Widget;
 		if(typeof window.customElements.get(tag) !== "undefined")
 		{
-			// Try webComponent loader first
-			element = loadWebComponent(tag, source, null);
+			// Try webComponent loader first, handing it the attributes rather than the XML node:
+			// given the node it also builds the element's children from it (loadFromXML()), and
+			// _createFragmentFromXml() clones those children itself. Every container ended up
+			// holding both copies - the readonly one from here and an editable one from there,
+			// which is where the empty date boxes and the editable account selects in each
+			// acilog / acdms row came from.
+			const attrs = {};
+			for(const name of source.getAttributeNames())
+			{
+				attrs[name] = source.getAttribute(name);
+			}
+			element = loadWebComponent(tag, attrs, null);
 		}
 		else
 		{

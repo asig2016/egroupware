@@ -673,6 +673,41 @@ describe("Et2Datagrid keyboard navigation", () =>
 		assert.equal((el as any).activeRowId, `row-${startIndex + 1}`, "active row id should advance by exactly one row");
 	});
 
+	/**
+	 * Contract: plain keyboard navigation selects the newly active row, like the
+	 * legacy nextmatch, so onselect consumers (eg. mail's preview) follow the
+	 * keyboard; Ctrl+arrow keeps moving focus only.
+	 * Setup: seed rows, select the first one, then send ArrowDown with and
+	 * without Ctrl.
+	 * Pass: plain ArrowDown replaces the selection with the new active row and
+	 * emits et2-selection-changed; Ctrl+ArrowDown leaves the selection alone.
+	 */
+	it("selects the active row on plain navigation but not with Ctrl", async() =>
+	{
+		const el = createDatagrid();
+		el.columns = [{key: "label", title: "Label", width: "1fr"}] as any;
+		el.templateData = {columns: el.columns} as any;
+		el.setInitialRows(Array.from({length: 5}, (_v, index) => ({id: `row-${index}`, label: `Row ${index}`})));
+		el.total = 5;
+		(el as any)._moveActiveRow(0, false);
+		(el as any).selectedRowIds = new Set(["row-0"]);
+
+		const selectionEvents : string[][] = [];
+		el.addEventListener("et2-selection-changed", ((event : CustomEvent) =>
+		{
+			selectionEvents.push([...(event.detail?.selectedRowIds || [])]);
+		}) as EventListener);
+
+		(el as any)._onTableKeydown(new KeyboardEvent("keydown", {key: "ArrowDown"}));
+		assert.deepEqual(Array.from((el as any).selectedRowIds), ["row-1"], "plain ArrowDown should select the new active row");
+		assert.deepEqual(selectionEvents, [["row-1"]], "plain ArrowDown should emit one selection change");
+
+		(el as any)._onTableKeydown(new KeyboardEvent("keydown", {key: "ArrowDown", ctrlKey: true}));
+		assert.equal((el as any).activeRowId, "row-2", "Ctrl+ArrowDown should still move the active row");
+		assert.deepEqual(Array.from((el as any).selectedRowIds), ["row-1"], "Ctrl+ArrowDown should not change the selection");
+		assert.equal(selectionEvents.length, 1, "Ctrl+ArrowDown should not emit a selection change");
+	});
+
 });
 
 describe("Et2Datagrid column sizing", () =>

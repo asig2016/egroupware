@@ -2387,6 +2387,25 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		{
 			this._selectRange(this.anchorRowIndex >= 0 ? this.anchorRowIndex : previous, nextIndex);
 		}
+		else if(this.selectionMode !== "none" && !event.ctrlKey && !event.metaKey && this.activeRowId)
+		{
+			// Plain navigation (no modifier) replaces the selection with the newly active row,
+			// same as a plain click - so anything reacting to selection (e.g. a preview pane) keeps
+			// following the keyboard cursor, which is what the legacy nextmatch did.
+			// Must happen synchronously here, not via the capture-phase action-shortcut handler further
+			// up the dispatch chain that runs *before* _moveActiveRow() above and would act on the row
+			// that was active before this keypress, one step behind.
+			// Nothing to do if that row is already the whole selection: re-emitting would make consumers
+			// reload (mail re-fetches the preview) for a selection that did not change.
+			if(this.allSelected || this.selectedRowIds.size !== 1 || !this.selectedRowIds.has(this.activeRowId))
+			{
+				this.allSelected = false;
+				this.selectedRowIds = new Set([this.activeRowId]);
+				this._syncRowAccessibilityState();
+				this._emitSelectionChanged();
+			}
+			this.anchorRowIndex = nextIndex;
+		}
 	}
 
 	private _isRowIndexRendered(index : number) : boolean

@@ -2782,10 +2782,16 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	/**
 	 * Seed datagrid with preloaded rows and skip initial fetch.
 	 */
-	setInitialRows(rows : any[])
+	/**
+	 * @param rows the row data
+	 * @param rowIdFor optional, gives the row id the grid keys a row by - the caller knows which
+	 * 	field holds the id and which datastore uid the row is cached under, the guess made by
+	 * 	_rowIdFor() is only the fallback
+	 */
+	setInitialRows(rows : any[], rowIdFor? : (row : any, index : number) => string)
 	{
 		const mappedRows = (rows || []).map((row, index) => ({
-			id: this._rowIdFor(row, index),
+			id: rowIdFor ? rowIdFor(row, index) : this._rowIdFor(row, index),
 			data: row
 		}));
 		this._clearRows();

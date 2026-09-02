@@ -362,7 +362,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 
 		if(this.rows.length)
 		{
-			this._datagrid?.setInitialRows(this.rows);
+			this._setInitialRows(this.rows);
 			// No need to keep them
 			this.rows = [];
 		}
@@ -457,7 +457,48 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 	setRows(rows : any[])
 	{
 		this.rows = rows || [];
-		this._datagrid?.setInitialRows(this.rows);
+		this._setInitialRows(this.rows);
+	}
+
+	/**
+	 * Hand preloaded rows to the grid the way a fetched page arrives.
+	 *
+	 * The first page comes inline with the template (Nextmatch::beforeSendToClient() puts it in
+	 * the "rows" attribute), every later page through Et2NextmatchDataProvider.fetchPage(), which
+	 * keys its rows by the datastore uid ("addressbook::123") and leaves the row data in the egw
+	 * cache. Preloaded rows went into the grid untouched, keyed by the bare id their row-id field
+	 * holds and cached nowhere, so one grid mixed two id formats:
+	 * - egw.dataGetUIDdata(id) finds nothing for a row of the first page, which is how every app
+	 *   preview reads the selected row - the preview pane just stays empty until the list is
+	 *   re-fetched (a filter change), after which the same click works
+	 * - a refresh names its row by the prefixed uid, so an update to a first-page row looked like
+	 *   a row the grid does not hold and was promoted to an add, duplicating it
+	 * Legacy nextmatch did the same thing in et2_dataview_controller.loadInitialData().
+	 *
+	 * @param rows the server's rows, keyed by index
+	 */
+	protected _setInitialRows(rows : any[])
+	{
+		const egw = this.egw();
+		// the field holding the row id, "row_id" in the nextmatch settings - the same one the
+		// server built the uids of every later page from
+		const idField = (<any>this).rowId || "id";
+
+		this._datagrid?.setInitialRows(rows, (row, index) =>
+		{
+			const id = row === null || typeof row !== "object" ? undefined : row[idField] ?? row.id;
+
+			if(typeof id === "undefined" || id === null || id === "")
+			{
+				return String(index);
+			}
+			const uid = this._dataProvider.normalizeRowId(id, true);
+
+			// where everything reading a row by its uid expects to find it
+			egw?.dataStoreUID?.(uid, row);
+
+			return uid;
+		});
 	}
 
 	/**

@@ -443,7 +443,11 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		if(changedProperties.has("templateData"))
 		{
 			// Capture source cell->column mapping before user reorders columns.
-			this._sourceColumnKeys = (this.templateData?.columns || this.columns || []).map((column) => String(column.key));
+			// templateData.columns can already be reordered when it arrives (Et2Nextmatch applies
+			// the saved column preference to it), so prefer the row-template order it passes along.
+			this._sourceColumnKeys = this.templateData?.sourceColumnKeys?.length
+									 ? this.templateData.sourceColumnKeys.map((key) => String(key))
+									 : (this.templateData?.columns || this.columns || []).map((column) => String(column.key));
 		}
 		if(structureChanged)
 		{

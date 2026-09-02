@@ -22,6 +22,12 @@ export interface Et2DatagridTemplateData
 	rowHeight?: number;
 	loaderTemplate : HTMLTemplateElement | null;
 	columns : Et2DatagridColumn[];
+	/**
+	 * Column keys in row-template order, which is the order the row's cells are in.
+	 * Set when `columns` has been reordered (eg. to the order a saved column preference
+	 * names them in) and so no longer says which cell belongs to which column.
+	 */
+	sourceColumnKeys? : string[];
 }
 
 export interface Et2DatagridRow

@@ -1105,6 +1105,11 @@ export class Et2Nextmatch extends Et2Widget(LitElement)
 		const nextColumns = this._applyLegacyNextmatchColumnPreferences(columns || [], templateData);
 		this._templateData = {
 			...templateData,
+			// The preference may put the visible columns in an order of its own, the cells of the
+			// row template never move - so the grid needs the template's own order to tell which
+			// cell belongs to which column. Without it every column whose preference position
+			// differs from its template position wore another column's header.
+			sourceColumnKeys: (columns || []).map((column) => String(column.key)),
 			columns: nextColumns
 		};
 	}

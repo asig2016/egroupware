@@ -432,6 +432,13 @@ window.app = {classes: {}};
 			// load etemplate2 template(s)
 			document.querySelectorAll('form.et2_container[data-etemplate]').forEach(node =>
 			{
+				// This bootstrap can run more than once per page: the module is bundled into a
+				// hashed chunk, and a stale, non-cache-busted app bundle can pull in a 2nd copy from
+				// an older build. Both copies share window.etemplate2, so without this guard the
+				// same form is instantiated twice, the app object keeps the 1st (detached) instance
+				// and submits stale/missing values (mail compose sent every attachment as a link).
+				if (node.__et2_bootstrapped) return;
+				node.__et2_bootstrapped = true;
 				const data = JSON.parse(node.getAttribute('data-etemplate')) || {};
 				if (popup || window.opener && !egwIsMobile()) {
 					// Resize popup when et2 load is done

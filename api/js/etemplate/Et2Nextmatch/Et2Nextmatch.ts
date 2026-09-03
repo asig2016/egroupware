@@ -774,6 +774,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		this.addEventListener("et2-column-selection-apply", this._handleColumnSelectionApply as EventListener);
 		this.addEventListener("contextmenu", this._handleContextMenu as EventListener, true);
 		this.addEventListener("dblclick", this._handleDoubleClick as EventListener, true);
+		this.addEventListener("click", this._handleMobileClick as EventListener, true);
 		this.addEventListener("keydown", this._handleActionShortcut as EventListener, true);
 		this.addEventListener("keydown", this._handleKeydown as EventListener);
 		this.addEventListener("pointerdown", this._handlePointerDown as EventListener);
@@ -814,6 +815,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		this.removeEventListener("et2-column-selection-apply", this._handleColumnSelectionApply as EventListener);
 		this.removeEventListener("contextmenu", this._handleContextMenu as EventListener, true);
 		this.removeEventListener("dblclick", this._handleDoubleClick as EventListener, true);
+		this.removeEventListener("click", this._handleMobileClick as EventListener, true);
 		this.removeEventListener("keydown", this._handleActionShortcut as EventListener, true);
 		this.removeEventListener("keydown", this._handleKeydown as EventListener);
 		this.removeEventListener("pointerdown", this._handlePointerDown as EventListener);
@@ -3669,11 +3671,39 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 	 */
 	private _handleDoubleClick = (event : MouseEvent) =>
 	{
+		this._executeDefaultActionForRowEvent(event);
+	};
+
+	/**
+	 * Execute the default row action on a single click on mobile.
+	 *
+	 * A finger can not double-click. The legacy action implementation
+	 * (EgwPopupActionImplementation) ran the default action on click when egwIsMobile(), and
+	 * a mobile template on Et2Nextmatch otherwise had no way to open an entry by tapping it.
+	 * Controls inside the row (checkboxes, buttons, the selection cell) keep their own click.
+	 */
+	private _handleMobileClick = (event : MouseEvent) =>
+	{
+		if(typeof window.egwIsMobile !== "function" || !window.egwIsMobile())
+		{
+			return;
+		}
+		this._executeDefaultActionForRowEvent(event, "[data-dg-meta-cell],input,button,select,textarea,et2-checkbox,sl-checkbox,et2-button,et2-button-icon,et2-select,et2-image[href]");
+	};
+
+	/**
+	 * Run the default row action for a click-like event on a non-interactive row target.
+	 *
+	 * @param event the click or double-click
+	 * @param extraInteractiveSelector further elements whose click must be left alone
+	 */
+	private _executeDefaultActionForRowEvent(event : MouseEvent, extraInteractiveSelector? : string)
+	{
 		if(event.defaultPrevented || event.button !== 0)
 		{
 			return;
 		}
-		if(this._isInteractiveRowEventTarget(event))
+		if(this._isInteractiveRowEventTarget(event, extraInteractiveSelector))
 		{
 			return;
 		}
@@ -3686,7 +3716,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		event.stopPropagation();
 		window.getSelection?.()?.removeAllRanges?.();
 		this._actionController.triggerDefaultActionForRow(event);
-	};
+	}
 
 	/**
 	 * Resolve row element for context-menu event from composed path.
@@ -3707,7 +3737,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 	/**
 	 * Detect row interactions that should remain native interactive element events.
 	 */
-	private _isInteractiveRowEventTarget(event : MouseEvent) : boolean
+	private _isInteractiveRowEventTarget(event : MouseEvent, extraSelector? : string) : boolean
 	{
 		const rowElement = this._getContextMenuRowElement(event);
 		if(!rowElement)
@@ -3717,7 +3747,8 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput
 		const interactiveSelector = [
 			"a[href]",
 			"[role='link']",
-			".et2_clickable"
+			".et2_clickable",
+			...(extraSelector ? [extraSelector] : [])
 		].join(",");
 		const path = event.composedPath?.() || [];
 		for(const node of path)

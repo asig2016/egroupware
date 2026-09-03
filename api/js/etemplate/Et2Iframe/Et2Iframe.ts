@@ -114,6 +114,24 @@ export class Et2Iframe extends Et2Widget(LitElement)
 	}
 
 	/**
+	 * The embedded document's window / document
+	 *
+	 * getDOMNode() returns the custom element, not the real <iframe> (which lives in the shadow
+	 * DOM), so `widget.getDOMNode().contentWindow` - the way app code talks to an embedded
+	 * eTemplate - would be undefined after a template is migrated from <iframe> to <et2-iframe>.
+	 * Forward both to the real node so the web component stays a drop-in replacement.
+	 */
+	get contentWindow() : Window
+	{
+		return this.__getIframeNode()?.contentWindow ?? null;
+	}
+
+	get contentDocument() : Document
+	{
+		return this.__getIframeNode()?.contentDocument ?? null;
+	}
+
+	/**
 	 * The url last handed to the `<iframe>`, so updated() does not load again what set_src()
 	 * has just loaded
 	 */

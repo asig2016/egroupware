@@ -25,7 +25,7 @@ import type {Et2Nextmatch} from "../../api/js/etemplate/Et2Nextmatch/Et2Nextmatc
 import "../../achelper/js/Widget/Et2actree";
 import "../../achelper/js/Widget/Et2acselect";
 import "../../achelper/js/Widget/Et2actimer";
-import {acemailarch} from "../../acemailstor/js/app";
+import {acemailarch} from "../../acemailstor/js/acemailarch";
 import {MailCompose} from "./compose";
 import {formatJmapAddress, isPreferenceOn, JmapBodyResult, JmapMessageReference, JmapUserError, MailJmap} from "./jmap";
 import {renderAttachmentIndex} from "./attachmentIndex";

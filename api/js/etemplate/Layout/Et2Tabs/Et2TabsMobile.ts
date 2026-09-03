@@ -1,5 +1,5 @@
 import {Et2Tabs} from "./Et2Tabs";
-import {html, TemplateResult} from "lit";
+import {css, html, TemplateResult} from "lit";
 import {classMap} from "lit/directives/class-map.js";
 import {repeat} from "lit/directives/repeat.js";
 import {Et2Details} from "../Et2Details/Et2Details";
@@ -13,6 +13,24 @@ import {SlTab, SlTabPanel} from "@shoelace-style/shoelace";
  */
 export class Et2TabsMobile extends Et2Tabs
 {
+	static get styles()
+	{
+		return [
+			...super.styles,
+			css`
+				/* A tab is an et2-details here, and its content padding stacked on the tab
+				   panel's own padding: ~30px of nothing above and below the content of every
+				   tab, on a phone screen. Keep a hair of the details padding, drop the panel's. */
+				et2-details::part(content) {
+					padding-block: var(--sl-spacing-2x-small);
+				}
+				::slotted(et2-tab-panel) {
+					--padding: 0;
+				}
+			`
+		];
+	}
+
 	connectedCallback()
 	{
 		super.connectedCallback();

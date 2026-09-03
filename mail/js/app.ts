@@ -26,7 +26,7 @@ import type {EgwFrameworkApp, FilterInfo} from "../../kdots/js/EgwFrameworkApp";
 import "../../achelper/js/Widget/Et2actree";
 import "../../achelper/js/Widget/Et2acselect";
 import "../../achelper/js/Widget/Et2actimer";
-import {acemailarch} from "../../acemailstor/js/app";
+import {acemailarch} from "../../acemailstor/js/acemailarch";
 import {MailCompose} from "./compose";
 import {formatJmapAddress, isPreferenceOn, JmapBodyResult, JmapMessageReference, JmapUserError, MailJmap} from "./jmap";
 import {renderAttachmentIndex} from "./attachmentIndex";

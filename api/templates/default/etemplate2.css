@@ -1565,6 +1565,11 @@ sl-option.cat_level3::part(label) {
 et2-tab-panel {
     padding-top: 1em;
 }
+/* On mobile a tab is an et2-details with its own content padding, and this padding on top of
+   it left a band of nothing above the content of every tab on a phone screen */
+et2-tabbox_mobile > et2-tab-panel {
+    padding-top: 0;
+}
 
 /**
  * Tabs widget

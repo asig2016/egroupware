@@ -362,7 +362,10 @@ export class et2_grid extends et2_DOMWidget implements et2_IDetachedDOM, et2_IAl
 					const currentPerspective = jQuery.extend({}, content.perspectiveData);
 					const check = function(node, nodeName)
 					{
-						if(nodeName == 'box' || nodeName == 'hbox' || nodeName == 'vbox')
+						// the web components have to be listed too, otherwise a $-ident nested
+						// inside an et2-hbox/et2-vbox in the last row is never found and the row
+						// does not autorepeat (the legacy names only cover un-migrated templates)
+						if(['box', 'hbox', 'vbox', 'et2-box', 'et2-hbox', 'et2-vbox'].indexOf(nodeName) != -1)
 						{
 							return et2_filteredNodeIterator(node, check, this);
 						}

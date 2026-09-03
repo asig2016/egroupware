@@ -1490,7 +1490,7 @@ html:not(.desktop) body egw-framework#egw_fw_basecontainer::part(divider) {
 }
 html:not(.desktop) :root egw-framework#egw_fw_basecontainer.egw_fw--left-side-collapsed::part(header),
 html:not(.desktop) body egw-framework#egw_fw_basecontainer.egw_fw--left-side-collapsed::part(header) {
-  display: flex;
+  display: none;
 }
 html:not(.desktop) :root egw-framework#egw_fw_basecontainer::part(main),
 html:not(.desktop) body egw-framework#egw_fw_basecontainer::part(main) {

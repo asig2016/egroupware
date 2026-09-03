@@ -15,12 +15,8 @@
 		  display: none;
 		}
 
-		/* An app hiding its left panel (the default on a phone, and what a tree click does)
-		   sets egw_fw--left-side-collapsed on the framework; EgwFramework.styles hides the header
-		   for that below 800px to gain space. On a phone that header is the only way to the app
-		   list and the user menu, so it stays - this outer part rule wins over the shadow one. */
 		&.egw_fw--left-side-collapsed::part(header) {
-		  display: flex;
+		  display: none;
 		}
 
 		&::part(main) {

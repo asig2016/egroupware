@@ -892,12 +892,19 @@ export class Et2Date extends Et2InputWidget(LitFlatpickr)
 		{
 			// Invalid date string
 		}
-		// If they typed a valid date/time, try to update flatpickr
-		if(parsedDate)
+		// If they typed a complete date/time, try to update flatpickr.
+		// "Complete" means the text round-trips through the display format: flatpickr parses
+		// every prefix of a date ("0" gives 30/04/2025 with "d/m/Y H:i"), so committing
+		// whatever parses would overwrite the widget's value and fire "change" after every
+		// single keystroke.  In a filter that "change" re-queries the nextmatch, which
+		// re-renders and takes the focus out of the field - the user gets one character in
+		// and typing a date is impossible.  Anything shorter stays a plain "input"; flatpickr
+		// itself commits on blur and Enter, so a date typed in another form (eg. "1/9/2026")
+		// is still picked up when the field is left.
+		const formattedDate = parsedDate ? flatpickr.formatDate(parsedDate, this.getOptions().altFormat) : null;
+		if(formattedDate === value)
 		{
-			const formattedDate = flatpickr.formatDate(parsedDate, this.getOptions().altFormat)
-			if(value === formattedDate &&
-				// Avoid infinite loop of setting the same value back triggering another change
+			if(// Avoid infinite loop of setting the same value back triggering another change
 				this._instance.input.value !== flatpickr.formatDate(parsedDate, this.getOptions().dateFormat))
 			{
 				try
@@ -911,18 +918,18 @@ export class Et2Date extends Et2InputWidget(LitFlatpickr)
 					this._instance.setDate(value, true, this._instance.config.altFormat);
 				}
 			}
-			if(this._inputNode.value !== formattedDate)
-			{
-				// Update the et2-textbox so it has current value for any (required) validation
-				this._inputNode.value = formattedDate;
-				// @ts-ignore
-				this._inputNode.validate && (<Et2Textbox>this._inputNode).validate();
-				this.updateComplete.then(() =>
-				{
-					this.dispatchEvent(new Event("change", {bubbles: true}));
-				});
-				return;
-			}
+			// Re-check any (required) validation now that the et2-textbox has a value.
+			// Its inner <input> *is* the input Flatpickr was created on (and now keeps
+			// hidden behind altInput), so setDate() above has already filled it with the
+			// canonical dateFormat value - and get value() reads exactly that input.
+			// Writing the display-format text into it here instead would make get value()
+			// hand out eg. "01/09/2026 10:00", which the next set value() feeds to
+			// new Date() (m/d/Y) and so turns 1 Sep 10:00 into 9 Jan 08:00.
+			// setDate() fires flatpickr's onChange -> _handleCalendarChange(), which
+			// dispatches "change" for us.
+			// @ts-ignore
+			this._inputNode.validate && (<Et2Textbox>this._inputNode).validate();
+			return;
 		}
 		this.dispatchEvent(new Event("input", {bubbles: true}));
 	}

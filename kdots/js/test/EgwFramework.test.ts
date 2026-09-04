@@ -299,5 +299,38 @@ describe('EgwFramework', () =>
 			assert.isTrue(egwStub.openDialog.calledOnceWith('app.handler.method'));
 			assert.isTrue(dialog.classList.contains('egw-popup'));
 		});
+
+		// openPopup() in this mode closes the dialog on sl-after-hide / sl-request-close.  Both
+		// events bubble and are composed, so Shoelace widgets inside the popup (et2-email's
+		// dropdown, a select, ...) used to close the whole popup while it was still rendering.
+		it('keeps the dialog open when a widget inside it fires sl-after-hide', async() =>
+		{
+			element.applicationList = [{
+				name: 'test-app', internalName: 'test', url: 'https://test.app', title: 'Test App',
+				icon: '', status: '1', openOnce: '', features: {}
+			}];
+			element.loadApp('test-app', true);
+			// Stand-in for the Et2Dialog egw.openDialog() would create
+			const dialog = Object.assign(document.createElement('div'), {
+				updateComplete: Promise.resolve(true),
+				modal: {activate: sinon.stub(), deactivate: sinon.stub()},
+				close: sinon.stub()
+			});
+			egwStub.openDialog.resolves(dialog);
+
+			await element.openPopup('/index.php?menuaction=app.handler.method', 0, 0, '_blank',
+				undefined, true, undefined, window);
+			await dialog.updateComplete;
+
+			const child = document.createElement('div');
+			dialog.append(child);
+			child.dispatchEvent(new CustomEvent('sl-after-hide', {bubbles: true, composed: true}));
+			child.dispatchEvent(new CustomEvent('sl-request-close', {bubbles: true, composed: true}));
+			assert.isFalse(dialog.close.called,
+				"a child's sl-after-hide / sl-request-close must not close the popup");
+
+			dialog.dispatchEvent(new CustomEvent('sl-after-hide', {bubbles: true}));
+			assert.isTrue(dialog.close.calledOnce, "the dialog's own sl-after-hide closes the popup");
+		});
 	});
 });

@@ -6,6 +6,16 @@
 	  -webkit-overflow-scrolling: touch;
 	}
 
+	/* The page must never scroll on a phone: the framework fills the viewport, and anything that
+	   still ends up below it (a form appended to body, a popup that is not a dialog) made the
+	   document taller than the screen. Focusing a list row then scrolled the whole page up by the
+	   framework header's height - no scrollbar to bring it back, and Chrome restores the offset
+	   on reload, so the header looked lost for good. A fixed body contributes nothing to the
+	   document's scrollable overflow, so there is nothing left to scroll. */
+	body {
+	  position: fixed;
+	  inset: 0;
+	}
 	:root, body {
 	  egw-framework#egw_fw_basecontainer {
 		--left-side-width: 0px !important;
@@ -29,8 +39,8 @@
 	  }
 
 
-	  /* Stop pull-to-refresh on chrome*/
-	  overflow-y: hidden;
+	  /* Stop pull-to-refresh on chrome. clip, not hidden: hidden still lets scripts scroll it. */
+	  overflow-y: clip;
 
 	  button[id*="save"]:hover,
 	  button[id*="apply"]:hover,

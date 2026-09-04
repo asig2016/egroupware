@@ -739,9 +739,12 @@ export class EgwFramework extends LitElement
 			// Listen for close - wait for updateComplete to allow etemplate a chance to bind first if it needs
 			dialog.updateComplete.then(() =>
 			{
+				// Both events bubble and composed, so Shoelace widgets INSIDE the dialog
+				// (an et2-email's sl-dropdown, a select's popup, a nested dialog, ...)
+				// deliver them here as well - only act on the dialog's own.
 				dialog.addEventListener("sl-request-close", (e) =>
 				{
-					if(!e.defaultPrevented)
+					if(e.target === dialog && !e.defaultPrevented)
 					{
 						this.popups.close(dialog);
 					}
@@ -751,7 +754,13 @@ export class EgwFramework extends LitElement
 				// sl-request-close. sl-after-hide fires on every real close regardless of
 				// how it was triggered, so use it to guarantee the dialog is untracked -
 				// _garbage_collector() never reclaims Et2Dialog entries on its own.
-				dialog.addEventListener("sl-after-hide", () => this.popups.close(dialog));
+				dialog.addEventListener("sl-after-hide", (e) =>
+				{
+					if(e.target === dialog)
+					{
+						this.popups.close(dialog);
+					}
+				});
 			});
 
 			// Put the dialog in the correct app so it can inherit application styles & be removed if app closes

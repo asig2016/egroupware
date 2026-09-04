@@ -211,4 +211,38 @@ describe('EgwFramework', () =>
 			'home.kdots_framework.test.template'
 		);
 	});
+
+	// openPopup() on a narrow screen opens an Et2Dialog instead of a window and closes it
+	// on sl-after-hide.  Shoelace widgets inside the popup (et2-email's dropdown, a select,
+	// ...) bubble the same event, and used to close the whole popup while it was rendering.
+	it('keeps an in-page popup open when a widget inside it fires sl-after-hide', async() =>
+	{
+		element.applicationList = [{
+			name: 'test-app', internalName: 'test', url: 'https://test.app', title: 'Test App',
+			icon: '', status: '1', features: {}
+		}];
+		element.loadApp('test-app', true);
+		sandbox.stub(window, 'matchMedia').returns(<MediaQueryList><unknown>{matches: true});
+		(window as any).app = {};
+
+		// Stand-in for the Et2Dialog egw.openDialog() would create
+		const dialog = Object.assign(document.createElement('div'), {
+			updateComplete: Promise.resolve(true),
+			modal: {activate: sinon.stub(), deactivate: sinon.stub()},
+			close: sinon.stub()
+		});
+		(egwStub as any).openDialog = sinon.stub().resolves(dialog);
+
+		await element.openPopup('index.php?menuaction=test.test_ui.edit', 400, 300, 'test_edit', 'test', false, 'no');
+		await dialog.updateComplete;
+
+		const child = document.createElement('div');
+		dialog.append(child);
+		child.dispatchEvent(new CustomEvent('sl-after-hide', {bubbles: true, composed: true}));
+		child.dispatchEvent(new CustomEvent('sl-request-close', {bubbles: true, composed: true}));
+		assert.isFalse(dialog.close.called, "a child's sl-after-hide / sl-request-close must not close the popup");
+
+		dialog.dispatchEvent(new CustomEvent('sl-after-hide', {bubbles: true}));
+		assert.isTrue(dialog.close.calledOnce, "the dialog's own sl-after-hide closes the popup");
+	});
 });

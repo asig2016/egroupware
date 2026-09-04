@@ -40,13 +40,42 @@ describe("Hidden widget", () =>
 	{
 		assert.isFalse(element.checkVisibility());
 	});
+
+	it('returns its value', async() =>
+	{
+		element.value = "/index.php?menuaction=app.class.method&ajax=true";
+		await elementUpdated(element);
+		assert.equal(element.getValue(), "/index.php?menuaction=app.class.method&ajax=true");
+	});
+
+	// Regression: a template whose readonlys use `__ALL__` (eg. a user without edit
+	// rights) marks every widget readonly, including hidden ones. The generic
+	// Et2InputWidget answer for a readonly widget is null, which lost the server
+	// provided ajax url that app-box tab loaders read from their hidden widget.
+	it('still returns its value when readonly', async() =>
+	{
+		element.value = "/index.php?menuaction=app.class.method&ajax=true";
+		element.readonly = true;
+		await elementUpdated(element);
+		assert.equal(element.getValue(), "/index.php?menuaction=app.class.method&ajax=true");
+	});
+
+	it('returns null when disabled', async() =>
+	{
+		element.value = "/index.php?menuaction=app.class.method&ajax=true";
+		element.disabled = true;
+		await elementUpdated(element);
+		assert.isNull(element.getValue());
+	});
 });
 
 // A genuine <input type="hidden"> - :host is always display:none by design, so "disabled stays
 // visible" (the whole point of which is distinguishing disabled from hidden) doesn't apply here:
 // it's never visible regardless of disabled state. Also has no label/help-text chrome at all.
+// "readonly" is skipped on purpose: a hidden input carries no user-editable state, so it keeps
+// answering its value when readonly (see the regression test above) instead of the generic null.
 inputBasicTests(before, "a hidden value", "input", {
 	// conformance: an <input type="hidden"> has no control to disable / require / focus, and is
 	// never visible, so "unhide" and the re-add visibility check cannot apply
-	skip: ["disabled", "label", "help-text", "disabled-controls", "required-aria", "help-text-aria", "focus", "unhide", "lifecycle"]
+	skip: ["readonly", "disabled", "label", "help-text", "disabled-controls", "required-aria", "help-text-aria", "focus", "unhide", "lifecycle"]
 });

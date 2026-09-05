@@ -141,6 +141,33 @@ describe("et2-iframe", () =>
 		el.remove();
 	});
 
+	// getDOMNode() returns the <et2-iframe> host, so app code that reaches an embedded
+	// eTemplate via `widget.getDOMNode().contentWindow` (achelper, actpm) needs the host to
+	// forward contentWindow/contentDocument to the real <iframe>; `iframe` exposes the node
+	// itself for consumers that want a 'load' listener etc.
+	it("iframe / contentWindow / contentDocument forward to the real <iframe>", async() =>
+	{
+		const el = await fixture<Et2Iframe>(html`
+            <et2-iframe></et2-iframe>`);
+		el.set_srcdoc("<p id='inner'>Hello</p>");
+		await new Promise<void>(resolve => el.__getIframeNode().addEventListener("load", () => resolve(), {once: true}));
+
+		const node = el.__getIframeNode();
+		assert.strictEqual(el.iframe, node);
+		assert.strictEqual(el.contentWindow, node.contentWindow);
+		assert.strictEqual(el.contentDocument, node.contentDocument);
+		assert.strictEqual(el.getDOMNode().contentWindow, node.contentWindow, "the legacy getDOMNode().contentWindow path keeps working");
+		assert.equal(el.contentDocument.getElementById("inner")?.textContent, "Hello");
+	});
+
+	it("contentWindow / contentDocument are null before the element has rendered", () =>
+	{
+		const el = document.createElement("et2-iframe") as Et2Iframe;
+		assert.isNull(el.iframe);
+		assert.isNull(el.contentWindow);
+		assert.isNull(el.contentDocument);
+	});
+
 	it("set_name()/set_allow()/set_seamless() reach the real <iframe>'s attributes", async() =>
 	{
 		const el = await fixture<Et2Iframe>(html`

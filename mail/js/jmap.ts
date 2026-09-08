@@ -67,6 +67,9 @@ interface JmapToken
 	// MailApp.bootstrapComposePopup() only pays for the extra hook-invocation endpoint call when
 	// something's actually registered, same as ProfileHandler::jmapBootstrap()'s own docblock).
 	hasComposePrepareHook : boolean;
+	// same, for the mail_compose_after_save hook a JMAP-native send has to fire itself - see
+	// MailCompose.runComposeAfterSaveHook() and Compose::ajax_composeAfterSave()
+	hasComposeAfterSaveHook : boolean;
 }
 
 export interface JmapMessageReference
@@ -4872,6 +4875,18 @@ export class MailJmap
 	}
 
 	/**
+	 * Whether any app registered for the mail_compose_after_save hook - same bootstrap-riding
+	 * mechanism (and same "don't pay for what nobody uses" reason) as hasComposePrepareHook() above.
+	 *
+	 * @return false if the account isn't JMAP-eligible at all (same as ensureToken() returning null)
+	 */
+	async hasComposeAfterSaveHook(profileID : string) : Promise<boolean>
+	{
+		const token = await this.ensureToken(profileID);
+		return token?.hasComposeAfterSaveHook ?? false;
+	}
+
+	/**
 	 * Get a valid access-token for $profileID, requesting a fresh one from the server if needed
 	 *
 	 * The refresh-token never leaves the server: we just re-request this same bootstrap
@@ -4924,6 +4939,7 @@ export class MailJmap
 						enableWsPush: !!data.enableWsPush,
 						pushAvailable: !!data.pushAvailable,
 						hasComposePrepareHook: !!data.hasComposePrepareHook,
+						hasComposeAfterSaveHook: !!data.hasComposeAfterSaveHook,
 					};
 					if (Object.keys(token.customLabels).length)
 					{

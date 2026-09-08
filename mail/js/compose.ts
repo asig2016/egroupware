@@ -1214,6 +1214,14 @@ export class MailCompose
 			this.egw.message(e?.message || this.egw.lang('Failed to create linked entry'), 'error');
 		}
 		await this.flagSourceMessagesAfterSend();
+		try
+		{
+			await this.runComposeAfterSaveHook();
+		}
+		catch (e)
+		{
+			console.error('MailCompose.runComposeAfterSaveHook(): failed', e);
+		}
 		// the form still carries its unsent-draft content as far as ETemplate's own dirty-tracking
 		// is concerned - it never went through ETemplate's own submit(), so closing now would
 		// otherwise trip the "unsaved changes" beforeunload prompt despite the message having
@@ -1284,6 +1292,35 @@ export class MailCompose
 			// send failure over this, the message already went out successfully
 			console.error('MailCompose: failed to flag original message(s) as answered/forwarded', e);
 		}
+	}
+
+	/**
+	 * Fire the mail_compose_after_save hook for a JMAP-native send
+	 *
+	 * Classic compose() ran this server-side right after its own send() returned, handing the hook
+	 * the submitted compose content - achelper uses it to run its mail template's own
+	 * `sent_callback` off `content.template_data`, which mail_compose_prepare put there when the
+	 * compose was opened. A JMAP-native send never reaches any server-side compose code at all, so
+	 * the round trip has to start here instead (Compose::ajax_composeAfterSave()).
+	 *
+	 * Called from trySendViaJmap() as a best-effort post-send follow-up, next to
+	 * integrateSentMessage() - the message is already out by then, so a failure is logged, never
+	 * shown as a send failure. Gated on JmapToken's own hasComposeAfterSaveHook flag, so an install
+	 * with nothing registered pays nothing (same pattern as the prepare hook's own gate in
+	 * MailApp.bootstrapComposePopup()).
+	 *
+	 * The content handed over is getValues() - the same shape the classic postback submitted, so an
+	 * existing registrant needs no changes.
+	 */
+	private async runComposeAfterSaveHook() : Promise<void>
+	{
+		const profileID = String(this.currentProfileID());
+		if (!await this.app.jmap.hasComposeAfterSaveHook(profileID))
+		{
+			return;
+		}
+		const content = this.et2.getInstanceManager().getValues(this.et2);
+		await this.egw.request('mail.EGroupware\\Mail\\Compose.ajax_composeAfterSave', [content]);
 	}
 
 	/**

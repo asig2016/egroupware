@@ -1938,7 +1938,8 @@ export class MailApp extends EgwApp
 		// the attached message/rfc822 sub-part's own id (mail_ui::displayMessage()'s own `part` GET
 		// param, threaded through compose.php's own bootstrap args) - see
 		// MailJmap.importAttachedMessageToDrafts()'s own docblock (ticket #124821) for why
-		part? : string) : Promise<void>
+		part? : string,
+		hookParams? : { [key : string] : any }) : Promise<void>
 	{
 		const {name, url, etemplate_exec_id} = bootstrap;
 
@@ -1962,7 +1963,13 @@ export class MailApp extends EgwApp
 		const [{actions, sel_options, content}, prepared] = await Promise.all([
 			this.getComposeToolbarData(accId),
 			this.jmap.hasComposePrepareHook(accId).then(has => has ?
-				this.egw.request('mail.EGroupware\\Mail\\Compose.ajax_prepareCompose', []) : null)
+				// hookParams: this popup's own leftover url params (compose.php's own $hook_params -
+				// achelper's mode/template/language/infolog_id/...). The hook reads them from $_GET,
+				// which on THIS json request would otherwise hold nothing but its own menuaction, so
+				// they have to travel through the client. etemplate_exec_id lets the endpoint store
+				// the hook's own $preserv (its attachments!) into this popup's etemplate request.
+				this.egw.request('mail.EGroupware\\Mail\\Compose.ajax_prepareCompose',
+					[hookParams || {}, etemplate_exec_id]) : null)
 		]);
 		const actionsCopy : any = {...actions};
 		// content/sel_options are the SAME shared, cached objects getComposeToolbarData() reuses

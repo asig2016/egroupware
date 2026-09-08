@@ -77,6 +77,8 @@ class ProfileHandler
 				// see the main branch's own comment below for why this rides along on the bootstrap
 				// already fetched once per account, instead of a dedicated per-compose-open call
 				$bootstrap['hasComposePrepareHook'] = Api\Hooks::count('mail_compose_prepare') > 0;
+				// same deal for the post-send hook, see Compose::ajax_composeAfterSave()
+				$bootstrap['hasComposeAfterSaveHook'] = Api\Hooks::count('mail_compose_after_save') > 0;
 				$response->data($bootstrap);
 				return;
 			}
@@ -123,6 +125,8 @@ class ProfileHandler
 				// request" - riding along here means zero extra round-trips for the common
 				// no-hook-registered case, rather than a dedicated per-compose-open check.
 				$bootstrap['hasComposePrepareHook'] = Api\Hooks::count('mail_compose_prepare') > 0;
+				// same deal for the post-send hook, see Compose::ajax_composeAfterSave()
+				$bootstrap['hasComposeAfterSaveHook'] = Api\Hooks::count('mail_compose_after_save') > 0;
 				// No working push-server for this instance (eg. shared hosting with none installed)?
 				// Tell the client to try JamWebSocketClient's client-side onPush() instead of the
 				// classic server-side JMAP push subscription (self::enablePush() below) - no

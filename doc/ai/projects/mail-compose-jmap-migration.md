@@ -3556,3 +3556,54 @@ client-side compose-from-draft flow `mail_ui::ajax_view()` already uses for an e
 Committed as `1012269cc1`.
 
 Both this and the regex cleanup above are committed locally only, not yet pushed.
+
+## Step 10 follow-up (2026-09-08): the `mail_compose_prepare`/`mail_compose_after_save` hooks made to work without the classic postback
+
+The Step 10 design sketch above assumed a registrant's `$_GET` params would somehow still be there
+when `ajax_prepareCompose()` runs. They are not: the params live on the compose POPUP's url
+(`mail/compose.php?mode=actemplate&template=...`), while the hook runs in a separate `egw.json`
+request whose query string is nothing but its own `menuaction`. achelper's own handler starts with
+`if (!$_GET['mode']) return;`, so every call returned immediately and its whole templated-mail flow
+silently did nothing - the reason this fork was carrying a revert of the `compose()` deletion.
+
+Closed with three small pieces instead:
+
+1. **`mail/compose.php`** collects `$hook_params` - every `$_GET`/`$_POST` key it does not consume
+   itself (`from`/`id`/`acc_id`/`smime_type`/`preset`/`mailto`/`menuaction`/`cd`/`ajax`; `mode` is
+   deliberately kept, achelper dispatches on it) - and passes them as an 8th
+   `data-mail-start` argument.
+2. **`MailApp.bootstrapComposePopup()`** hands them, plus the popup's own `etemplate_exec_id`, to
+   `Compose::ajax_prepareCompose($_params, $_etemplate_exec_id)`, which superimposes them on
+   `$_GET`/`$_REQUEST` before `runComposePrepareHook()` - so the hook contract is byte-for-byte the
+   one it had under the classic postback. It is not a privilege boundary: the params come from a url
+   the same user just opened in their own session. The endpoint also
+   - seeds `sel_options['mailaccount']` with the real identity list (new
+     `Compose::mailaccountOptions()`, shared with `ajax_getComposeToolbarData()`). A hook narrowing
+     that list to its own single identity looks the label up in what it was handed, so an empty seed
+     left the "From" box showing the raw `"72:95"` value;
+   - writes the hook's `$preserv` into the popup's own etemplate request, which is what makes
+     hook-injected classic `{file,name,type,size,tmp_name}` attachments work at all -
+     `Compose::getAttachment()` reads them back out of `preserv['attachments']` for
+     `MailCompose.uploadAttachmentsViaJmap()`'s own staged-attachment branch.
+3. **`mail_compose_after_save`** had no caller left at all once `compose()` was gone (a JMAP-native
+   send never touches server-side compose code). `MailCompose.runComposeAfterSaveHook()` now calls
+   the new `Compose::ajax_composeAfterSave($content)` from `trySendViaJmap()`, as a best-effort
+   post-send follow-up next to `integrateSentMessage()`, with `getValues()` - the same shape the
+   classic postback submitted. Gated on a new `hasComposeAfterSaveHook` bootstrap flag
+   (`ProfileHandler::jmapBootstrap()`, alongside `hasComposePrepareHook`), so an install with
+   nothing registered pays no round trip.
+
+Verified live 2026-09-08 against achelper's own templated mails (acilog entries 270651/270133,
+templates 30 and 26): the client-side popup comes up with the hook's To/Bcc/Reply-to/Subject/body/
+identity and its PDF attachments listed, pixel-identical to the same template through the classic
+postback, and `getAttachment()` resolves each attachment through the stored preserv (0 bytes back
+only because this dev instance's restored DB has no file content for any of them).
+
+Still different from the classic postback, and NOT caused by any of this: the client-side compose
+popup renders its labels untranslated (English "From/To/Cc/Subject", vs. Greek in the classic one) -
+reproduced with a plain `mail/compose.php?from=&id=&acc_id=..` too.
+
+With this in place nothing in this fork needs `compose()` any more - achelper opens
+`mail/compose.php` like every other caller - so the revert of the deletion this fork had been
+carrying was dropped again (2026-09-08).
+

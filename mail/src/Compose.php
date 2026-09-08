@@ -280,6 +280,33 @@ class Compose
 	}
 
 	/**
+	 * "From" selectbox options: "<acc_id>:<ident_id>" => identity label, every IMAP account/identity
+	 * this user has. Shared by ajax_getComposeToolbarData() and ajax_prepareCompose() - a
+	 * mail_compose_prepare hook that narrows this list down to its own single entry (achelper picks
+	 * the identity its mail template configures) looks the label up in the options it was HANDED,
+	 * so handing it an empty list left the "From" box showing the raw "72:95" value instead of the
+	 * account name (found live 2026-09-08, comparing the client-side compose against the classic
+	 * postback, which always passed the fully built options in).
+	 *
+	 * @return array
+	 */
+	protected static function mailaccountOptions() : array
+	{
+		$options = array();
+		foreach (Mail\Account::search(true, false) as $acc_id => $account)
+		{
+			// do NOT add SMTP only accounts as identities
+			if (!$account->is_imap(false)) continue;
+
+			foreach ($account->identities($acc_id) as $ident_id => $identity)
+			{
+				$options[$acc_id.':'.$ident_id] = $identity;
+			}
+		}
+		return $options;
+	}
+
+	/**
 	 * Toolbar-action-tree + sel_options needed to bootstrap a client-side compose popup
 	 *
 	 * getToolbarActions()'s own output (captions/icons/onExecute strings/shortcuts) plus the
@@ -303,17 +330,7 @@ class Compose
 		}
 
 		// same identities/sel_options computation as compose(), lines ~1381-1393 and 1484-1489
-		$sel_options = array('mailaccount' => array());
-		foreach (Mail\Account::search(true, false) as $acc_id => $account)
-		{
-			// do NOT add SMTP only accounts as identities
-			if (!$account->is_imap(false)) continue;
-
-			foreach ($account->identities($acc_id) as $ident_id => $identity)
-			{
-				$sel_options['mailaccount'][$acc_id.':'.$ident_id] = $identity;
-			}
-		}
+		$sel_options = array('mailaccount' => self::mailaccountOptions());
 		$sel_options['mimeType'] = self::$mimeTypes;
 		$sel_options['priority'] = self::$priorities;
 		$sel_options['filemode'] = Vfs\Sharing::$modes;
@@ -485,11 +502,50 @@ class Compose
 	 * installs have nothing registered here at all, so this round trip is opt-in per install, not a
 	 * cost every compose pays for.
 	 *
+	 * $_GET forwarding: a registrant's params sit on the compose POPUP's own url (mail/compose.php
+	 * ?mode=actemplate&template=...), NOT on this json request, whose query string is just its own
+	 * menuaction - so the hook would never see them and achelper's own
+	 * `if (!$_GET['mode']) return;` guard would end every call immediately. compose.php collects
+	 * its leftover request params (everything it doesn't consume itself) and hands them to
+	 * MailApp.bootstrapComposePopup(), which passes them back here as $_params - superimposed on
+	 * $_GET/$_REQUEST below so the hook contract stays byte-for-byte the one it had under the
+	 * classic postback. Not a privilege boundary: these params originate from a url the same user
+	 * just opened in their own session, so anything they could set here they could equally set
+	 * there; 'menuaction' is excluded only so this request keeps dispatching to itself.
+	 *
+	 * @param array $_params the compose popup's own leftover url params, see above
+	 * @param ?string $_etemplate_exec_id the popup's own etemplate request (compose.php's
+	 *  Etemplate::clientSideBootstrap()), to store the hook's $preserv into - getAttachment()
+	 *  reads preserv['attachments'] back out of it for compose.ts's own
+	 *  uploadAttachmentsViaJmap(), which is how a hook-injected classic {file,name,type,size,
+	 *  tmp_name} attachment reaches the JMAP send path at all
 	 * @return void writes {content, readonlys, sel_options, preserv} via Api\Json\Response
 	 */
-	function ajax_prepareCompose()
+	function ajax_prepareCompose(array $_params=[], ?string $_etemplate_exec_id=null)
 	{
-		[$content, $readonlys, $sel_options, $preserv] = self::runComposePrepareHook([], [], [], []);
+		foreach($_params as $name => $value)
+		{
+			if (!is_string($name) || $name === 'menuaction' || !(is_scalar($value) || is_array($value)))
+			{
+				continue;
+			}
+			$_GET[$name] = $_REQUEST[$name] = $value;
+		}
+
+		// Seeded with the same "From" options ajax_getComposeToolbarData() sends the popup, the way
+		// compose() passed its own already-built ones - see mailaccountOptions(). Whatever the hook
+		// returns REPLACES this key clientside (a shallow merge over the cached toolbar data), which
+		// is exactly what a hook narrowing it to one identity wants.
+		[$content, $readonlys, $sel_options, $preserv] = self::runComposePrepareHook(
+			[], [], ['mailaccount' => self::mailaccountOptions()], []);
+
+		if ($preserv && !empty($_etemplate_exec_id) &&
+			($request = Etemplate\Request::read($_etemplate_exec_id, false)))
+		{
+			// Request\Cache keeps the same id and saves the modified data in its own destructor,
+			// so there is no new exec_id to hand back to the client here
+			$request->preserv = array_merge((array)$request->preserv, $preserv);
+		}
 
 		Api\Json\Response::get()->data(compact('content', 'readonlys', 'sel_options', 'preserv'));
 	}
@@ -522,6 +578,31 @@ class Compose
 			$resolved[$field] = self::resolveEmailAddressList((array)($addresses[$field] ?? []));
 		}
 		Api\Json\Response::get()->data($resolved);
+	}
+
+	/**
+	 * Standalone JSON endpoint for the mail_compose_after_save hook
+	 *
+	 * Classic compose() ran this right after a successful send, with the submitted compose content
+	 * (achelper uses it to fire its mail-template's own `sent_callback` off
+	 * $content['template_data']). A JMAP-native send never touches the server's compose code at
+	 * all, so MailCompose.trySendViaJmap() calls this instead, as one of its best-effort
+	 * post-send follow-ups next to integrateSentMessage() - the mail is already out by then, so a
+	 * failure here is logged, never reported as a send failure.
+	 *
+	 * Only called when JmapToken's own hasComposeAfterSaveHook flag is true, exactly like
+	 * ajax_prepareCompose() above - no round trip at all for an install with nothing registered.
+	 *
+	 * @param array $_content the compose form's own current values, the same shape the classic
+	 *  postback handed the hook
+	 * @return void
+	 */
+	function ajax_composeAfterSave(array $_content=[])
+	{
+		Api\Hooks::process(array(
+			'location' => 'mail_compose_after_save',
+			'content'  => $_content,
+		));
 	}
 
 	function getAttachment()

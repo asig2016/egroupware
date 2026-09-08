@@ -103,6 +103,19 @@ if (($mailto = (string)($_GET['mailto'] ?? '')) !== '')
 	], static fn($value) => $value !== null);
 }
 
+// A mail_compose_prepare registrant (achelper, ...) reads its OWN params straight from $_GET -
+// mode/template/language/infolog_id/acerp_id/company_id/acemailstor_id for achelper's templated
+// mails. That hook does not run in THIS request any more, it runs in its own json round trip
+// (Compose::ajax_prepareCompose(), called from bootstrapComposePopup() below), whose query string
+// is nothing but its own menuaction - so hand this popup's own leftover params through the client
+// to that endpoint, which superimposes them on its $_GET again. Everything this file consumes
+// itself is excluded; 'mode' deliberately is NOT (achelper keys its whole dispatch off it, and
+// bootstrapComposePopup() gets its own copy as an explicit argument anyway).
+$hook_params = array_diff_key(
+	($_GET ?? []) + ($_POST ?? []),
+	array_flip(['from', 'id', 'acc_id', 'smime_type', 'preset', 'mailto', 'menuaction', 'cd', 'ajax'])
+);
+
 Api\Framework::set_extra('mail', 'start', array(
 	'method' => 'app.mail.bootstrapComposePopup',
 	'args'   => array(
@@ -117,6 +130,7 @@ Api\Framework::set_extra('mail', 'start', array(
 		(string)($_REQUEST['pgp_encrypted'] ?? ''),
 		$bootstrap,
 		$preset,
+		$hook_params,
 	),
 ));
 

@@ -102,6 +102,39 @@ container/DB and runs the full installer from scratch on every run, since nothin
 is no pre-existing install to connect into, no stray domain-mismatch to work around, and no risk of colliding with
 another concurrent test run.
 
+### An interrupted run leaves its fixtures behind - clean up before blaming the code
+
+A suite whose fixtures carry FIXED ids only cleans them up in `tearDown()`. Kill the run - Ctrl-C,
+a timeout, a stopped background task - and those rows stay in the database, so the NEXT run dies
+in `setUp()` with a duplicate-key error, in tests that have nothing to do with whatever was
+changed.
+
+The clearest example in this tree is `acdms/tests/FireportFixtures.php`: company / report / map
+`987654`, accounts `987654101..106`, positions `9876542xx`, rules from `987654400`, a second
+report `987655`. An interrupted run of `acdms/tests/` produced
+`EGroupware\Api\Db\Exception\InvalidSql: Duplicate entry '987654101' for key 'PRIMARY'` at
+`FireportFixtures.php:128` and, from it, 16 errors and 2 failures spread over four unrelated test
+files (2026-09-09). A re-run on a cleaned database was green.
+
+So before reading a cluster of errors as a regression:
+
+* grep the output for `Duplicate entry` - one at the top of the run explains everything under it;
+* check the fixture ids are gone (for the acdms fireport suite:
+  `SELECT COUNT(*) FROM ac_dms_acc WHERE company_id=987654`, and the same for `ac_dms_hl`,
+  `ac_dms_bl`, `ac_dms_rep_instaces`, plus `ac_dms_rep_maps` / `_pos` / `_maprules` and
+  `ac_dms_rep` for ids `987654` / `987655` - a stray report row even shows up in the application's
+  own list, named "Fixture report");
+* delete what `tearDown()` would have deleted, then run again. A run that finishes cleans up after
+  itself, so this only ever follows an interrupted one.
+
+Two habits that avoid it: let a suite finish rather than killing it, and write fixtures whose
+teardown is keyed on something the next run can find (the fixed id itself) rather than on state
+held in the test object.
+
+**Never "compare against a baseline" by stashing the code while the database is already
+migrated.** Old code against new rows proves nothing about the change and can write stale rows
+back into a shared instance. Compare on a database that matches the code.
+
 ### Admin-only functionality: dedicated admin test account
 
 `demo` (the suite-wide default session, `$GLOBALS['EGW_USER']`/`['EGW_PASSWORD']`, normalized by

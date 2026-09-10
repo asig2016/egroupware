@@ -30,6 +30,14 @@ class admin_ui
 	);
 
 	/**
+	 * Value of the container-filter of the group-list matching the groups without a container
+	 *
+	 * Not "" (that is "all containers") and not a name Accounts::container() can ever return, as
+	 * that ucfirst()s a non-empty regexp-match.
+	 */
+	const NO_CONTAINER = '!';
+
+	/**
 	 * Reference to global accounts object
 	 *
 	 * @var Api\Accounts
@@ -80,6 +88,13 @@ class admin_ui
 
 		$sel_options['tree'] = $this->tree_data();
 		$sel_options['filter'] = array_merge([['value' => '', 'label' => lang('All groups')]], Etemplate\Widget\Select::groups());
+		$sel_options['container'] = array_merge([
+			['value' => '', 'label' => lang('All containers')],
+			['value' => self::NO_CONTAINER, 'label' => lang('Without container')],
+		], array_map(static function($container)
+		{
+			return ['value' => $container, 'label' => $container];
+		}, self::group_containers()));
 
 		$sel_options['filter2'] = array(
 			''            => 'All',
@@ -458,6 +473,31 @@ class admin_ui
 	}
 
 	/**
+	 * Distinct container-names of all groups, for the container-filter of the group-list
+	 *
+	 * The container is not stored anywhere: Accounts::container() derives it per group from the
+	 * attribute named by $GLOBALS['egw_info']['server']['group_container_attribute'], so the only
+	 * way to know which containers exist is to look at every group. Cheap enough to do on every
+	 * index() call, as Accounts::search() caches the full group-list on instance-level.
+	 *
+	 * @return array of container-names, sorted, empty if no container is configured
+	 */
+	protected static function group_containers() : array
+	{
+		$containers = array();
+		foreach($GLOBALS['egw']->accounts->search(array('type' => 'groups')) as $group)
+		{
+			if (($container = Api\Accounts::container($group)))
+			{
+				$containers[$container] = $container;
+			}
+		}
+		natcasesort($containers);
+
+		return array_values($containers);
+	}
+
+	/**
 	 * Callback for the nextmatch to get groups
 	 *
 	 * Does NOT set members for huge installations, but return "is_huge" === true in $rows.
@@ -468,14 +508,34 @@ class admin_ui
 	 */
 	public static function get_groups(array &$query, array &$rows=null)
 	{
+		// the container is derived per group (see group_containers()) and nothing accounts->search()
+		// can filter on - so for a container-filter we have to fetch all groups and page here
+		$container_filter = (string)($query['col_filter']['container'] ?? '');
+
 		$groups = $GLOBALS['egw']->accounts->search(array(
 				'type'  => 'groups',
 				'query' => $query['search'] ?? null,
 				'order' => $query['order'] ?? null,
 				'sort'  => $query['sort'] ?? null,
+			) + ($container_filter === '' ? array(
 				'start' => (int)$query['start'],
 				'offset' => (int)$query['num_rows']
-			));
+			) : array()));
+
+		// accounts->total is clobbered by the members() and get_user_applications() calls below
+		$total = $GLOBALS['egw']->accounts->total;
+
+		if ($container_filter !== '')
+		{
+			$groups = array_filter($groups, static function(array $group) use ($container_filter)
+			{
+				$container = Api\Accounts::container($group);
+
+				return $container_filter === self::NO_CONTAINER ? !isset($container) : $container === $container_filter;
+			});
+			$total = count($groups);
+			$groups = array_slice($groups, (int)$query['start'], (int)$query['num_rows'] ?: null, true);
+		}
 
 		// release session (after query got cached!) to allow parallel requests to run
 		$GLOBALS['egw']->session->commit_session();
@@ -514,7 +574,7 @@ class admin_ui
 			];
 		}
 		$rows['is_huge'] = $is_huge;
-		return $GLOBALS['egw']->accounts->total;
+		return $total;
 	}
 
 	/**

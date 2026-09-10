@@ -50,7 +50,7 @@
 			</rows>
 		</grid>
 	</et2-template>
-	<et2-template  id="admin.index.group" template="" lang="" group="0" version="1.9.001">
+	<et2-template  id="admin.index.group" template="" lang="" group="0" version="1.9.002">
 		<grid width="100%">
 			<columns>
 				<column width="30%"/>
@@ -81,6 +81,12 @@
 				</row>
 			</rows>
 		</grid>
+		<!-- Outside the grid on purpose: api/filter-template.php scans this template's source for
+		     nextmatch-* tags to build the filter drawer, while a tag inside a header cell would
+		     also join its id into the column name (et2_nextmatch::_getColumnName()) - renaming
+		     "account_lid_account_description_account_dn" and hiding that column for everyone who
+		     already has a column preference. -->
+		<et2-nextmatch-header-filter  label="Container" id="container" emptyLabel="All containers" noLang="1"/>
 	</et2-template>
 	<et2-template  id="admin.index.header" template="" lang="" group="0" version="1.9.001">
 		<et2-toolbar  id="account-toolbar">

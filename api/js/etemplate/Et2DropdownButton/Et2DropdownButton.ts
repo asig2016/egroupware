@@ -127,12 +127,25 @@ export class Et2DropdownButton extends Et2WidgetWithSelectMixin(LitElement)
 	private _group : SlButtonGroup;
 	private _dropdow : SlDropdown;
 
+	/**
+	 * The menu items are rendered the first time the dropdown opens, not with the button
+	 *
+	 * Every sl-menu-item render reads getComputedStyle().direction (Shoelace's
+	 * SubmenuController does it for every item, submenu or not), and each such read forces a
+	 * style recalculation of the whole document when the DOM is dirty - which it is while a
+	 * template is being built. A pane rebuilt per selection with two of these buttons (20
+	 * options between them) paid ~8 ms per item, 200 ms per arrow key in the mail archive list
+	 * (2026-09-10). Nobody can see the menu before it opens, so nothing is lost by waiting.
+	 */
+	private _menuOpened : boolean = false;
+
 	constructor()
 	{
 		super();
 
 		// Bind handlers - parent already got click
 		this._handleSelect = this._handleSelect.bind(this);
+		this._handleMenuShow = this._handleMenuShow.bind(this);
 	}
 
 	connectedCallback()
@@ -216,14 +229,14 @@ export class Et2DropdownButton extends Et2WidgetWithSelectMixin(LitElement)
                     ${this.label}
                     <slot name="suffix" slot="suffix"></slot>
                 </sl-button>
-                <sl-dropdown placement=${this.placement} hoist part="dropdown">
+                <sl-dropdown placement=${this.placement} hoist part="dropdown" @sl-show=${this._handleMenuShow}>
                     <slot name="trigger" slot="trigger">
                         <sl-button exportparts="base, base:trigger__base" part="trigger" size="${egwIsMobile() ? "large" : "medium"}"
                                    slot="trigger" caret
                                ?disabled=${this.disabled}></sl-button>
                     </slot>
                     <sl-menu @sl-select=${this._handleSelect} part="menu">
-                        ${(this.select_options || []).map((option : SelectOption) => this._optionTemplate(option))}
+                        ${this._menuOpened ? (this.select_options || []).map((option : SelectOption) => this._optionTemplate(option)) : nothing}
                         <slot></slot>
                     </sl-menu>
                 </sl-dropdown>
@@ -248,6 +261,18 @@ export class Et2DropdownButton extends Et2WidgetWithSelectMixin(LitElement)
                 ${icon}
                 ${this.noLang ? option.label : this.egw().lang(option.label)}
             </sl-menu-item>`;
+	}
+
+	/**
+	 * First open of the dropdown: from now on the menu items are rendered
+	 */
+	protected _handleMenuShow()
+	{
+		if(!this._menuOpened)
+		{
+			this._menuOpened = true;
+			this.requestUpdate();
+		}
 	}
 
 	protected _handleSelect(ev)

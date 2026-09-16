@@ -362,18 +362,21 @@ class Egw extends Egw\Base
 
 			// this removes the sessiondata if its saved in the URL
 			$query = preg_replace('/[&]?sessionid(=|%3D)[^&]+&kp3(=|%3D)[^&]+&domain=.*$/','',$_SERVER['QUERY_STRING']);
+			$extra_vars = [];
 			if ($GLOBALS['egw_info']['server']['http_auth_types'])
 			{
-				$redirect = '/api/ntlm/index.php?';
+				$redirect = '/api/ntlm/index.php';
 			}
 			else
 			{
-				$redirect = '/login.php?';
+				$redirect = '/login.php';
 				// only add "your session could not be verified", if a sessionid is given (cookie or on url)
-				if (Session::get_sessionid()) $redirect .= 'cd=10&';
+				if (Session::get_sessionid()) $extra_vars['cd'] = 10;
 			}
-			if ($relpath) $redirect .= 'phpgw_forward='.urlencode($relpath.(!empty($query) ? '?'.$query : ''));
-			self::redirect_link($redirect);
+			// as a parameter, encoded once by redirect_link(): urlencode()d here it was encoded twice, the
+			// login page decoded one level, and a namespaced menuaction ("%5C") came back as "%255C"
+			if ($relpath) $extra_vars['phpgw_forward'] = $relpath.(!empty($query) ? '?'.$query : '');
+			self::redirect_link($redirect, $extra_vars);
 		}
 	}
 

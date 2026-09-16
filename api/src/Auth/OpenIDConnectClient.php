@@ -232,7 +232,9 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
 				!empty($GLOBALS['egw_info']['server']['openidconnect_discovery'])) &&
 				($GLOBALS['sessionid'] = Api\Auth::login()))
 			{
-				Api\Egw::redirect_link('/index.php', 'cd=yes');
+				// language & phpgw_forward selected on the login-screen, like login.php does
+				[$forward, $extra_vars] = Api\Auth::finishSsoLogin();
+				Api\Egw::redirect_link($forward, $extra_vars);
 				exit;
 			}
 			throw new OpenIDConnectClientException("Missing OpenIDConnectClient state!");

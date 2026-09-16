@@ -51,6 +51,7 @@ class LoginParamsTest extends TestCase
 	public function testSelectedLangFallsBackToTheRememberedOneOnlyWhenAsked()
 	{
 		$_SESSION[Auth::LOGIN_LANG] = 'fr';
+		$_SESSION[Auth::LOGIN_STASHED] = time();
 		$this->assertNull(Auth::selectedLang());
 		$this->assertEquals('fr', Auth::selectedLang(true));
 
@@ -65,6 +66,7 @@ class LoginParamsTest extends TestCase
 			'phpgw_forward"><script>alert(1)</script>' => 'x',
 			'passwd' => 'secret',
 			'phpgw_array' => ['x'],
+			'phpgw_Forward' => '/other',
 		];
 		$this->assertEquals(['phpgw_forward' => '/index.php?menuaction=calendar.calendar_uiviews.index'],
 			Auth::loginParams());
@@ -89,11 +91,31 @@ class LoginParamsTest extends TestCase
 	public function testLoginParamsFallBackToTheRememberedOnesOnlyWhenAsked()
 	{
 		$_SESSION[Auth::LOGIN_PARAMS] = ['phpgw_forward' => '/remembered'];
+		$_SESSION[Auth::LOGIN_STASHED] = time();
 		$this->assertEquals([], Auth::loginParams());
 		$this->assertEquals(['phpgw_forward' => '/remembered'], Auth::loginParams(true));
 
 		$_REQUEST['phpgw_forward'] = '/requested';
 		$this->assertEquals(['phpgw_forward' => '/requested'], Auth::loginParams(true));
+	}
+
+	/**
+	 * What an abandoned SSO login remembered must not forward a much later login
+	 */
+	public function testRememberedValuesExpire()
+	{
+		$_SESSION[Auth::LOGIN_LANG] = 'fr';
+		$_SESSION[Auth::LOGIN_PARAMS] = ['phpgw_forward' => '/remembered'];
+		$_SESSION[Auth::LOGIN_STASHED] = time() - Auth::LOGIN_STASH_TTL - 1;
+
+		$this->assertNull(Auth::selectedLang(true));
+		$this->assertEquals([], Auth::loginParams(true));
+
+		$_SESSION[Auth::LOGIN_STASHED] = time();
+		Auth::clearLoginStash();
+		$this->assertEquals([], Auth::loginParams(true));
+		$this->assertArrayNotHasKey(Auth::LOGIN_LANG, $_SESSION);
+		$this->assertArrayNotHasKey(Auth::LOGIN_STASHED, $_SESSION);
 	}
 
 	#[\PHPUnit\Framework\Attributes\DataProvider('forwardProvider')]
@@ -107,15 +129,91 @@ class LoginParamsTest extends TestCase
 		return [
 			['/index.php?menuaction=calendar.calendar_uiviews.index&cd=yes', true],
 			['index.php', true],
+			['calendar/index.php', true],
+			['/index.php?query=a\\b', true],
 			['/openid/endpoint.php/authorize?client_id=x&redirect_uri=https://example.org/', true],
 			['//evil.example', false],
 			['/\\evil.example', false],
 			['\\\\evil.example', false],
+			['\\evil.example', false],
+			["\t\\evil.example", false],
+			["\x0b\\evil.example", false],
+			[' /index.php', false],
 			["/\t/evil.example", false],
 			["  //evil.example", false],
 			['https://evil.example', false],
 			['javascript:alert(1)', false],
 		];
+	}
+
+	/**
+	 * The URL the login redirects to, for every kind of webserver_url - the one place a browser decides
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('redirectProvider')]
+	public function testLoginRedirectStaysOnThisServer(string $forward)
+	{
+		$backup = $GLOBALS['egw_info'] ?? null;
+		$host_backup = $_SERVER['HTTP_HOST'] ?? null;
+		$_SERVER['HTTP_HOST'] = 'egw.example.com';
+		try
+		{
+			foreach(['', '/', '/egroupware'] as $webserver_url)
+			{
+				// enforce_ssl makes Session::link() glue "https://".HTTP_HOST in front of the path
+				foreach(['', 'redirect'] as $enforce_ssl)
+				{
+					$GLOBALS['egw_info'] = ['flags' => ['currentapp' => 'login'],
+						'server' => ['webserver_url' => $webserver_url, 'enforce_ssl' => $enforce_ssl]];
+					$_GET = ['phpgw_forward' => $forward];
+					[$url, $extra_vars] = Auth::loginForward();
+					try
+					{
+						$link = \EGroupware\Api\Session::link($url, $extra_vars);
+					}
+					catch (\InvalidArgumentException $e)
+					{
+						continue;	// refused to link outside, fine too
+					}
+					$link = str_replace(["\t", "\r", "\n"], '', $link);
+					$msg = "webserver_url='$webserver_url', enforce_ssl='$enforce_ssl': ".json_encode($forward)." links to ".json_encode($link);
+					if ($enforce_ssl)
+					{
+						$this->assertStringStartsWith('https://egw.example.com/', $link, $msg);
+						$this->assertSame('egw.example.com', parse_url($link, PHP_URL_HOST), $msg);
+						$this->assertNull(parse_url($link, PHP_URL_USER), $msg);
+					}
+					else
+					{
+						$this->assertMatchesRegularExpression('#^/(?![/\\\\])#', $link, $msg);
+					}
+				}
+			}
+		}
+		finally
+		{
+			$GLOBALS['egw_info'] = $backup;
+			if (isset($host_backup)) $_SERVER['HTTP_HOST'] = $host_backup; else unset($_SERVER['HTTP_HOST']);
+		}
+	}
+
+	public static function redirectProvider() : array
+	{
+		return array_map(fn($forward) => [$forward], [
+			'/index.php?menuaction=calendar.calendar_uiviews.index',
+			'index.php',
+			'\\evil.example',
+			"\t\\evil.example",
+			'/\\evil.example',
+			'//evil.example',
+			'https://evil.example',
+			'%5Cevil.example',
+			// relative, already containing the webserver_url: no prefix, and with enforce_ssl
+			// "https://<host>" + "x@evil.example/..." made evil.example the host
+			'x@evil.example/egroupware/',
+			'.evil.example/egroupware/x',
+			'.evil.example//x',
+			'x@evil.example//',
+		]);
 	}
 
 	public function testInputHiddenEscapesTheName()

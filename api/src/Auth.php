@@ -175,6 +175,15 @@ class Auth
 	const LOGIN_PARAMS = 'egw_login_params';
 
 	/**
+	 * Most phpgw_* parameters loginParams() takes, and the longest value
+	 *
+	 * login() stores them in the session of a not yet authenticated request, so without a limit anyone
+	 * could have the server store as much as the request size allows.
+	 */
+	const LOGIN_PARAMS_MAX = 10;
+	const LOGIN_PARAMS_MAX_LENGTH = 8192;
+
+	/**
 	 * Get the phpgw_* parameters (eg. phpgw_forward) of the login-request
 	 *
 	 * They are lost, if the login-form is submitted with GET (eg. by clicking a SSO discovery button), as
@@ -190,9 +199,11 @@ class Auth
 		{
 			// strict name pattern: the name is later reflected into a hidden input, so it must not be able to
 			// break out of the attribute (PHP does NOT mangle ", < or > in parameter names)
-			if (is_string($value) && preg_match('/^phpgw_[a-z0-9_]+$/i', $name))
+			if (is_string($value) && strlen($value) <= self::LOGIN_PARAMS_MAX_LENGTH &&
+				preg_match('/^phpgw_[a-z0-9_]+$/i', $name))
 			{
 				$params[$name] = $value;
+				if (count($params) >= self::LOGIN_PARAMS_MAX) break;
 			}
 		}
 		if (!$params && $remembered && is_array($_SESSION[self::LOGIN_PARAMS] ?? null))
@@ -200,6 +211,23 @@ class Auth
 			$params = $_SESSION[self::LOGIN_PARAMS];
 		}
 		return $params;
+	}
+
+	/**
+	 * Check a phpgw_forward target stays on this server
+	 *
+	 * The target comes from the request, and a SSO login forwards to it without the user doing anything.
+	 * Session::link() refuses "//host" and "http(s)://host", but a browser also reads "/\host" as
+	 * "//host", and drops tabs and newlines anywhere and spaces in front, before it parses a URL.
+	 *
+	 * @param string $forward
+	 * @return bool false for anything a browser would take as another host or scheme
+	 */
+	public static function isLocalForward(string $forward) : bool
+	{
+		$url = ltrim(str_replace(["\t", "\r", "\n"], '', $forward), "\x00..\x20");
+
+		return !preg_match('#^([/\\\\]{2}|[a-z][a-z0-9+.-]*:)#i', $url);
 	}
 
 	/**

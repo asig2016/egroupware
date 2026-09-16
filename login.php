@@ -53,49 +53,16 @@ if(isset($GLOBALS['sitemgr_info']) && $GLOBALS['egw_info']['user']['userid'] == 
 
 function parseForward(&$extra_vars)
 {
-	$forward = isset($_GET['phpgw_forward']) ? urldecode($_GET['phpgw_forward']) : $_POST['phpgw_forward'] ?? null;
-	// never forward to another server, eg. "/\evil.example" is "//evil.example" for a browser
-	if (!is_string($forward) || !Api\Auth::isLocalForward($forward))
-	{
-		$forward = null;
-	}
-	if (!$forward)
-	{
-		$extra_vars = 'cd=yes';
-		$forward = '/index.php';
-	}
-	else
-	{
-		list($forward, $extra_vars) = explode('?', $forward, 2);
-		// only append cd=yes, if there is not already a cd value!
-		if (strpos($extra_vars, 'cd=') === false)
-		{
-			$extra_vars .= ($extra_vars ? '&' : '') . 'cd=yes';
-		}
-	}
+	[$forward, $extra_vars] = Api\Auth::loginForward();
 	return $forward;
 }
 
 // SSO login: CAS, SAML, ...
 if (($GLOBALS['sessionid'] = Api\Auth::login()))
 {
-	// apply the language selected on the login-screen, a SSO login has no other way to get it
-	if (($lang = Api\Auth::selectedLang(true)))
-	{
-		if ($lang != $GLOBALS['egw_info']['user']['preferences']['common']['lang'])
-		{
-			$GLOBALS['egw']->preferences->add('common', 'lang', $lang, 'session');
-		}
-		unset($_SESSION[Api\Auth::LOGIN_LANG]);
-	}
-	// restore phpgw_* parameters eg. phpgw_forward, they are lost by the redirects to the IdP and back
-	$_GET += Api\Auth::loginParams(true);
-	unset($_SESSION[Api\Auth::LOGIN_PARAMS]);
-
-	// check if new translations are available
-	Api\Translation::check_invalidate_cache();
-
-	$forward = parseForward($extra_vars);
+	// apply the language selected on the login-screen and restore phpgw_* parameters eg. phpgw_forward,
+	// a SSO login loses both by the redirects to the IdP and back
+	[$forward, $extra_vars] = Api\Auth::finishSsoLogin();
 	$GLOBALS['egw']->redirect_link($forward, $extra_vars);
 }
 else
@@ -278,15 +245,7 @@ else
 			// preserve phpgw_* params (eg. phpgw_forward) across a rejected login, so a
 			// subsequent correct login still returns to whatever originally redirected here
 			// (eg. openid's /authorize), instead of falling through to the default "/index.php"
-			$retry_vars = ['cd' => $GLOBALS['egw']->session->cd_reason];
-			foreach ($_GET as $name => $value)
-			{
-				if (strpos($name, 'phpgw_') !== false)
-				{
-					$retry_vars[$name] = $value;
-				}
-			}
-			Egw::redirect_link('/login.php', $retry_vars);
+			Egw::redirect_link('/login.php', ['cd' => $GLOBALS['egw']->session->cd_reason] + Api\Auth::loginParams());
 		}
 		else
 		{
@@ -298,6 +257,9 @@ else
 
 			// check if new translations are available
 			Api\Translation::check_invalidate_cache();
+
+			// a password login does not use what an earlier, abandoned SSO login remembered
+			Api\Auth::clearLoginStash();
 
 			$forward = parseForward($extra_vars);
 
@@ -369,13 +331,13 @@ else
 	   unset($GLOBALS['loginscreenmessage']);
 	}
 
-	foreach($_GET as $name => $value)
+	// same phpgw_* parameters as the hidden fields of the login-screen, see Framework\Login
+	foreach(Api\Auth::loginParams() as $name => $value)
 	{
-		if(strpos($name,'phpgw_') !== false)
-		{
-			$extra_vars .= '&' . urlencode($name) . '=' . urlencode($value);
-		}
+		$extra_vars .= '&' . urlencode($name) . '=' . urlencode($value);
 	}
+	// whatever an abandoned SSO login remembered, the login-screen starts a new one
+	Api\Auth::clearLoginStash();
 
 	$GLOBALS['egw']->framework->login_screen($extra_vars??null, $force_password_change??null);
 }

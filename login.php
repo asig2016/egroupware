@@ -54,6 +54,11 @@ if(isset($GLOBALS['sitemgr_info']) && $GLOBALS['egw_info']['user']['userid'] == 
 function parseForward(&$extra_vars)
 {
 	$forward = isset($_GET['phpgw_forward']) ? urldecode($_GET['phpgw_forward']) : $_POST['phpgw_forward'] ?? null;
+	// never forward to another server, eg. "/\evil.example" is "//evil.example" for a browser
+	if (!is_string($forward) || !Api\Auth::isLocalForward($forward))
+	{
+		$forward = null;
+	}
 	if (!$forward)
 	{
 		$extra_vars = 'cd=yes';

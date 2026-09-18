@@ -581,8 +581,17 @@ class Storage extends Storage\Base
 		if ($criteria && is_string($criteria))
 		{
 			$order_by_was = $order_by;
+			// Let the RAG search INSIDE the filters of this query, instead of searching globally and
+			// having the result intersected afterwards - which silently drops every match outside its
+			// best N hits, however selective the filters are. Built on COPIES: cf_filter() runs again
+			// further down and adding its extra_filterN joins twice would change the query that runs.
+			$rag_filter = $filter;
+			$rag_join = $join;
+			$rag_wildcard = '';
+			$this->cf_filter($rag_filter, $rag_join, $rag_wildcard);
 			if (!class_exists('EGroupware\\Rag\\Embedding') ||
-				!Rag\Embedding::search2criteria($this->app, $criteria, $order_by, $extra_cols, $filter))
+				!Rag\Embedding::search2criteria($this->app, $criteria, $order_by, $extra_cols, $filter, null,
+					$this->ragFilterSubquery($rag_filter, (string)$rag_join)))
 			{
 				// legacy search
 				$extra_join_added = true;    // we have NOT added the join, as we use a sub-query and therefore not need it

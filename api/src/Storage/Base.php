@@ -866,37 +866,7 @@ class Base
 		}
 		if(is_array($filter) && count($filter))
 		{
-			$db_filter = array();
-			$data2db_filter = $this->data2db($filter);
-			if (!is_array($data2db_filter)) {
-				echo function_backtrace()."<br/>\n";
-				echo "filter=";_debug_array($filter);
-				echo "data2db(filter)=";_debug_array($data2db_filter);
-			}
-			foreach($data2db_filter as $col => $val)
-			{
-				if ($val !== '')
-				{
-					// check if a db-internal name conversation necessary
-					if (!is_int($col) && ($c = array_search($col,$this->db_cols)))
-					{
-						$col = $this->table_name . '.' . $c;
-					}
-					if(is_int($col))
-					{
-						$db_filter[] = $val;
-					}
-					// only allow "!''" for real column-names NOT (e.g. injected) SQL fragments
-					elseif ($val === "!''" && preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)?$/iu', $col))
-					{
-						$db_filter[] = $col." != ''";
-					}
-					else
-					{
-						$db_filter[$col] = $val;
-					}
-				}
-			}
+			$db_filter = $this->filter2where($filter);
 			if ($query)
 			{
 				if ($op != 'AND')
@@ -1840,5 +1810,107 @@ class Base
 	public function disableSanitizeOrderBy()
 	{
 		$this->sanitize_order_by = false;
+	}
+
+	/**
+	 * Convert a filter as passed to search() into the db-level conditions it applies
+	 *
+	 * Extracted from search() so anything that has to filter by the SAME conditions - the RAG
+	 * sub-query of ragFilterSubquery() - cannot drift from what the list itself shows. It is the
+	 * data2db() conversion and the column-name mapping that make the difference; a filter array
+	 * handed to the db unconverted selects a different set.
+	 *
+	 * @param array $filter col-data pairs and/or integer-keyed sql fragments
+	 * @return array conditions for Api\Db
+	 */
+	protected function filter2where(array $filter) : array
+	{
+		$db_filter = array();
+		$data2db_filter = $this->data2db($filter);
+		if (!is_array($data2db_filter)) {
+			echo function_backtrace()."<br/>\n";
+			echo "filter=";_debug_array($filter);
+			echo "data2db(filter)=";_debug_array($data2db_filter);
+		}
+		foreach($data2db_filter as $col => $val)
+		{
+			if ($val !== '')
+			{
+				// check if a db-internal name conversation necessary
+				if (!is_int($col) && ($c = array_search($col,$this->db_cols)))
+				{
+					$col = $this->table_name . '.' . $c;
+				}
+				if(is_int($col))
+				{
+					$db_filter[] = $val;
+				}
+				// only allow "!''" for real column-names NOT (e.g. injected) SQL fragments
+				elseif ($val === "!''" && preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)?$/iu', $col))
+				{
+					$db_filter[] = $col." != ''";
+				}
+				else
+				{
+					$db_filter[$col] = $val;
+				}
+			}
+		}
+		return $db_filter;
+	}
+
+	/**
+	 * Alias ragFilterSubquery() gives its id column, so the RAG can join on it without knowing ours
+	 *
+	 * The RAG reads it from here: the sub-query is built in core, which must not depend on the RAG
+	 * app being installed at all.
+	 */
+	const RAG_FILTER_ID = 'rag_id';
+
+	/**
+	 * @var bool false: never scope a RAG search with this class's filters, e.g. an unsuitable join
+	 */
+	public $rag_filter_join = true;
+
+	/**
+	 * Subquery selecting the ids the current filters allow, for the RAG to join against
+	 *
+	 * The RAG searches its own tables and can only be scoped by what we tell it about ours. A list of
+	 * ids has to be produced up-front and capped, and above that cap the search runs unscoped and is
+	 * intersected afterwards - which silently drops every match outside the k best hits. As a
+	 * sub-query it becomes a join inside the RAG's own query, and the optimizer keeps the vector /
+	 * fulltext index for a broad filter while driving from our table for a selective one.
+	 *
+	 * Built from $filter and $join ONLY: the search pattern is what the RAG is answering, so it must
+	 * not be part of what we scope it by. It goes through filter2where(), so the sub-query selects
+	 * exactly the set the list itself shows.
+	 *
+	 * The result stays mergeable (no GROUP BY/HAVING/LIMIT/UNION), or the optimizer materializes it
+	 * and loses the choice of plan that makes this worthwhile.
+	 *
+	 * SECURITY: integer-keyed $filter entries and $join are pasted verbatim, exactly as search() does
+	 * with the same values - this is only as safe as the $filter its caller already trusts.
+	 *
+	 * @param array|null $filter the same filter array search() gets
+	 * @param string $join ='' the same join search() gets
+	 * @return string|null null if this storage cannot be expressed as a joinable id sub-query
+	 */
+	protected function ragFilterSubquery(?array $filter, string $join='') : ?string
+	{
+		// no single-column auto-id to join on, e.g. a multi-column primary key
+		if (!$this->rag_filter_join || empty($this->autoinc_id) || empty($this->table_name))
+		{
+			return null;
+		}
+		// a join we cannot merge into the RAG's query would make it materialize the sub-query
+		if ($join && (preg_match('/\b(GROUP\s+BY|HAVING|LIMIT|UNION)\b/i', $join) || strpos($join, ';') !== false))
+		{
+			return null;
+		}
+		$where = $filter ? $this->filter2where($filter) : [];
+
+		return 'SELECT '.$this->table_name.'.'.$this->autoinc_id.' AS '.self::RAG_FILTER_ID.
+			' FROM '.$this->table_name.($join ? ' '.$join : '').
+			($where ? ' WHERE '.$this->db->expression($this->table_name, $where) : '');
 	}
 }

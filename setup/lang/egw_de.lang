@@ -853,3 +853,9 @@ your temporary directory '%1' %2	setup	de	Ihr temporäres Verzeichnis '%1' %2
 [header-password],[header-user],[new-password],[new-user]	setup	de	[Header-Passwort],[Header-Benutzer],[neues-Passwort],[neuer-Benutzer]
 {db | php(default) | php-restore}	setup	de	{db | php(Vorgabe) | php-restore}
 {off(default) | on}	setup	de	{off(Vorgabe) | on}
+access tokens of the idp	setup	de	Access-Tokens des IdP
+accept (only where openid connect logs users in: as authentication type or as option on the login page)	setup	de	Akzeptieren (nur wo OpenID Connect Benutzer anmeldet: als Authentifizierungstyp oder als Option auf der Anmeldeseite)
+webdav accepts an access token the idp issued for this client as bearer token - what an egroupware mounting this webdav sends for its own logged in users	setup	de	WebDAV akzeptiert ein vom IdP für diesen Client ausgestelltes Access-Token als Bearer-Token - was ein EGroupware, das dieses WebDAV einbindet, für seine eigenen angemeldeten Benutzer sendet
+access tokens open	setup	de	Access-Tokens öffnen
+webdav only	setup	de	Nur WebDAV
+webdav, caldav, carddav and the rest api (a token still opens only the apps of its scopes)	setup	de	WebDAV, CalDAV, CardDAV und die REST-API (ein Token öffnet weiterhin nur die Apps seiner Scopes)

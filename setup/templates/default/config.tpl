@@ -536,6 +536,23 @@
       <td>{lang_Perl_regular_expression_to_extract_username}</td>
       <td><input name="newsettings[oic_username_preg]" value="{value_oic_username_preg}" size="40" placeholder="/^(.*)$/"/></td>
    </tr>
+   <tr class="row_on">
+      <td>{lang_Access_tokens_of_the_IdP}:</td>
+      <td>
+        <label title="{lang_WebDAV_accepts_an_access_token_the_IdP_issued_for_this_client_as_Bearer_token_-_what_an_EGroupware_mounting_this_WebDAV_sends_for_its_own_logged_in_users}">
+          <input type="hidden" value="" name="newsettings[oic_access_tokens]"/>
+          <input type=checkbox name="newsettings[oic_access_tokens]" value="true" {checked_oic_access_tokens_true}>{lang_Accept_(only_where_OpenID_Connect_logs_users_in:_as_authentication_type_or_as_option_on_the_login_page)}</label>
+      </td>
+   </tr>
+   <tr class="row_off">
+      <td>{lang_Access_tokens_open}:</td>
+      <td>
+        <select name="newsettings[oic_access_token_endpoints]">
+          <option value="" {selected_oic_access_token_endpoints_}>{lang_WebDAV_only}</option>
+          <option value="groupdav" {selected_oic_access_token_endpoints_groupdav}>{lang_WebDAV,_CalDAV,_CardDAV_and_the_REST_API_(a_token_still_opens_only_the_apps_of_its_scopes)}</option>
+        </select>
+      </td>
+   </tr>
 
    <tr class="row_off">
     <td colspan="2">&nbsp;</td>

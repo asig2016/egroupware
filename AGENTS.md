@@ -145,6 +145,14 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   apps extend; a plain grep for the append idiom was already proven insufficient on calendar (raw
   fragments also show up as bare inline array-literal elements and under other variable names), so
   this needs the same per-call-site reading, not just a pattern search.
+- `doc/ai/projects/oidc-webdav-token-mounts.md` - PATCH CORE: an EGroupware whose users log in
+  through another EGroupware as OpenID Connect provider can be mounted (WebDAV) per user without
+  a password: the provider mints a short-lived, app-scoped access token per request (`$token` in
+  the mount url, `Vfs\Base::accessTokenFor()`, sent as Bearer token by `Vfs\WebDavClient`), the
+  other side accepts it (`Api\Header\Authenticate`, `Auth\Openidconnect::accountFromBearer()`),
+  opt-in in setup. Covers the hard rules (expiry, max age, audience, issuer, app scopes as session
+  limits, existing account, username match, TLS only, session only, prior authorization) and
+  why each exists.
 - `doc/ai/projects/smallpart-s3-videos.md` - design for adding S3 storage to smallPART/ViDoTeach
   videos (ticket #89091 item 4), currently plain files served directly by nginx with zero PHP in the
   serving path - a requirement that rules out a literal copy of `Stylite\Vfs\S3\StreamWrapper`
@@ -272,17 +280,6 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   `savePlatform()`). DONE: library bumped, all 33 harness tests + the unrelated `BoTest.php` green.
   Still open: the real HTTP/OIDC/OAuth1-signed entry point and a live-LMS verification pass, neither
   attempted (see the doc's "Status"/"Not covered" sections).
-- `doc/ai/projects/hashed-entries-build-pinning.md` - giving rollup's entry files (`app.min.js`,
-  `egw.min.js`, `etemplate2.js`) content hashes and pinning a document to one build's file graph, so
-  opening a not-yet-opened app after a rebuild stops forcing the user into a reload the build-epoch
-  design deliberately set out to spare them. Covers why the already-caught "Illegal constructor"
-  crash is not the motivation, why hashing without pinning fixes nothing, the confirmed-dead
-  `getImportMap()` trio and why an import map is probably unnecessary, the way hashing would silently
-  disable the existing `egw_import` dedup defence, the app-disclosure problem a verbatim manifest
-  would create, and why the pin must NOT live in the session (it would survive a reload and make the
-  "reload at your convenience" prompt a lie). Implemented and live (`a77de36152` +co-commits); the doc
-  now also tracks ticket #124112's follow-up findings and a running commit list. Two residual bugs
-  from that ticket still open - see the doc's "Status" section.
 ## Security and data handling
 
 - Do not commit secrets, tokens, credentials, private keys, or production data.

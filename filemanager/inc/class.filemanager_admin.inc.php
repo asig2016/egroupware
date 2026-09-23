@@ -92,6 +92,21 @@ class filemanager_admin extends filemanager_ui
 					$this->sudo($content['user'], $content['password'], $msg, true, self::$is_setup);
 					$msg_type = Vfs::$is_root ? 'success' : 'error';
 				}
+				// a mount changed under running sessions: the session copy of the mount table, the
+				// resolved urls of this request and the access tokens minted for $token mounts
+				// (Vfs\Base::accessTokenFor()) are read anew
+				elseif (!empty($content['clear_mount_cache']) && $GLOBALS['egw_info']['user']['apps']['admin'])
+				{
+					Vfs::clearstatcache();
+					clearstatcache();
+					Api\Vfs\Base::forgetAccessTokens();
+					if (method_exists($GLOBALS['egw'], 'invalidate_session_cache'))
+					{
+						$GLOBALS['egw']->invalidate_session_cache();
+					}
+					$msg = lang('Mount cache cleared: the mount table and the access tokens minted for mounts are read anew.');
+					$msg_type = 'success';
+				}
 				elseif ($content['etemplates'] && $GLOBALS['egw_info']['user']['apps']['admin'])
 				{
 					$path = '/etemplates';
@@ -165,12 +180,15 @@ class filemanager_admin extends filemanager_ui
 							$url .= str_replace(urlencode('$user'), '$user', urlencode(trim($content['mounts']['url']['user'])));
 							if (!empty($content['mounts']['url']['pass']))
 							{
-								$url .= ':' . ($content['mounts']['url']['pass'] === '$pass' ? '$pass' : urlencode(trim($content['mounts']['url']['pass'])));
+								// the placeholders stay placeholders, a password is url-encoded
+								$pass = trim($content['mounts']['url']['pass']);
+								$url .= ':' . (in_array($pass, ['$pass', '$token'], true) ? $pass : urlencode($pass));
 							}
 							$url .= '@';
 						}
-						$url .= $content['mounts']['url']['host'] ?: 'default';
-						$url .= $content['mounts']['url']['path'] ?: $path;
+						// a pasted host or path may carry a blank: it would become part of the host name
+						$url .= trim($content['mounts']['url']['host'] ?? '') ?: 'default';
+						$url .= trim($content['mounts']['url']['path'] ?? '') ?: $path;
 
 						// WebDAV needs a trailing slash and while EGroupware redirects, NextCloud e.g. gives an error
 						if (preg_match('#^webdavs?://#', $url) && !substr($url, -1) !== '/')
@@ -193,10 +211,21 @@ class filemanager_admin extends filemanager_ui
 						}
 						else
 						{
-							$msg = Vfs::mount($url, $path, true) ?
-								lang('Successful mounted %1 on %2.', str_replace('%5C', '\\', $url), $path) :
+							// a url with $user, $pass, $token, ... can not be probed with the admin's
+							// own credentials - Vfs::mount()'s default (null) checks a url only
+							// without placeholders; a $token url is minted per user and request
+							$placeholders = strpos($url, '$') !== false;
+							$msg = Vfs::mount($url, $path, $placeholders ? null : true) ?
+								lang('Successful mounted %1 on %2.', str_replace('%5C', '\\', $url), $path).
+								($placeholders ? ' '.lang('Not verified: the url has placeholders, it is checked when a user opens it.') : '') :
 								lang('Error mounting %1 on %2!', str_replace('%5C', '\\', $url), $path);
 						}
+					}
+					// Mount pressed without a path: say so, the silence read as "not added"
+					elseif (Vfs::$is_root && !empty($content['mounts']['mount']) && empty($content['mounts']['path']))
+					{
+						$msg = lang('Please enter the path to mount on, e.g. /home/shares/name!');
+						$msg_type = 'error';
 					}
 					if ($content['allow_delete_versions'] != $GLOBALS['egw_info']['server']['allow_delete_versions'])
 					{
@@ -276,10 +305,12 @@ class filemanager_admin extends filemanager_ui
 		$content['mounts']['at'] = '@';
 		foreach(Vfs::mount() as $path => $url)
 		{
+			// a $token mount says whether a token can be minted for the admin looking, and why not
+			$status = Api\Vfs\Base::accessTokenStatus($url);
 			$content['mounts'][$n++] = array(
 				'path' => $path,
-				'url'  => preg_replace('#://([^:@/]+):((?!\$pass)[^@/]+)@#', '://$1:****@',
-					str_replace('%5c', '\\', $url)),
+				'url'  => preg_replace('#://([^:@/]+):((?!\$pass|\$token|%24token)[^@/]+)@#', '://$1:****@',
+					str_replace('%5c', '\\', $url)).($status !== '' ? ' ['.lang('Token').': '.$status.']' : ''),
 			);
 			$readonlys["disable[$path]"] = !$this->versioning || !Vfs::$is_root ||
 				Vfs::parse_url($url,PHP_URL_SCHEME) != $this->versioning;

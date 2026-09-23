@@ -118,6 +118,14 @@ and drop the 11th entry if that pushes the list over 10 - dropping it here does 
 file itself. The full set of project docs, including everything trimmed off this list, always
 lives in `doc/ai/projects/` - check there directly for anything not shown here.
 
+- `doc/ai/projects/oidc-webdav-token-mounts.md` - PATCH CORE: an EGroupware whose users log in
+  through another EGroupware as OpenID Connect provider can be mounted (WebDAV) per user without
+  a password: the provider mints a short-lived, app-scoped access token per request (`$token` in
+  the mount url, `Vfs\Base::accessTokenFor()`, sent as Bearer token by `Vfs\WebDavClient`), the
+  other side accepts it (`Api\Header\Authenticate`, `Auth\Openidconnect::accountFromBearer()`),
+  opt-in in setup. Covers the hard rules (expiry, max age, audience, issuer, app scopes as session
+  limits, existing account, username match, TLS only, session only, prior authorization) and
+  why each exists.
 - `doc/ai/projects/smallpart-s3-videos.md` - design for adding S3 storage to smallPART/ViDoTeach
   videos (ticket #89091 item 4), currently plain files served directly by nginx with zero PHP in the
   serving path - a requirement that rules out a literal copy of `Stylite\Vfs\S3\StreamWrapper`
@@ -256,19 +264,6 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   "reload at your convenience" prompt a lie). Implemented and live (`a77de36152` +co-commits); the doc
   now also tracks ticket #124112's follow-up findings and a running commit list. Two residual bugs
   from that ticket still open - see the doc's "Status" section.
-- `doc/ai/projects/calendar-rrule-standards-gap.md` - maps how far `calendar_rrule` (the whole
-  recurrence engine, shared by the UI, DB storage, iCal import/export, and the JSCalendar REST read
-  path) falls short of RFC 5545 - single-implicit-BYDAY/BYMONTHDAY only, no BYMONTH/BYYEARDAY/
-  BYWEEKNO/BYSETPOS/BYHOUR-MINUTE-SECOND, COUNT irreversibly collapsed to UNTIL, RRULE+RDATE
-  mutually exclusive, WKST read from the viewing user's live preference instead of stored per
-  event - ahead of two future features (a real stored RRULE + library-based interpretation, and
-  REST support for creating/updating recurring events). Covers the full gap table plus several
-  concrete bugs found while building the harness (a crash importing RRULE+RDATE together with
-  UNTIL, order-dependent semantic loss for RRULE+RDATE without UNTIL, a `monthly_byday_num`
-  int/float docblock mismatch, YEARLY leap-day drift, JSCalendar's `byDay` not being a JSON array
-  as RFC 8984 requires). Mapping + test harness (`calendar/tests/RruleTest.php`,
-  `IcalRruleRoundtripTest.php`, `JsCalendarRecurrenceTest.php`) done; schema redesign and REST
-  write support are future phases, not started.
 ## Security and data handling
 
 - Do not commit secrets, tokens, credentials, private keys, or production data.

@@ -177,6 +177,14 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   apps extend; a plain grep for the append idiom was already proven insufficient on calendar (raw
   fragments also show up as bare inline array-literal elements and under other variable names), so
   this needs the same per-call-site reading, not just a pattern search.
+- `doc/ai/projects/oidc-webdav-token-mounts.md` - PATCH CORE: an EGroupware whose users log in
+  through another EGroupware as OpenID Connect provider can be mounted (WebDAV) per user without
+  a password: the provider mints a short-lived, app-scoped access token per request (`$token` in
+  the mount url, `Vfs\Base::accessTokenFor()`, sent as Bearer token by `Vfs\WebDavClient`), the
+  other side accepts it (`Api\Header\Authenticate`, `Auth\Openidconnect::accountFromBearer()`),
+  opt-in in setup. Covers the hard rules (expiry, max age, audience, issuer, app scopes as session
+  limits, existing account, username match, TLS only, session only, prior authorization) and
+  why each exists.
 - `doc/ai/projects/smallpart-s3-videos.md` - design for adding S3 storage to smallPART/ViDoTeach
   videos (ticket #89091 item 4), currently plain files served directly by nginx with zero PHP in the
   serving path - a requirement that rules out a literal copy of `Stylite\Vfs\S3\StreamWrapper`
@@ -279,17 +287,6 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   modernizing `pdf-player.ts` into this repo's Lit/`Et2Widget` web-component conventions (which it
   does not follow at all, same as its sibling `multi-video.ts`) - separate from and not required for
   the pdfjs-dist bump, not attempted.
-- `doc/ai/projects/et2-historylog-conversion.md` - replacing the legacy `historylog` widget
-  (`<historylog>`) with an `et2-historylog` web component built on `Et2Datagrid`, plus the filtering
-  the legacy widget never had. DONE - the legacy widget is deleted. Covers why composition beats subclassing
-  `Et2Nextmatch`, the per-row polymorphic value cell (the one thing `Et2Datagrid`'s fixed row
-  template does not do natively), the deliberately narrow scope (sort locked, no selection, no
-  actions, no values returned), the filter drawer echoing `Et2AppBox`, the zero-template-edit
-  migration via `api/etemplate.php`'s `ADD_ET2_PREFIX_LEGACY_REGEXP` and why the server-side tag
-  still needs dual registration, and four pre-existing `History::get_rows()` gaps found while
-  reading (dead `colfilter`, ignored `search`, calendar's apparently-dead `filter` SQL fragment, and
-  the pass-through `validate()` that must be allowlisted before any of it is honoured), plus what a
-  diff needs that a virtualized shadow-DOM row takes away from it.
 ## Security and data handling
 
 - Do not commit secrets, tokens, credentials, private keys, or production data.

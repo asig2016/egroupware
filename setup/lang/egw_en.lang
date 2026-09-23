@@ -859,3 +859,9 @@ re-encrypted with the current db password: %1 mail account credentials, %2 custo
 old db password (only needed to restore a backup created with a different db password)	setup	en	Old DB password (only needed to restore a backup created with a different DB password)
 the backup was created with a different db password, passwords encrypted with it will not be readable without the old db password!	setup	en	The backup was created with a different DB password, passwords encrypted with it will not be readable without the old DB password!
 to re-encrypt passwords of a backup created with a different db password, set its old db password in the environment variable egw_cli_old_db_password	setup	en	To re-encrypt passwords of a backup created with a different DB password, set its old DB password in the environment variable EGW_CLI_OLD_DB_PASSWORD
+access tokens of the idp	setup	en	Access tokens of the IdP
+accept (only where openid connect logs users in: as authentication type or as option on the login page)	setup	en	Accept (only where OpenID Connect logs users in: as authentication type or as option on the login page)
+webdav accepts an access token the idp issued for this client as bearer token - what an egroupware mounting this webdav sends for its own logged in users	setup	en	WebDAV accepts an access token the IdP issued for this client as bearer token - what an EGroupware mounting this WebDAV sends for its own logged in users
+access tokens open	setup	en	Access tokens open
+webdav only	setup	en	WebDAV only
+webdav, caldav, carddav and the rest api (a token still opens only the apps of its scopes)	setup	en	WebDAV, CalDAV, CardDAV and the REST API (a token still opens only the apps of its scopes)

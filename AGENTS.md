@@ -118,6 +118,14 @@ and drop the 11th entry if that pushes the list over 10 - dropping it here does 
 file itself. The full set of project docs, including everything trimmed off this list, always
 lives in `doc/ai/projects/` - check there directly for anything not shown here.
 
+- `doc/ai/projects/oidc-webdav-token-mounts.md` - PATCH CORE: an EGroupware whose users log in
+  through another EGroupware as OpenID Connect provider can be mounted (WebDAV) per user without
+  a password: the provider mints a short-lived, app-scoped access token per request (`$token` in
+  the mount url, `Vfs\Base::accessTokenFor()`, sent as Bearer token by `Vfs\WebDavClient`), the
+  other side accepts it (`Api\Header\Authenticate`, `Auth\Openidconnect::accountFromBearer()`),
+  opt-in in setup. Covers the hard rules (expiry, max age, audience, issuer, app scopes as session
+  limits, existing account, username match, TLS only, session only, prior authorization) and
+  why each exists.
 - `doc/ai/projects/et2-nextmatch-conversion.md` - per-app migration from the legacy
   `et2_extension_nextmatch` widget (`<nextmatch>`) to the `Et2Nextmatch` web component
   (`<et2-nextmatch>`). Covers the template-rename checklist, the legacy-widget-API-to-`Et2Nextmatch`

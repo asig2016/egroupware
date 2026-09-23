@@ -361,3 +361,8 @@ you will be redirected to your home directory.	filemanager	en	You will be redire
 you will be redirected to your start folder.	filemanager	en	You will be redirected to your start folder.
 your home dir did not exist, egroupware created a new one.	filemanager	en	Your home directory did not exist, EGroupware created a new one.
 your home directory	filemanager	en	Home folder
+not verified: the url has placeholders, it is checked when a user opens it.	filemanager	en	Not verified: the url has placeholders, it is checked when a user opens it.
+clear mount cache	filemanager	en	Clear mount cache
+after a mount was changed: every session reads the mount table anew, and the access tokens minted for mounts with $token are forgotten	filemanager	en	After a mount was changed: every session reads the mount table anew, and the access tokens minted for mounts with $token are forgotten
+mount cache cleared: the mount table and the access tokens minted for mounts are read anew.	filemanager	en	Mount cache cleared: the mount table and the access tokens minted for mounts are read anew.
+please enter the path to mount on, e.g. /home/shares/name!	filemanager	en	Please enter the path to mount on, e.g. /home/shares/name!

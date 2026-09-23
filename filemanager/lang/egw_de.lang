@@ -359,3 +359,8 @@ you will be redirected to your home directory.	filemanager	de	Sie werden zu Ihre
 you will be redirected to your start folder.	filemanager	de	Sie werden zu Ihrem Anfangs- / Start-Ordner geleitet
 your home dir did not exist, egroupware created a new one.	filemanager	de	Ihr persönlicher Ordner hat nicht existiert. EGroupware hat ein neues für Sie angelegt.
 your home directory	filemanager	de	Ihr persönlicher Ordner
+not verified: the url has placeholders, it is checked when a user opens it.	filemanager	de	Nicht geprüft: die URL enthält Platzhalter, sie wird geprüft, wenn ein Benutzer sie öffnet.
+clear mount cache	filemanager	de	Mount-Cache leeren
+after a mount was changed: every session reads the mount table anew, and the access tokens minted for mounts with $token are forgotten	filemanager	de	Nach einer geänderten Einbindung: jede Sitzung liest die Mount-Tabelle neu, und die für Einbindungen mit $token ausgestellten Access-Tokens werden verworfen
+mount cache cleared: the mount table and the access tokens minted for mounts are read anew.	filemanager	de	Mount-Cache geleert: die Mount-Tabelle und die für Einbindungen ausgestellten Access-Tokens werden neu gelesen.
+please enter the path to mount on, e.g. /home/shares/name!	filemanager	de	Bitte den Pfad angeben, unter dem eingebunden werden soll, z.B. /home/shares/name!

@@ -83,6 +83,8 @@
 		</grid>
 		<et2-vbox  class="filemanager_config">
 			<et2-button  label="Mount /etemplates to allow customizing of eTemplates" id="etemplates" class="et2_buttonFitContent"></et2-button>
+			<et2-button  label="Clear mount cache" id="clear_mount_cache" class="et2_buttonFitContent" image="reload"
+			             statustext="After a mount was changed: every session reads the mount table anew, and the access tokens minted for mounts with $token are forgotten"></et2-button>
 			<et2-select  id="allow_delete_versions" onchange="1" label="Who should be allowed to finally delete deleted files or old versions of a file:" disabled="!@versioning" emptyLabel="Noone"></et2-select>
 			<et2-hbox  disabled="!@versioning">
 				<et2-number  id="mtime" label="Delete all older versions and deleted files older then %s days" statustext="0 means all, -N newer then N days" precision="0"></et2-number>

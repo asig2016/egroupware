@@ -83,7 +83,7 @@ class Base
 	 * @param string $url =null url of the filesystem to mount, eg. oldvfs://default/
 	 * @param string $path =null path to mount the filesystem in the vfs, eg. /
 	 * @param boolean $check_url =null check if url is an existing directory, before mounting it
-	 *    default null only checks if url does not contain a $ as used in $user or $pass
+	 *    default null only checks if url does not contain a $ as used in $user, $pass or $token
 	 * @param boolean|int $persistent_mount =true create a persitent mount, or only a temprary for current request,
 	 *    or integer account_id to mount persistent for a given user or group
 	 * @param boolean $clear_fstab =false true clear current fstab, false (default) only add given mount
@@ -356,11 +356,21 @@ class Base
 
 				if ($replace_user_pass_host)
 				{
+					// $token: an access token of our OpenID app for the current user and the
+					// client the mount names, see accessTokenFor() - minted only now, per request.
+					// %24token is the same placeholder url-encoded, as a mount form may store it
+					$url = str_replace('%24token', '$token', $url);
+					if (strpos($url, '$token') !== false)
+					{
+						$parts['token'] = self::accessTokenFor($url);
+						$url = self::withoutTokenParams($url);
+					}
 					$url = strtr($url, [
 						'$user' => $parts['user'],
 						'$pass' => $parts['pass'],
 						'$host' => $parts['host'],
 						'$home' => $parts['home'],
+						'$token' => $parts['token'] ?? '',
 					]);
 				}
 				if (isset($parts['query']))
@@ -517,6 +527,226 @@ class Base
 		self::$symlink_cache = self::$resolve_url_cache = array();
 	}
 
+	/* ------------------------------------------- $token: an OpenID access token as Bearer token */
+
+	/** query parameters of a mount url with $token: the client to mint for and the app scopes */
+	const TOKEN_PARAM_CLIENT = 'oidc_client';
+	const TOKEN_PARAM_SCOPE = 'oidc_scope';
+	/** scopes minted when the mount names none */
+	const TOKEN_DEFAULT_SCOPES = ['app-filemanager'];
+	/** a token is reused while it lives at least this long (seconds) */
+	const TOKEN_MIN_LIFETIME = 300;
+
+	/**
+	 * The lifetime a token is minted with: the other side cannot revoke it, so short, and
+	 * re-minted silently (Auth\Openidconnect::MAX_TOKEN_AGE over there matches)
+	 */
+	const TOKEN_LIFETIME = 'PT15M';
+	/** session cache location of the minted tokens: sha1(client|scopes) => ['jwt', 'exp'] */
+	const TOKEN_CACHE = 'oidc-tokens';
+
+	/**
+	 * Mints the token: function(string $client, array $scopes): ?string - null = the OpenID app
+	 * (EGroupware\OpenID\Token); set by tests, and by anyone who wants another issuer
+	 *
+	 * @var ?callable
+	 */
+	public static $access_token_provider = null;
+
+	/**
+	 * The access token a mount url with $token gets for the current user
+	 *
+	 * The other side is an EGroupware whose users log in through THIS installation as OpenID
+	 * Connect provider (setup: "Access tokens of the IdP" over there): every request
+	 * carries a short-lived token naming the user, and the rights on the other side are that
+	 * user's. Nothing is minted unless every rule holds - an empty token then fails the request
+	 * over there with a 401, which is the honest answer:
+	 * - the url is webdavs:// or https://, a token must not travel in the clear
+	 * - a user session, not an async job or the setup - the token names the session's user
+	 * - the mount names the client ("?oidc_client=<id>") the other side is registered as here
+	 * - the scopes ("&oidc_scope=app-filemanager,app-x", default app-filemanager) are app scopes
+	 *   the client is allowed - the token can never be a full-API credential
+	 * - the user has authorized that client before (its refresh token exists: a browser login
+	 *   over there), the OpenID app's own rule for tokens minted without a grant
+	 * The token's "sub" is the account name, as in the id token the browser login gets, plus
+	 * preferred_username and email - whichever claim the other side maps its usernames by.
+	 * Minted once per session and client, reused while it lives at least TOKEN_MIN_LIFETIME.
+	 *
+	 * @param string $url the mount url, with $token and the oidc_* parameters
+	 * @return string the JWT, '' when no token can be given
+	 */
+	protected static function accessTokenFor(string $url): string
+	{
+		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+		if (!in_array($scheme, ['webdavs', 'https'], true))
+		{
+			self::tokenLog("$scheme:// is not encrypted, no token for ".self::maskUrl($url));
+			return '';
+		}
+		if (empty($GLOBALS['egw_info']['user']['account_id']) || empty($GLOBALS['egw_info']['user']['account_lid']) ||
+			!empty($GLOBALS['egw_info']['flags']['async-service']) || !empty($GLOBALS['egw_info']['flags']['currentapp']) && $GLOBALS['egw_info']['flags']['currentapp'] === 'setup')
+		{
+			self::tokenLog("no user session, no token for ".self::maskUrl($url));
+			return '';
+		}
+		parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
+		// a trailing slash after the query ("...?oidc_scope=app-filemanager/") is a habit from
+		// urls that end in one, not part of the value
+		$client = trim((string)($query[self::TOKEN_PARAM_CLIENT] ?? ''), " /");
+		if ($client === '')
+		{
+			self::tokenLog("mount names no ".self::TOKEN_PARAM_CLIENT.", no token for ".self::maskUrl($url));
+			return '';
+		}
+		$scopes = array_values(array_filter(array_map(fn($s) => trim($s, " /"), explode(',', (string)($query[self::TOKEN_PARAM_SCOPE] ?? ''))), 'strlen')) ?: self::TOKEN_DEFAULT_SCOPES;
+		foreach ($scopes as $scope)
+		{
+			if (!preg_match('/^app-[a-z0-9_-]+$/i', $scope))
+			{
+				self::tokenLog("scope '$scope' is no app scope, no token for ".self::maskUrl($url));
+				return '';
+			}
+		}
+		sort($scopes);
+		$cache_key = sha1($client.'|'.implode(',', $scopes));
+		$tokens = Api\Cache::getSession(__CLASS__, self::TOKEN_CACHE) ?: [];
+		if (!empty($tokens[$cache_key]['jwt']) && (int)$tokens[$cache_key]['exp'] - time() >= self::TOKEN_MIN_LIFETIME)
+		{
+			return $tokens[$cache_key]['jwt'];
+		}
+		$jwt = (self::$access_token_provider ?? [__CLASS__, 'mintAccessToken'])($client, $scopes);
+		if (!$jwt)
+		{
+			return '';
+		}
+		$payload = json_decode(base64_decode(strtr(explode('.', $jwt)[1] ?? '', '-_', '+/')), true);
+		$tokens[$cache_key] = ['jwt' => $jwt, 'exp' => (int)($payload['exp'] ?? 0)];
+		Api\Cache::setSession(__CLASS__, self::TOKEN_CACHE, $tokens);
+		return $jwt;
+	}
+
+	/**
+	 * Forget the tokens minted for mounts in this session: the next request mints anew
+	 *
+	 * The mounts page's "Clear mount cache" presses this, together with clearstatcache() and
+	 * the session cache of the mount table - after a mount was changed under a running session.
+	 */
+	public static function forgetAccessTokens(): void
+	{
+		Api\Cache::unsetSession(__CLASS__, self::TOKEN_CACHE);
+	}
+
+	/**
+	 * Mint an access token with the OpenID app, see accessTokenFor() for the rules
+	 *
+	 * @return ?string JWT or null
+	 */
+	protected static function mintAccessToken(string $client_id, array $scopes): ?string
+	{
+		if (!class_exists('EGroupware\OpenID\Token') || !class_exists('EGroupware\OpenID\Repositories\ClientRepository'))
+		{
+			self::tokenLog("OpenID app not installed, no token for client '$client_id'");
+			return null;
+		}
+		try {
+			$client = (new \EGroupware\OpenID\Repositories\ClientRepository())->getClientEntity($client_id);
+			if (!$client)
+			{
+				self::tokenLog("client '$client_id' does not exist, no token");
+				return null;
+			}
+			$allowed = (array)($client->getScopes() ?? []);
+			if ($allowed && array_diff($scopes, $allowed))
+			{
+				self::tokenLog("client '$client_id' does not allow scope(s) ".implode(',', array_diff($scopes, $allowed)).", no token");
+				return null;
+			}
+			// the user has authorized the client before: a browser login over there left a
+			// refresh token. Checked here, not by Token::accessToken(): its own check builds a
+			// DateInterval from a null lifetime and throws
+			if (!(new \EGroupware\OpenID\Repositories\RefreshTokenRepository())->findToken($client, $GLOBALS['egw_info']['user']['account_id'], 'PT0S'))
+			{
+				self::tokenLog("user has not authorized client '$client_id' (no refresh token: log in over there once), no token");
+				return null;
+			}
+			// a NEW token each time: one found by lifetime comes back without its scopes, and the
+			// JWT would carry none - the session cache in accessTokenFor() does the reusing
+			$entity = (new \EGroupware\OpenID\Token())->accessToken($client_id, $scopes, null, false, self::TOKEN_LIFETIME, false);
+			if (!$entity)
+			{
+				self::tokenLog("client '$client_id' issued no token");
+				return null;
+			}
+			// "sub" = the account name, as in the id token of the browser login
+			$entity->setUserIdentifier($GLOBALS['egw_info']['user']['account_lid']);
+			return $entity->convertToJWT((new \EGroupware\OpenID\Keys())->getPrivateKey(), [
+				'preferred_username' => $GLOBALS['egw_info']['user']['account_lid'],
+				'email' => (string)($GLOBALS['egw_info']['user']['account_email'] ?? ''),
+			])->toString();
+		}
+		catch (\Throwable $e) {
+			self::tokenLog("minting a token for client '$client_id' failed: ".$e->getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * The mount url without the oidc_* parameters: they are for us, not for the other side
+	 */
+	public static function withoutTokenParams(string $url): string
+	{
+		if (($query = parse_url($url, PHP_URL_QUERY)) === null || $query === false || $query === '')
+		{
+			return $url;
+		}
+		parse_str($query, $params);
+		unset($params[self::TOKEN_PARAM_CLIENT], $params[self::TOKEN_PARAM_SCOPE]);
+		$rest = http_build_query($params);
+		return str_replace('?'.$query, $rest !== '' ? '?'.$rest : '', $url);
+	}
+
+	/**
+	 * A mount url for the log: no password, no token
+	 */
+	protected static function maskUrl(string $url): string
+	{
+		return preg_replace('#://([^:@/]+):[^@/]+@#', '://$1:***@', $url);
+	}
+
+	/** why the last accessTokenFor() gave no token, '' when it did - for accessTokenStatus() */
+	protected static $token_reason = '';
+
+	protected static function tokenLog(string $message): void
+	{
+		self::$token_reason = $message;
+		if (self::LOG_LEVEL > 0)
+		{
+			error_log(__CLASS__.'::accessTokenFor() '.$message);
+		}
+	}
+
+	/**
+	 * What a mount url with $token gets for the current user, in words - the mounts page shows it
+	 *
+	 * @param string $url the mount url
+	 * @return string '' when the url has no $token, else "token minted, valid N minutes" or the reason
+	 */
+	public static function accessTokenStatus(string $url): string
+	{
+		$url = str_replace('%24token', '$token', $url);
+		if (strpos($url, '$token') === false)
+		{
+			return '';
+		}
+		self::$token_reason = '';
+		if (($jwt = self::accessTokenFor($url)) === '')
+		{
+			return self::$token_reason ?: 'no token';
+		}
+		$payload = json_decode(base64_decode(strtr(explode('.', $jwt)[1] ?? '', '-_', '+/')), true);
+		return 'token minted, valid '.max(0, (int)round(((int)($payload['exp'] ?? 0) - time()) / 60)).' minutes';
+	}
+
 	/**
 	 * Load stream wrapper for a given schema
 	 *
@@ -531,7 +761,7 @@ class Base
 			{
 				case 'webdav':
 				case 'webdavs':
-					\Grale\WebDav\StreamWrapper::register();
+					\Grale\WebDav\StreamWrapper::register(null, new WebDavClient());   // a $token goes as Bearer token
 					self::$wrappers[] = 'webdav';
 					self::$wrappers[] = 'webdavs';
 					break;

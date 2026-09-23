@@ -120,6 +120,20 @@ class Authenticate
 				}
 			}
 		}
+		// a Bearer token our own openid app did not issue: an access token of the OpenID Connect
+		// PROVIDER (setup: "Access tokens of the IdP"), what an EGroupware mounting our WebDAV
+		// sends for the user logged in over there ($token in the mount url, Vfs\Base). Only by
+		// webdav.php (groupdav.php when setup says so) and only over https; verified against the
+		// provider's keys and judged by Auth\Openidconnect::accountFromClaims(): expiry, audience,
+		// issuer, app scopes (they become the session's limits) and an existing account.
+		elseif (isset($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/^Bearer (.+)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches) &&
+			($account = Api\Auth\Openidconnect::accountFromBearer($matches[1], $token_limits)))
+		{
+			$username = $account;
+			unset($password);
+			$auth_check = false;
+			$session->limits = $token_limits;
+		}
 		// if given password contains non-ascii chars AND we can not authenticate with it
 		if (isset($username) && isset($password) &&
 			(preg_match('/[^\x20-\x7F]/', $password) || strpos($password, '\\x') !== false) &&

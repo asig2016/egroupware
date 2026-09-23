@@ -118,6 +118,14 @@ and drop the 11th entry if that pushes the list over 10 - dropping it here does 
 file itself. The full set of project docs, including everything trimmed off this list, always
 lives in `doc/ai/projects/` - check there directly for anything not shown here.
 
+- `doc/ai/projects/oidc-webdav-token-mounts.md` - PATCH CORE: an EGroupware whose users log in
+  through another EGroupware as OpenID Connect provider can be mounted (WebDAV) per user without
+  a password: the provider mints a short-lived, app-scoped access token per request (`$token` in
+  the mount url, `Vfs\Base::accessTokenFor()`, sent as Bearer token by `Vfs\WebDavClient`), the
+  other side accepts it (`Api\Header\Authenticate`, `Auth\Openidconnect::accountFromBearer()`),
+  opt-in in setup. Covers the hard rules (expiry, max age, audience, issuer, app scopes as session
+  limits, existing account, username match, TLS only, session only, prior authorization) and
+  why each exists.
 - `doc/ai/projects/knowledgebase-app.md` - design of a brand-new `knowledgebase` app to supersede
   the deprecated `phpbrain` (Knowledge Base) and `wiki` apps, built on `Api\Storage`/
   `Api\Storage\Tracking`/`Api\Categories`/`Api\Acl` rather than either legacy app's bespoke
@@ -233,12 +241,6 @@ lives in `doc/ai/projects/` - check there directly for anything not shown here.
   app picker swaps the search combo for a plain URL input, then the existing (Link) button/ajax
   path - already fully generic - just works, no new widgets or endpoints needed), and a small
   inline-SVG icon (no new asset file). Done and tested.
-- `doc/ai/projects/mail-bo-decoupling.md` - breaking `Api\Mail`/`mail_ui` apart into smaller,
-  independently-testable components, to fix the "large heavily-coupled legacy class with no test
-  coverage" problem shared by those two and `MailApp` (client-side). Phase 1 (4 low-risk `Api\Mail`
-  groups) done; covers the full method inventory, per-group coupling/risk assessment, and the
-  extraction discipline that emerged (no wrapper unless a separate-repo consumer needs it; delete
-  confirmed-dead code; re-check "no callers" case-insensitively for PHP method names).
 
 ## Security and data handling
 

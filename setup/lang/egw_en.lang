@@ -853,3 +853,9 @@ your temporary directory '%1' %2	setup	en	Your temporary directory '%1' %2
 [header-password],[header-user],[new-password],[new-user]	setup	en	[header-password],[header-user],[new-password],[new-user]
 {db | php(default) | php-restore}	setup	en	{db | php(default) | php-restore}
 {off(default) | on}	setup	en	{off(default) | on}
+access tokens of the idp	setup	en	Access tokens of the IdP
+accept (only where openid connect logs users in: as authentication type or as option on the login page)	setup	en	Accept (only where OpenID Connect logs users in: as authentication type or as option on the login page)
+webdav accepts an access token the idp issued for this client as bearer token - what an egroupware mounting this webdav sends for its own logged in users	setup	en	WebDAV accepts an access token the IdP issued for this client as bearer token - what an EGroupware mounting this WebDAV sends for its own logged in users
+access tokens open	setup	en	Access tokens open
+webdav only	setup	en	WebDAV only
+webdav, caldav, carddav and the rest api (a token still opens only the apps of its scopes)	setup	en	WebDAV, CalDAV, CardDAV and the REST API (a token still opens only the apps of its scopes)

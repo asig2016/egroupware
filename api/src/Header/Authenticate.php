@@ -104,7 +104,10 @@ class Authenticate
 		}
 		elseif ((isset($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/^Bearer (.+)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches) ||
 			!empty($_COOKIE['oauth_id_token']) && ($matches = [1 => $_COOKIE['oauth_id_token']])) &&
-			class_exists('EGroupware\OpenID\Token') && ($token = (new Token())->validate($matches[1], "PT5M", $client)))
+			class_exists('EGroupware\OpenID\Token') && ($token = (new Token())->validate($matches[1], "PT5M", $client)) &&
+			// a token minted for a WebDAV mount on another installation (Vfs\Base::mintAccessToken())
+			// is for over there only - here it would log the mount target in as the user
+			$token->claims()->get(Api\Vfs\Base::TOKEN_USE_CLAIM) !== Api\Vfs\Base::TOKEN_USE_REMOTE_MOUNT)
 		{
 			$username = $token->claims()->get('sub');
 			unset($password);
@@ -119,6 +122,20 @@ class Authenticate
 					$session->limits[substr($scope, 4)] = true;
 				}
 			}
+		}
+		// a Bearer token our own openid app did not issue: an access token of the OpenID Connect
+		// PROVIDER (setup: "Access tokens of the IdP"), what an EGroupware mounting our WebDAV
+		// sends for the user logged in over there ($token in the mount url, Vfs\Base). Only by
+		// webdav.php (groupdav.php when setup says so) and only over https; verified against the
+		// provider's keys and judged by Auth\Openidconnect::accountFromClaims(): expiry, audience,
+		// issuer, app scopes (they become the session's limits) and an existing account.
+		elseif (isset($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/^Bearer (.+)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches) &&
+			($account = Api\Auth\Openidconnect::accountFromBearer($matches[1], $token_limits)))
+		{
+			$username = $account;
+			unset($password);
+			$auth_check = false;
+			$session->limits = $token_limits;
 		}
 		// if given password contains non-ascii chars AND we can not authenticate with it
 		if (isset($username) && isset($password) &&

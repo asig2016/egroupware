@@ -437,6 +437,12 @@ export class Et2Ai extends Et2MarkdownMixin(Et2Widget(LitElement))
 		let actionValue = value;
 		if(typeof actionValue == "string")
 		{
+			// a plain text field gets plain text: the answer may be html (the AI's or the server's markdown
+			// to html), which showed as literal <b> and <br/> - the result display keeps the formatting
+			if(this._isPlainTextTarget(target))
+			{
+				actionValue = this._toPlainText(actionValue);
+			}
 			actionValue = actionValue.trim();
 			const originalValue = (typeof target.getValue == "function" ? target.getValue() : target.value) ?? ""
 			const aiContent = action?.target == "self" ? this.getContent() : originalValue;
@@ -462,6 +468,34 @@ export class Et2Ai extends Et2MarkdownMixin(Et2Widget(LitElement))
 				target.value = actionValue;
 			}
 		}
+	}
+
+	/**
+	 * Is the target a plain text field (no html editor, no iframe)
+	 */
+	protected _isPlainTextTarget(target : any) : boolean
+	{
+		const tag = (target?.tagName ?? "").toUpperCase();
+		return ["ET2-TEXTAREA", "ET2-TEXTBOX", "TEXTAREA", "INPUT"].includes(tag);
+	}
+
+	/**
+	 * Html or markdown answer as plain text, keeping its line breaks
+	 */
+	protected _toPlainText(value : string) : string
+	{
+		if(/<[a-z][^>]*>/i.test(value))
+		{
+			const html = value
+				.replace(/<br\s*\/?>\n?/gi, "\n")
+				.replace(/<\/(p|div|li|tr|h[1-6]|ul|ol|table)>\n?/gi, "\n")
+				.replace(/<li[^>]*>/gi, "- ")
+				.replace(/<\/t[dh]>/gi, "\t");
+			value = new DOMParser().parseFromString(html, "text/html").body.textContent ?? "";
+		}
+		return value
+			.replace(/\*\*(.+?)\*\*/gs, "$1")
+			.replace(/\n{3,}/g, "\n\n");
 	}
 
 	public clearResult()

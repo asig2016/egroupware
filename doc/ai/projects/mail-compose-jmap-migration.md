@@ -2745,14 +2745,14 @@ a throwaway script decoding the real ticket `.eml`'s bytes both ways, not just r
 
 ### Bug (b): reply's To field - a comma in the sender's display name broke address round-tripping, found and fixed for real
 
-The original message's `From: "Mueller, Jens" <Jens.Mueller@elkamet.de>` - a properly RFC 5322
+The original message's `From: "Doe, John" <john.doe@example.com>` - a properly RFC 5322
 quoted display name (Outlook always quotes a comma-containing name; the comma itself is entirely
 legal *inside* a quoted-string). Six call sites across `mail/js/{compose,app,jmap}.ts` - every place
 this project turns a JMAP `{name, email}` object back into a `"name <email>"` mailbox string for a
 reply/forward's To/Cc/Bcc, an ACL notification's `from`, and a grid row's address columns - all
 shared the same bug: `a.name ? \`${a.name} <${a.email}>\` : a.email`, unconditionally dropping any
-quoting. For `{name: "Mueller, Jens", email: "Jens.Mueller@elkamet.de"}` this produces the literal
-string `Mueller, Jens <Jens.Mueller@elkamet.de>` - the bare, unquoted comma then reads as an
+quoting. For `{name: "Doe, John", email: "john.doe@example.com"}` this produces the literal
+string `Doe, John <john.doe@example.com>` - the bare, unquoted comma then reads as an
 address-LIST separator to anything parsing it afterward (Et2Email's own address-list parser
 included), splitting one mailbox into two malformed fragments.
 
@@ -2764,10 +2764,10 @@ and `email2row()`/`quoteOriginalMessage()`'s address-list formatting) with it, r
 one call site and leaving the other five to fail the same way later.
 
 **Live-verified** on boulder: setting a compose window's To field to the OLD unquoted string
-(`Mueller, Jens <Jens.Mueller@elkamet.de>`) reproduces the reported failure exactly - Et2Email
+(`Doe, John <john.doe@example.com>`) reproduces the reported failure exactly - Et2Email
 renders "Ungültige E-Mail-Adresse" under a garbled single chip. Setting it to the NEW, correctly
-quoted string (`"Mueller, Jens" <Jens.Mueller@elkamet.de>`, what `formatJmapAddress()` now
-produces) on a fresh page renders one clean "Mueller, Jens (elkamet.de)" chip with no error at all.
+quoted string (`"Doe, John" <john.doe@example.com>`, what `formatJmapAddress()` now
+produces) on a fresh page renders one clean "Doe, John (example.com)" chip with no error at all.
 `npx tsc --noEmit`/`npm run build` clean for all three touched files.
 
 ## FIXED (2026-09-04): S/MIME signed message with real attachments showed no attachment icon in the list

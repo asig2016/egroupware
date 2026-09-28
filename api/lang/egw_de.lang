@@ -862,6 +862,7 @@ locations	common	de	Räume
 logging / debuging	groupdav	de	Logging / Fehlersuche
 login	common	de	Anmelden
 login rejected by epl firewall, please contact your administrator	common	de	Anmeldung von der EPL-Firewall abgelehnt, bitte wenden Sie sich an Ihren EGroupware-Administrator.
+login rejected, please contact your administrator	common	de	Anmeldung abgelehnt, bitte wenden Sie sich an Ihren Administrator.
 loginid	common	de	Benutzerkennung
 logout	common	de	Abmelden
 lost login id	common	de	Anmeldenamen vergessen

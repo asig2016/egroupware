@@ -860,6 +860,7 @@ locations	common	en	Locations
 logging / debuging	groupdav	en	Logging / debuging
 login	common	en	Login
 login rejected by epl firewall, please contact your administrator	common	en	Login rejected by EGroupware firewall, please contact your administrator.
+login rejected, please contact your administrator	common	en	Login rejected, please contact your administrator.
 loginid	common	en	Login ID
 logout	common	en	Logout
 lost login id	common	en	Lost login ID

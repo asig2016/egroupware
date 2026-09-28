@@ -545,6 +545,7 @@ local	common	el	Τοπικός
 locations	common	el	τοποθεσίες
 login	common	el	Είσοδος
 login rejected by epl firewall, please contact your administrator	common	el	Η σύνδεση απορρίφθηκε από το τείχος προστασίας του EGroupware, επικοινωνήστε με το διαχειριστή σας.
+login rejected, please contact your administrator	common	el	Η σύνδεση απορρίφθηκε, επικοινωνήστε με το διαχειριστή σας.
 loginid	common	el	Ταυτότητα εισόδου
 logout	common	el	Εξοδος
 lost login id	common	el	Χαμένο αναγνωριστικό σύνδεσης

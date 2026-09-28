@@ -120,7 +120,17 @@ class Openidconnect implements BackendSSO
 				}
 			}
 			// return user session
-			return $GLOBALS['egw']->session->create($account_lid, null, null, false, false);
+			if (!($sessionid = $GLOBALS['egw']->session->create($account_lid, null, null, false, false)))
+			{
+				// tell the login screen why, like a password login does: the numeric codes are its own messages
+				// (blocked, account expired, ...), a session_creation hook's free-text reason might tell internals
+				// and stays in the access-log and auth.log
+				$reason = $GLOBALS['egw']->session->cd_reason;
+				Api\Auth::log(__METHOD__."() OpenIDConnect login of '$account_lid' successful, but session creation failed: ".
+					($GLOBALS['egw']->session->reason ?? $reason));
+				$_GET['cd'] = is_numeric($reason) ? (int)$reason : lang('Login rejected, please contact your administrator');
+			}
+			return $sessionid;
 		}
 		catch(\Exception $e) {
 			_egw_log_exception($e);

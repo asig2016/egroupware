@@ -1312,6 +1312,30 @@ export class Et2Date extends Et2InputWidget(LitFlatpickr)
             </div>`;
 	}
 
+	updated(changedProperties)
+	{
+		super.updated(changedProperties);
+		this._skipIncrementButtonsOnTab();
+	}
+
+	/**
+	 * Keep the up/down buttons out of the tab order: Tab goes from the date to the next field
+	 *
+	 * They are mouse helpers - the keyboard changes the date by typing it. sl-icon-button renders
+	 * its inner <button> with tabindex="0" whenever it is enabled, and a tabindex on the host does
+	 * not reach it, so it is set on the inner button once that has rendered.
+	 */
+	protected _skipIncrementButtonsOnTab()
+	{
+		this.shadowRoot?.querySelectorAll(".et2-date-time__scrollbuttons et2-button-icon").forEach((button : any) =>
+		{
+			(button.updateComplete ?? Promise.resolve()).then(() =>
+			{
+				button.shadowRoot?.querySelector("button")?.setAttribute("tabindex", "-1");
+			});
+		});
+	}
+
 	render()
 	{
 

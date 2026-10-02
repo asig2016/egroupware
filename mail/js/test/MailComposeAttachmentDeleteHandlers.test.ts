@@ -10,24 +10,16 @@ import {Et2Dialog} from "../../../api/js/etemplate/Et2Dialog/Et2Dialog";
  * das Rad" (deleting an already-uploaded attachment just spins forever) - for both a brand new
  * compose's own upload and a forwarded message's carried-over attachments.
  *
- * Root cause: attachmentsWidget.set_value({content: ...}) (mergeAttachmentEntries()/
- * deleteAttachment()/checkSharingFilemode(), mail/js/compose.ts) rebuilds every attachment row
- * from compose.xet's own row template - client-side, from raw data, since JMAP-mode compose never
- * has a server-rendered initial page load to populate this grid from. A row rebuilt this way never
- * gets its own `onclick="app.mail.compose.deleteAttachment"` STRING attribute resolved into a
- * real bound function (confirmed live via a real compose popup: the delete button widget's own
- * `.onclick` stayed an unresolved no-op after set_value()) - Et2Widget._handleClick() sees that as
- * "nothing cancelled the click", so ButtonMixin._handleClick() falls through to its own default
- * action: submitting the whole popup's form, which JMAP mode has nothing server-side left to
- * handle at all, hence the endless spinner.
+ * Root cause (corrected 2026-10-02, see _wireAttachmentDeleteHandlers()'s docblock): et2 calls
+ * every onclick as (event, widget), deleteAttachment() took the widget only, got the event, missed
+ * the `delete[...]` id and returned true - ButtonMixin._handleClick() then submits the popup's form,
+ * which JMAP mode has nothing server-side left to handle, hence the endless spinner. The original
+ * diagnosis (a set_value()-rebuilt row's onclick string never resolves) was wrong: rebuilt rows
+ * resolve it like the initial render does. _wireAttachmentDeleteHandlers() hid the bug for
+ * rebuilt rows only; a mail_compose_prepare hook's attachments (initial content) kept hanging.
  *
- * Fixed by _wireAttachmentDeleteHandlers() explicitly assigning each delete button's `.onclick`
- * property directly after every set_value() call, bypassing the broken string-attribute
- * resolution entirely.
- *
- * Setup: a fake `attachments` grid widget whose OWN set_value() mimics the real bug precisely -
- * it throws away and recreates a fresh row widget object (onclick reset to a no-op, exactly like
- * the real broken row-rebuild) every time it's called, so a passing test proves
+ * Setup: a fake `attachments` grid widget whose OWN set_value() throws away and recreates a fresh
+ * row widget object with a no-op onclick every time it's called, so a passing test proves
  * _wireAttachmentDeleteHandlers() is what re-wires each row, not just a one-time fluke.
  */
 
@@ -220,6 +212,30 @@ describe("MailCompose attachment delete buttons stay clickable after set_value()
 
 		assert.isFalse(clickDeleteButton(et2, 'tmp-1'));
 		assert.isTrue(et2.getArrayMgr('content').getEntry('no_griddata'), "removing the last attachment restores the empty state");
+	});
+
+	it("a row rendered with the initial content (prepare-hook attachment) deletes through the template's own onclick", () =>
+	{
+		// found live 2026-10-02: an achelper template mail's attachment is in the popup's initial
+		// content, so its row is never rebuilt/re-wired - the button keeps the template-resolved
+		// `onclick="app.mail.compose.deleteAttachment"` (the bound method, see
+		// et2_compileLegacyJS()), which Et2Widget._handleClick() calls as (event, widget)
+		const {compose, et2} = createCompose();
+		(compose as any).isJmapMode = true;
+		const path = 'vfs://default/apps/acilog/123/bill.pdf';
+		et2.getArrayMgr('content').data.attachments = [{tmp_name : path, name : 'bill.pdf', size : 10}];
+		const widget = {id : `delete[${path}]`, onclick : compose.deleteAttachment.bind(compose)};
+		et2.rowWidgets[widget.id] = widget;
+
+		assert.isFalse(widget.onclick(new Event('click'), widget), "the click must be cancelled, not submit the form");
+		assert.deepEqual(et2.getArrayMgr('content').data.attachments, [], "the attachment must actually be removed");
+	});
+
+	it("an unrecognised button never falls through to the (dead) form submit in JMAP mode", () =>
+	{
+		const {compose} = createCompose();
+		(compose as any).isJmapMode = true;
+		assert.isFalse(compose.deleteAttachment(new Event('click'), {id : 'something-else'}));
 	});
 
 	it("documents the ORIGINAL bug: an unresolved onclick lets the click fall through instead of cancelling it", () =>

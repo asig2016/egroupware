@@ -2454,22 +2454,22 @@ export class MailCompose
 	 * dreht sich nur das Rad" (deleting an already-uploaded attachment just spins forever), for
 	 * both a new compose's own upload AND a forwarded message's carried-over attachments - ie.
 	 * EVERY attachment row, since JMAP-mode compose only ever populates this grid via set_value(),
-	 * never a server-rendered initial page load. Root cause: a set_value()-rebuilt row's own
-	 * `onclick="..."` STRING attribute never gets resolved into a real bound function the way a
-	 * server-rendered (or otherwise template-parsed) row's does - the delete button's own
-	 * `.onclick` stayed unresolved (Et2Widget._handleClick()'s own `typeof this.onclick ==
-	 * 'function'` check fails, so it just returns true - a no-op, not a cancel).
-	 * ButtonMixin._handleClick() (api/js/etemplate/Et2Button/ButtonMixin.ts) treats that truthy
-	 * result as "nothing cancelled the click" and falls through to its own default action -
-	 * submitting the whole popup's form, which JMAP mode has nothing server-side left to handle,
-	 * hence the endless spinner.
+	 * never a server-rendered initial page load. The diagnosis back then was that a
+	 * set_value()-rebuilt row never resolves its `onclick="..."` string - wrong, checked live
+	 * 2026-10-02: rebuilt rows resolve it to the bound deleteAttachment() just like the initial
+	 * render does. The real cause was the signature: et2 calls every onclick as (event, widget)
+	 * (Et2Widget._handleClick()), deleteAttachment() took the widget only, so it got the event,
+	 * missed the `delete[...]` id and returned true. ButtonMixin._handleClick()
+	 * (api/js/etemplate/Et2Button/ButtonMixin.ts) treats that as "nothing cancelled the click"
+	 * and submits the popup's form, which JMAP mode has nothing server-side left to handle -
+	 * the endless spinner. This wiring passed the widget correctly and so hid the bug for every
+	 * rebuilt row; rows in the popup's initial content (a mail_compose_prepare hook's
+	 * attachments, eg. an achelper template mail) were never re-wired and kept hanging.
 	 *
-	 * Fixed by explicitly assigning each delete button widget's `.onclick` property directly,
-	 * bypassing the broken string-attribute resolution entirely - ButtonMixin._handleClick()
-	 * already correctly short-circuits the form submit once `.onclick` is a real function
-	 * returning false, exactly like a normally-resolved one would. Called after every
-	 * attachmentsWidget.set_value() (both here and at the end of deleteAttachment() itself, so
-	 * remaining rows stay wired after one is removed).
+	 * deleteAttachment() now takes (event, widget) itself, so the template's own onclick works
+	 * everywhere. Re-assigning `.onclick` after every attachmentsWidget.set_value() (here, in
+	 * deleteAttachment() and checkSharingFilemode()) is kept as a cheap guarantee that each row's
+	 * button cancels the submit regardless of how its attribute was resolved.
 	 */
 	private _wireAttachmentDeleteHandlers() : void
 	{
@@ -2479,7 +2479,7 @@ export class MailCompose
 			const widget : any = this.et2.getWidgetById(`delete[${attachment.tmp_name}]`);
 			if(widget)
 			{
-				widget.onclick = (_event : Event, w : any) => this.deleteAttachment(w);
+				widget.onclick = (_event : Event, w : any) => this.deleteAttachment(_event, w);
 			}
 		}
 	}
@@ -2553,13 +2553,19 @@ export class MailCompose
 	 * removing them from the array they are tracked and the UI") this instead removes the row
 	 * client-side only - no postback at all, same reasoning as every other JMAP-mode attachment
 	 * path this session (a postback would re-run bootstrapReply()/lose unsent edits).
+	 *
+	 * Called as et2 calls any onclick: (event, widget). A row rendered with the popup's initial
+	 * content (the mail_compose_prepare hook's attachments, eg. an achelper template mail) keeps
+	 * the template's resolved `onclick` - with a widget-only signature it got the event, missed
+	 * the id and fell through to the dead postback: endless spinner.
 	 */
-	deleteAttachment(widget : any) : boolean
+	deleteAttachment(_ev : Event, widget : any) : boolean
 	{
 		if (!this.isJmapMode) return true;
 		const match = /^delete\[(.*)\]$/.exec(String(widget?.id ?? ''));
 		const tmpName = match?.[1];
-		if (!tmpName) return true;
+		// never fall through to the submit: nothing server-side answers it in JMAP mode
+		if (!tmpName) return false;
 		const content = this.et2.getArrayMgr('content');
 		content.data.attachments = (content.data.attachments || []).filter((a : any) => a.tmp_name !== tmpName);
 		content.data.no_griddata = !content.data.attachments.length;

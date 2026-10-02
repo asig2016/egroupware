@@ -131,7 +131,12 @@ export class Et2CustomfieldsHeader extends Et2Widget(LitElement)
 		}
 		// Some templates populate global customfield modifications after initial attribute transform.
 		// Keep one-way hydration from modifications so initial render has field list without user interaction.
-		if(!this.customfields || !Object.keys(this.customfields).length || !this.fields || !Object.keys(this.fields).length)
+		// An explicit fields map is a sparse allow-list: empty legitimately means "all hidden", so only
+		// missing metadata (or a non-explicit empty fields map) warrants a re-sync - treating the explicit
+		// empty map as missing re-entered the sync on every update and hard-froze the tab (endless
+		// performUpdate loop, found live on acdms "Filter by" with all customfield columns hidden).
+		if(!this.customfields || !Object.keys(this.customfields).length ||
+			(!this._hasExplicitFields && (!this.fields || !Object.keys(this.fields).length)))
 		{
 			this._syncCustomfieldsFromModifications();
 		}

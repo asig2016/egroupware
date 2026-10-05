@@ -285,6 +285,22 @@ describe("Et2Description link styles", () =>
 		});
 	});
 
+	it("keeps the link styles invisible when the host shows all its children", async() =>
+	{
+		// egw-app's shadow root has ":host > * {display: flex}", which beats the UA's style {display: none}
+		const host = await fixture<HTMLDivElement>(html`<div></div>`);
+		const root = host.attachShadow({mode: "open"});
+		root.innerHTML = `<style>:host > * { display: flex; }</style>
+			<et2-description noLang href="not_real_url" value="click me"></et2-description>`;
+		const description = root.querySelector("et2-description") as Et2Description;
+		// @ts-ignore TypeScript doesn't recognize widgets as Elements
+		await elementUpdated(description);
+
+		const style = root.getElementById(Et2Description.LINK_STYLES_ID);
+		assert.isNotNull(style, "Link styles not added");
+		assert.equal(getComputedStyle(style).display, "none", "Link styles render as visible text");
+	});
+
 	it("lets an app rule win", async() =>
 	{
 		const host = await fixture<HTMLDivElement>(html`<div></div>`);

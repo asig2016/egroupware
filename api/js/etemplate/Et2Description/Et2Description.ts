@@ -112,6 +112,9 @@ export class Et2Description extends Et2MarkdownMixin(Et2Widget(LitElement)) impl
 		const style = document.createElement("style");
 		style.id = Et2Description.LINK_STYLES_ID;
 		style.textContent = linkStyles.cssText;
+		// A <style> is only hidden by the UA stylesheet, so a host rule like egw-app's
+		// ":host > * {display: flex}" turned it into a visible line of CSS text
+		style.style.display = "none";
 		// First, so app CSS loaded before us still wins over equal specificity
 		target.prepend(style);
 	}

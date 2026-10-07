@@ -1413,6 +1413,34 @@ export class filemanagerAPP extends EgwApp
 	}
 
 	/**
+	 * The etemplate a list action belongs to - the key of this.path_widget
+	 *
+	 * The action or one of its parents carries the nextmatch (as the handlers above use it); else
+	 * the row's DOM node is followed up, through shadow roots, to its template.
+	 */
+	protected actionTemplate(_action, _target) : string | undefined
+	{
+		for(let action = _action; action; action = action.parent)
+		{
+			const nm = action.data?.nextmatch;
+			if(nm && typeof nm.getInstanceManager === "function")
+			{
+				return nm.getInstanceManager().uniqueId;
+			}
+		}
+		let node = _target?.iface?.getDOMNode?.();
+		while(node)
+		{
+			if(node.id && this.path_widget[node.id])
+			{
+				return node.id;
+			}
+			node = node.parentNode || (<ShadowRoot>node).host;
+		}
+		return undefined;
+	}
+
+	/**
 	 * Callback to check if the paste action is enabled.  We also update the
 	 * clipboard historical targets here as well
 	 *
@@ -1441,11 +1469,12 @@ export class filemanagerAPP extends EgwApp
 		}
 		let actions = [];
 
-		// Current directory
-		let current_dir = this.get_path();
+		// Current directory - of the list the menu was opened in: with a second filemanager list in the
+		// window (the Files tab of an entry, an app-box) the first registered one is somebody else's
+		const template = this.actionTemplate(_action, _target);
+		let current_dir = this.get_path(template);
 		let dir = egw.dataGetUIDdata('filemanager::'+current_dir);
-		//let path_widget = etemplate2.getById('filemanager-index').widgetContainer.getWidgetById('button[createdir]');
-		let path_widget = <et2_widget><unknown>Object.entries(this.path_widget)[0];
+		let path_widget = <et2_widget><unknown>(template && this.path_widget[template] || Object.values(this.path_widget)[0]);
 		actions.push({
 			id:_action.id+'_current', caption: current_dir, path: current_dir,
 			enabled: dir && dir.data && dir.data.class && dir.data.class.indexOf('noEdit') === -1 ||

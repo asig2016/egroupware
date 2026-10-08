@@ -640,10 +640,10 @@ class Base
 						continue;	// no need to write that (unset) column
 					}
 					if ($this->table_def['fd'][$db_col]['type'] == 'varchar' && is_string($this->data[$col]) &&
-						strlen($this->data[$col]) > $this->table_def['fd'][$db_col]['precision'])
+						mb_strlen($this->data[$col]) > $this->table_def['fd'][$db_col]['precision'])
 					{
-						// truncate the field to maximum length, if upper layers didn't care
-						$data[$db_col] = substr($this->data[$col],0,$this->table_def['fd'][$db_col]['precision']);
+						// truncate the field to maximum length (characters, not bytes: a byte cut broke UTF-8), if upper layers didn't care
+						$data[$db_col] = mb_substr($this->data[$col],0,$this->table_def['fd'][$db_col]['precision']);
 					}
 					else
 					{

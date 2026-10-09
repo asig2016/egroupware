@@ -4755,9 +4755,11 @@ class Imap extends Jmap\Base
 		{
 			return null;
 		}
-		$arr = array_change_key_case($headers->toArray(), CASE_UPPER);
-		$value = $arr[strtoupper($name)] ?? null;
-		$value = is_array($value) ? reset($value) : $value;
+		// only this header, as its plain text: toArray() send-encoded EVERY header of the message, and one
+		// address with an empty domain anywhere ("user@") threw in idn_to_ascii() - failing the whole
+		// Email/get, so a single such mail emptied the message list of its folder
+		$element = $headers[$name];
+		$value = $element ? $element->value : null;
 		if ($value === null || trim((string)$value) === '')
 		{
 			return null;

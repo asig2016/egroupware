@@ -469,11 +469,13 @@ export class filemanagerAPP extends EgwApp
 	 * so the path the server gave the widget is left alone.
 	 *
 	 * @param dir
+	 * @param container template to look in, default this.et2 (the template loaded last)
 	 */
-	protected setUploadPath(dir : string)
+	protected setUploadPath(dir : string, container? : any)
 	{
-		const upload = this.et2.getWidgetById('upload');
-		if(upload && !this.et2.getArrayMgr('content').getEntry('hidden_upload'))
+		container = container ?? this.et2;
+		const upload = container?.getWidgetById('upload');
+		if(upload && !container.getArrayMgr('content')?.getEntry('hidden_upload'))
 		{
 			// Et2VfsUpload needs the trailing /
 			upload.path = dir + '/';
@@ -499,8 +501,13 @@ export class filemanagerAPP extends EgwApp
 		{
 			this.change_dir('~', widget);
 		}
-		this.setUploadPath(widget.getValue());
-		this.nm && this.nm.applyFilters({col_filter: {dir: widget.getValue()}});
+		// the list and upload of the path widget's own template: this.nm / this.et2 are the template loaded
+		// last - another filemanager list (the Files tab of an entry in an other app) changed folder instead,
+		// and this list kept the rows of the previous folder under the new path
+		const container = widget?.getInstanceManager?.()?.widgetContainer;
+		this.setUploadPath(widget.getValue(), container);
+		const nm = container?.getWidgetById('nm') ?? this.nm;
+		nm && nm.applyFilters({col_filter: {dir: widget.getValue()}});
 
 		return true;
 	}
@@ -1151,6 +1158,8 @@ export class filemanagerAPP extends EgwApp
 	{
 		let etemplate_name;
 		for(etemplate_name in this.path_widget) break;
+		// no widget (a link opening the app): the app's own list, not the first other list that registered
+		if(!widget && this.path_widget['filemanager-index']) etemplate_name = 'filemanager-index';
 		if (widget) etemplate_name = widget.getInstanceManager().uniqueId;
 
 		// Make sure everything is in place for changing directory

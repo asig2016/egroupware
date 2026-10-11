@@ -273,7 +273,8 @@ export class EgwFramework extends LitElement
 			// Let everyone know the initial app
 			this.activeApp?.updateComplete.then(() =>
 			{
-				this.showTab(this.activeApp.name);
+				// by its id: the name of an entry-tab is the application it belongs to, whose tab is another one
+				this.showTab(this.activeApp.id);
 			});
 
 			// Remove the initial loader
@@ -1594,11 +1595,55 @@ export class EgwFramework extends LitElement
 
 	private _setTabAppsSession()
 	{
-		egw.setSessionItem('api', 'fw_tab_apps', JSON.stringify(this._tabApps));
+		const tabs = JSON.stringify(this._tabApps);
+		egw.setSessionItem('api', 'fw_tab_apps', tabs);
+		// the session storage ends with the browser tab: a copy that outlives it (per user, egw_store), for the
+		// next login in a new tab or window - see restoreTabApps()
+		try
+		{
+			egw.setLocalStorageItem?.('api', 'fw_tab_apps', tabs);
+		}
+		catch(e)
+		{
+			// a full or blocked storage only costs the tabs of the next login
+		}
 	}
 
 	/**
-	 * Restore the entry-tabs stored for this session and load the active ones
+	 * The entry-tabs to restore: those of this browser tab (a reload, a logout and login in it), else - a new
+	 * browser tab or window, which starts with an empty session storage - those the user had open last
+	 *
+	 * Without the second the server still named such a tab as the active one (common preference active_tab),
+	 * the client did not know it any more, and the page stayed empty after the login.
+	 */
+	private _storedTabApps() : { [id : string] : ApplicationInfo }
+	{
+		let stored = egw.getSessionItem('api', 'fw_tab_apps');
+		if(stored === null || typeof stored === "undefined")
+		{
+			try
+			{
+				stored = egw.getLocalStorageItem?.('api', 'fw_tab_apps') ?? null;
+			}
+			catch(e)
+			{
+				stored = null;
+			}
+		}
+		try
+		{
+			const tabs = JSON.parse(stored || null);
+			return tabs && typeof tabs === "object" && !Array.isArray(tabs) ? tabs : {};
+		}
+		catch(e)
+		{
+			return {};
+		}
+	}
+
+	/**
+	 * Restore the entry-tabs stored for this session (or, in a new browser tab, those the user had open last:
+	 * _storedTabApps()) and load the active ones
 	 *
 	 * Unlike applicationList these never went through the server's run-rights filter, they are
 	 * whatever the client wrote to the session storage - which outlives a logout and login in
@@ -1612,7 +1657,7 @@ export class EgwFramework extends LitElement
 	 */
 	private restoreTabApps()
 	{
-		const stored = JSON.parse(egw.getSessionItem('api', 'fw_tab_apps') || null) || {};
+		const stored = this._storedTabApps();
 		const apps = this.egw.user('apps') || {};
 
 		const allowed = {};
@@ -1639,7 +1684,16 @@ export class EgwFramework extends LitElement
 		// Do NOT load tabs on mobile
 		if(!this.getRootNode()?.querySelector('html')?.classList.contains('mobile'))
 		{
-			Object.values(this._tabApps).filter(app => app.active).forEach(app => this.loadApp(app.name));
+			// the page comes with an application in front (the server only knows applications, for an entry-tab
+			// the one it belongs to): the tab the user had in front takes its place, and is what connectedCallback()
+			// announces as the initial app
+			let front : EgwFrameworkApp = null;
+			Object.values(this._tabApps).filter(app => app.active).forEach(app => front = this.loadApp(app.name) ?? front);
+			if(front)
+			{
+				this.querySelectorAll("egw-app[active]").forEach(app => app.removeAttribute("active"));
+				front.setAttribute("active", "");
+			}
 		}
 		this.requestUpdate("applicationList");
 	}

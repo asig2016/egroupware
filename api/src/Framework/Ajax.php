@@ -1069,6 +1069,14 @@ abstract class Ajax extends Api\Framework
 			if (!$active_tab) $active_tab = $default_app;
 		}
 
+		// the client reports a tab opened INSIDE an application (id "<app>-<hash>": an entry or a list in a tab of
+		// its own) as the active one too. It is no application: after the next login none was active and the
+		// page stayed empty - activate the application the tab belonged to
+		if ($active_tab && !isset($apps[$active_tab]) && ($tab_app = strstr($active_tab, '-', true)) && isset($apps[$tab_app]))
+		{
+			$active_tab = $tab_app;
+		}
+
 		//self::app_from_url might return an application the user has no rights
 		//for or may return an application that simply does not exist. So check first
 		//whether the $active_tab really exists in the $apps array.

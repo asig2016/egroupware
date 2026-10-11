@@ -197,6 +197,52 @@ describe("A long path in a toolbar", () =>
 	});
 });
 
+describe("The copy button", () =>
+{
+	beforeEach(async() =>
+	{
+		await before();
+		window.egw.copyTextToClipboard = sinon.stub().resolves(undefined);
+		window.egw.message = sinon.stub();
+	});
+
+	it("copies the path to the clipboard and says so, without starting to edit", async() =>
+	{
+		element.value = "/home/test/some dir";
+		await elementUpdated(element);
+
+		const button = element.shadowRoot.querySelector<HTMLButtonElement>(".vfs-path__copy");
+		assert.exists(button, "no copy button");
+		button.click();
+		await elementUpdated(element);
+		// the clipboard write resolves in its own microtask
+		await new Promise(resolve => setTimeout(resolve, 0));
+
+		assert.isTrue(window.egw.copyTextToClipboard.calledOnce, "clipboard not written");
+		assert.equal(window.egw.copyTextToClipboard.firstCall.args[0], "/home/test/some dir");
+		assert.isTrue(window.egw.message.calledOnce, "no message");
+		assert.isFalse(element.editing, "the click started editing");
+	});
+
+	it("is there for a read-only path too, the pencil is not", async() =>
+	{
+		element.value = "/home/test";
+		element.readonly = true;
+		await elementUpdated(element);
+
+		assert.exists(element.shadowRoot.querySelector(".vfs-path__copy"), "no copy button");
+		assertNoElement(element.shadowRoot.querySelector(".vfs-path__edit"), "a pencil on a read-only path");
+	});
+
+	it("is not there without a value", async() =>
+	{
+		element.value = "";
+		await elementUpdated(element);
+
+		assertNoElement(element.shadowRoot.querySelector(".vfs-path__copy"), "a copy button with nothing to copy");
+	});
+});
+
 describe("A disabled path", () =>
 {
 	beforeEach(before);

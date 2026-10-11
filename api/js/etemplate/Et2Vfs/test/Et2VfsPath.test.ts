@@ -133,6 +133,70 @@ describe("Path widget layout", () =>
 	});
 });
 
+/**
+ * In a toolbar the widget is not stretched: it is as wide as its breadcrumb. The text input of edit mode asks for
+ * no width of its own, so the widget shrank to its minimum the moment the pencil was clicked and grew back on blur.
+ */
+describe("Path widget in a toolbar", () =>
+{
+	let widget : Et2VfsPath;
+	let wrapper : HTMLElement;
+
+	beforeEach(async() =>
+	{
+		// as Et2Toolbar slots its children: they flex, with min-width: fit-content, beside buttons that do not
+		wrapper = await fixture<HTMLElement>(html`
+            <div style="width: 80em; display: flex; flex-direction: row; align-items: center">
+                <et2-vfs-path style="flex: 1 1 auto; min-width: fit-content" value="/apps/acilog/270708/Financial_Tax_and_Payroll/1. Returns"></et2-vfs-path>
+                <button style="flex: 0 0 fit-content">New</button>
+            </div>`);
+		widget = <Et2VfsPath>wrapper.firstElementChild;
+		sinon.stub(widget, "egw").returns(window.egw);
+		await elementUpdated(widget);
+	});
+
+	const width = () => Math.round(widget.getBoundingClientRect().width);
+
+	it("keeps its width while the path is edited, and lets go of it afterwards", async() =>
+	{
+		const shown = width();
+		const room = wrapper.getBoundingClientRect().width - wrapper.lastElementChild.getBoundingClientRect().width;
+		assert.isAtLeast(shown, Math.round(room) - 1, "The path does not take the room the toolbar has");
+
+		widget.edit();
+		await elementUpdated(widget);
+		assert.equal(width(), shown, "Editing changed the width");
+
+		widget.blur();
+		await elementUpdated(widget);
+		assert.equal(widget.style.width, "", "The pinned width stayed after editing");
+		assert.equal(width(), shown, "The breadcrumb came back with another width");
+	});
+});
+
+/**
+ * A toolbar gives its children min-width: fit-content and moves what does not fit into its overflow menu. A
+ * long path must not make the widget wider than the room it has: the breadcrumb scrolls inside the widget.
+ */
+describe("A long path in a toolbar", () =>
+{
+	it("does not grow past the room it has", async() =>
+	{
+		const wrapper = await fixture<HTMLElement>(html`
+            <div style="width: 40em; display: flex; flex-direction: row; align-items: center">
+                <et2-vfs-path style="flex: 1 1 auto; min-width: fit-content"
+                              value="/apps/acilog/265185-Financial, Tax and HR due diligence of SOME COMPANY S.A. (A VERY LONG TITLE INDEED)/Financial_Tax_and_Payroll/1. VAT returns"></et2-vfs-path>
+                <button style="flex: 0 0 fit-content">New</button>
+            </div>`);
+		const widget = <Et2VfsPath>wrapper.firstElementChild;
+		sinon.stub(widget, "egw").returns(window.egw);
+		await elementUpdated(widget);
+
+		const room = wrapper.getBoundingClientRect().width - wrapper.lastElementChild.getBoundingClientRect().width;
+		assert.isAtMost(Math.round(widget.getBoundingClientRect().width), Math.round(room), "The long path made the widget wider than the toolbar");
+	});
+});
+
 describe("A disabled path", () =>
 {
 	beforeEach(before);

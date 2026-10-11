@@ -197,6 +197,8 @@ export class Et2VfsPath extends Et2InputWidget(LitElement) implements et2_IDetac
 		const oldEditing = this.editing;
 		this.editing = false;
 		this.requestUpdate("editing", oldEditing);
+		// back to the width the breadcrumb takes (see edit())
+		this.style.width = "";
 		if(!this._edit)
 		{
 			return;
@@ -214,6 +216,17 @@ export class Et2VfsPath extends Et2InputWidget(LitElement) implements et2_IDetac
 	public edit()
 	{
 		const oldValue = this.editing;
+		// Keep the width the breadcrumb had: the text input asks for no width of its own (width: 0 in the
+		// styles, so that it does not make the widget wider), and in a toolbar the widget shrank to its
+		// minimum the moment the pencil was clicked. Released again in blur().
+		if(!this.editing)
+		{
+			const width = this.getBoundingClientRect().width;
+			if(width > 0)
+			{
+				this.style.width = width + "px";
+			}
+		}
 		this.editing = true;
 
 		this.requestUpdate("editing", oldValue);

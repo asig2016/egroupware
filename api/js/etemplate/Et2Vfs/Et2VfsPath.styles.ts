@@ -77,7 +77,11 @@ export default css`
 	}
 
 	.vfs-path__scroll {
-		flex: 1 1 auto;
+		/* Take the room there is, not the width of the whole breadcrumb: a toolbar gives its children
+		   min-width: fit-content, and a long path made the widget wider than the toolbar, which then
+		   moved it into its overflow menu - the path vanished. The breadcrumb scrolls inside instead. */
+		flex: 1 1 0;
+		width: 0;
 		overflow: hidden;
 		min-width: 10em;
 	}

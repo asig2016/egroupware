@@ -209,6 +209,11 @@ export class EgwFrameworkApp extends LitElement
 	/** The application's content must be in an iframe instead of handled normally */
 	protected useIframe = false;
 	protected _sideboxData : any;
+	/** egw is loaded: the right header can be rendered, and is from then on rendered in place */
+	private _egwComplete : boolean = false;
+	/** The application menu of _menuFor, built once per sidebox data instead of once per render */
+	private _menuPromise : Promise<TemplateResult> | null = null;
+	private _menuFor : any = null;
 	/** We've loaded something other than our set url via load(...), on refresh go back */
 	private _offUrl : boolean = false;
 
@@ -250,6 +255,22 @@ export class EgwFrameworkApp extends LitElement
 		// Work around sl-split-panel resizing to 0 when app is hidden
 		this.framework.addEventListener("sl-tab-hide", this.handleTabHide);
 		this.framework.addEventListener("sl-tab-show", this.handleTabShow);
+
+		// The right header waits for egw - once. Asked through until() in render(), every render
+		// made a new promise, until() put the spinner back and the whole header (filter button,
+		// print, the application menu with its sl-menu-items) was torn down and rebuilt.
+		// An app that is in the page's own markup connects before egw-framework is defined, and
+		// has no getEgwComplete() to ask yet.
+		if(!this._egwComplete)
+		{
+			const upgraded = typeof (<any>this.framework)?.getEgwComplete === "function" ?
+							 Promise.resolve() : customElements.whenDefined("egw-framework");
+			upgraded.then(() => this.framework?.getEgwComplete()).then(() =>
+			{
+				this._egwComplete = true;
+				this.requestUpdate();
+			});
+		}
 	}
 
 	disconnectedCallback()
@@ -1562,19 +1583,25 @@ export class EgwFrameworkApp extends LitElement
 			return nothing;
 		}
 
-		// Sub-menus call getComputedStyle() so are expensive, defer them until later
-		const menuPromise = new Promise(async resolve =>
+		// Sub-menus call getComputedStyle() so are expensive, defer them until later - and build
+		// them once per sidebox data: a new promise on every render made until() drop the menu and
+		// create every sl-menu-item again, each with a forced style recalculation of its own
+		if(this._menuFor !== this._sideboxData || !this._menuPromise)
 		{
-			await this.loadingPromise;
-			setTimeout(() =>
+			const sideboxData = this._menuFor = this._sideboxData;
+			this._menuPromise = new Promise(async resolve =>
 			{
-				resolve(
-					html`${repeat(this._sideboxData, (menu) => menu['menu_name'], this._applicationMenuItemTemplate.bind(this))}`
-				);
+				await this.loadingPromise;
+				setTimeout(() =>
+				{
+					resolve(
+						html`${repeat(sideboxData, (menu) => menu['menu_name'], this._applicationMenuItemTemplate.bind(this))}`
+					);
+				});
 			});
-		});
+		}
 
-		return html`${until(menuPromise, nothing)}`;
+		return html`${until(this._menuPromise, nothing)}`;
 	}
 
 	/**
@@ -1707,8 +1734,8 @@ export class EgwFrameworkApp extends LitElement
                 <header class="egw_fw_app__header" part="header">
                     <slot name="main-header"></slot>
                 </header>
-                ${until(this.framework?.getEgwComplete().then(() => this._rightHeaderTemplate()), html`
-                    <sl-spinner></sl-spinner>`)}
+                ${this._egwComplete ? this._rightHeaderTemplate() : html`
+                    <sl-spinner></sl-spinner>`}
             </div>
             <div class="egw_fw_app__main" part="main" title>
                 ${this.loading ? this._loadingTemplate() : nothing}

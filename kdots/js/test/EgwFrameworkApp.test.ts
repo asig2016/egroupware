@@ -275,3 +275,99 @@ describe("EgwFrameworkApp filter indicator", () =>
 		assert.equal(element.filterInfo(set).icon, "filter-circle-fill");
 	});
 });
+
+/**
+ * Contract under test:
+ * - The right header (filter button, print, application menu) is rendered in place: a re-render
+ *   of the app keeps its elements instead of creating them again.
+ * - The application menu is built once per sidebox data, and again when new sidebox data arrives.
+ *
+ * Why it matters: every nextmatch filter change re-renders the app two to three times
+ * (handleFilterChange(), rowCount). The header used to hang on an until() over a promise made
+ * anew in render(), and so did the menu: each render put the fallback back, dropped the header
+ * and built every sl-menu-item again - and SlMenuItem asks getComputedStyle() while rendering,
+ * a forced style recalculation of the whole page per item.
+ *
+ * Setup strategy:
+ * - The sidebox data is set directly: setSidebox() would also go looking for favourites.
+ * - Element identity is compared, not markup: a rebuilt header renders the very same HTML.
+ *
+ * Pass criteria:
+ * - The same sl-dropdown and the same sl-menu-item nodes before and after re-renders, checked
+ *   both right after the render (no fallback in between) and once everything has settled.
+ */
+describe("EgwFrameworkApp header is rendered in place", () =>
+{
+	let element : EgwFrameworkApp;
+
+	const sidebox = (labels : string[]) => [{
+		menu_name: "menu",
+		title: "Menu",
+		entries: labels.map(label => ({lang_item: label, item_link: "/" + label}))
+	}];
+	const menu = () => element.shadowRoot.querySelector("sl-dropdown.egw_fw_app__menu");
+	const menuItems = () => Array.from(element.shadowRoot.querySelectorAll("sl-menu-item"));
+	const labels = () => menuItems().map(item => item.textContent.trim()).filter(label => label);
+
+	// the menu waits for the app to load, and then for a timeout
+	const settled = async() =>
+	{
+		await element.updateComplete;
+		await new Promise(resolve => setTimeout(resolve, 20));
+		await element.updateComplete;
+	};
+
+	beforeEach(async() =>
+	{
+		stubEgw();
+
+		const framework = await fixture(frameworkStandIn());
+		framework.innerHTML = `<egw-app name="test-app"></egw-app>`;
+		element = <EgwFrameworkApp>framework.querySelector("egw-app");
+		await element.updateComplete;
+
+		(<any>element)._sideboxData = sidebox(["One", "Two"]);
+		element.requestUpdate();
+		await settled();
+	});
+
+	it("renders the application menu", () =>
+	{
+		assert.exists(menu(), "header rendered once egw is complete");
+		assert.includeMembers(labels(), ["One", "Two"]);
+	});
+
+	it("keeps the header and its menu items across re-renders", async() =>
+	{
+		const dropdown = menu();
+		const items = menuItems();
+		assert.isNotEmpty(items);
+
+		for(let i = 0; i < 3; i++)
+		{
+			element.requestUpdate();
+			await element.updateComplete;
+
+			assert.strictEqual(menu(), dropdown, "header must not be replaced while re-rendering");
+			assert.isNull(element.shadowRoot.querySelector(".egw_fw_app__header ~ sl-spinner"), "no fallback in between");
+
+			await settled();
+
+			assert.strictEqual(menu(), dropdown, "header must not be rebuilt");
+			assert.sameOrderedMembers(menuItems(), items, "menu items must not be rebuilt");
+		}
+	});
+
+	it("builds the menu again for new sidebox data", async() =>
+	{
+		const dropdown = menu();
+
+		(<any>element)._sideboxData = sidebox(["One", "Three"]);
+		element.requestUpdate();
+		await settled();
+
+		assert.includeMembers(labels(), ["One", "Three"]);
+		assert.notInclude(labels(), "Two");
+		assert.strictEqual(menu(), dropdown, "only the menu's entries change");
+	});
+});

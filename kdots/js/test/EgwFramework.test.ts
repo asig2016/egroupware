@@ -255,6 +255,43 @@ describe('EgwFramework', () =>
 			assert.isTrue(setSessionItem.calledOnce, "the refused tabs were not written back");
 			assert.deepEqual(Object.keys(JSON.parse(setSessionItem.firstCall.args[2])), ['addressbook-MTI=']);
 		});
+
+		// a new browser tab or window after a login: the session storage is empty, the tabs the user had open
+		// last are in the local storage - without them the server's active tab was unknown and the page stayed empty
+		it('takes the tabs of the last session when this browser tab has none, and its own when it has', async() =>
+		{
+			await element.getEgwComplete();
+			const last = JSON.stringify({'addressbook-MTI=': tab('addressbook-MTI=', 'addressbook')});
+			const own = JSON.stringify({'addressbook-OTk=': tab('addressbook-OTk=', 'addressbook')});
+			const run = (session) =>
+			{
+				const replaced = {getSessionItem: sinon.stub().returns(session), setSessionItem: sinon.stub(),
+					getLocalStorageItem: sinon.stub().returns(last), setLocalStorageItem: sinon.stub(),
+					user: sinon.stub().callsFake(field => field === 'apps' ? {addressbook: {}} : undefined)};
+				const originals = {window: {}, bound: {}};
+				for(const key of Object.keys(replaced))
+				{
+					originals.window[key] = egwStub[key];
+					originals.bound[key] = egw[key];
+				}
+				Object.assign(egwStub, replaced);
+				Object.assign(egw, replaced);
+				(element as any)._tabApps = {};
+				try
+				{
+					(element as any).restoreTabApps();
+				}
+				finally
+				{
+					Object.assign(egwStub, originals.window);
+					Object.assign(egw, originals.bound);
+				}
+				return Object.keys((element as any)._tabApps);
+			};
+			assert.deepEqual(run(null), ['addressbook-MTI='], "a new browser tab did not get the last tabs");
+			assert.deepEqual(run(own), ['addressbook-OTk='], "the tabs of this browser tab did not win");
+			assert.deepEqual(run('{}'), [], "a browser tab that closed its tabs got the last ones back");
+		});
 	});
 
 	describe('openPopup() in same-window mode', () =>

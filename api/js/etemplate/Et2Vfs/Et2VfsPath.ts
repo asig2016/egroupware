@@ -112,6 +112,7 @@ export class Et2VfsPath extends Et2InputWidget(LitElement) implements et2_IDetac
 		super();
 
 		this.handleEditMouseDown = this.handleEditMouseDown.bind(this);
+		this.handleCopyClick = this.handleCopyClick.bind(this);
 		this.handleKeyDown = this.handleKeyDown.bind(this);
 		this.handlePathClick = this.handlePathClick.bind(this);
 	}
@@ -267,6 +268,25 @@ export class Et2VfsPath extends Et2InputWidget(LitElement) implements et2_IDetac
 		event.preventDefault();
 		event.stopPropagation();
 		this.edit();
+	}
+
+	/**
+	 * The copy button: the path to the clipboard, and a message that it is there
+	 *
+	 * Not a breadcrumb click and not a click on the field: either would navigate or start editing.
+	 */
+	protected handleCopyClick(event : MouseEvent)
+	{
+		event.preventDefault();
+		event.stopPropagation();
+		const value = this.value.replace(/\/+$/, "") || "/";
+		Promise.resolve(this.egw().copyTextToClipboard(value, this, event)).then((success) =>
+		{
+			if(success !== false)
+			{
+				this.egw().message(this.egw().lang("'%1' copied to clipboard", value), "success");
+			}
+		});
 	}
 
 	protected handleKeyDown(event : KeyboardEvent)
@@ -513,6 +533,19 @@ export class Et2VfsPath extends Et2InputWidget(LitElement) implements et2_IDetac
                                             e.stopPropagation();
                                             this.handleScroll({deltaY: 20})
                                         }}></sl-icon-button>
+                        ${!this.value ? nothing : html`
+                            <button
+                                    part="copy-button"
+                                    class="vfs-path__copy"
+                                    type="button"
+                                    title=${this.egw().lang("Copy to clipboard")}
+                                    aria-label=${this.egw().lang("Copy to clipboard")}
+                                    @click=${this.handleCopyClick}
+                                    tabindex="-1"
+                            >
+                                <sl-icon name="copy"></sl-icon>
+                            </button>`
+                        }
                         ${!isEditable ? nothing : html`
                             <button
                                     part="edit-button"

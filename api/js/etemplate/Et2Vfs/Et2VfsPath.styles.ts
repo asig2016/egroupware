@@ -55,9 +55,9 @@ export default css`
 		padding-inline: var(--sl-input-spacing-medium);
 	}
 
-	/* Edit button */
+	/* Edit and copy buttons: the copy button is always there, the pencil shows on hover */
 
-	.vfs-path__edit {
+	.vfs-path__edit, .vfs-path__copy {
 		flex-grow: 0;
 		display: inline-flex;
 		visibility: hidden;
@@ -98,7 +98,12 @@ export default css`
 	}
 
 	.form-control-input sl-icon-button[name*="caret"]:last-of-type {
-		right: 2em;
+		/* right of it: the copy button and the pencil, each an icon plus its margin */
+		right: calc(4em + var(--sl-input-spacing-medium));
+	}
+
+	.vfs-path__copy {
+		visibility: visible;
 	}
 
 	:host(:hover) .form-control-input.vfs-path__overflow sl-icon-button[name*="caret"] {
@@ -154,7 +159,7 @@ export default css`
 		padding-bottom: 0;
 	}
 
-	.form-control--medium .vfs-path__edit {
+	.form-control--medium .vfs-path__edit, .form-control--medium .vfs-path__copy {
 		margin-inline-start: var(--sl-input-spacing-medium);
 	}
 

@@ -234,6 +234,11 @@ class Egw extends Egw\Base
 		else	// set the defines for login, in case it's more then just login
 		{
 			$this->define_egw_constants();
+
+			// the installed apps (cached instance-wide), for scripts running as "login" without a
+			// session: the openid app's token endpoint knows its app-* scopes only from them, and
+			// failed exchanging an authorization code or refresh token asking for one
+			$this->applications->read_installed_apps();
 		}
 	}
 

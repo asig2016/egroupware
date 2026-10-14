@@ -33,6 +33,27 @@ class TokenPlaceholderTest extends LoggedInTest
 	private string $path;
 	private $is_root_backup;
 	private array $calls = [];
+	private array $server_backup = [];
+	private ?string $lid_backup = null;
+
+	private function setServer(string $name, $value): void
+	{
+		if (!array_key_exists($name, $this->server_backup))
+		{
+			$this->server_backup[$name] = $GLOBALS['egw_info']['server'][$name] ?? null;
+		}
+		$GLOBALS['egw_info']['server'][$name] = $value;
+	}
+
+	/** the provider's token of the login, as Auth\Openidconnect::idpAccessToken() would give it */
+	private function idpTokens(string $token='eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.idp-signature'): void
+	{
+		Base::$idp_token_provider = function(&$why) use ($token)
+		{
+			$this->calls[] = ['idp'];
+			return $token;
+		};
+	}
 
 	protected function setUp(): void
 	{
@@ -53,6 +74,14 @@ class TokenPlaceholderTest extends LoggedInTest
 	protected function tearDown(): void
 	{
 		Base::$access_token_provider = null;
+		Base::$idp_token_provider = null;
+		foreach ($this->server_backup as $name => $value)
+		{
+			if ($value === null) unset($GLOBALS['egw_info']['server'][$name]);
+			else $GLOBALS['egw_info']['server'][$name] = $value;
+		}
+		$this->server_backup = [];
+		if (isset($this->lid_backup)) $GLOBALS['egw_info']['user']['account_lid'] = $this->lid_backup;
 		@Vfs::umount($this->path);   // a temporary mount may already be gone, see mount()
 		Vfs::$is_root = $this->is_root_backup;
 		parent::tearDown();
@@ -144,5 +173,117 @@ class TokenPlaceholderTest extends LoggedInTest
 		$this->assertSame('webdavs://u:$token@h/p?keep=1', Base::withoutTokenParams('webdavs://u:$token@h/p?oidc_client=dms&keep=1&oidc_scope=app-x'));
 		$this->assertSame('webdavs://u:$token@h/p', Base::withoutTokenParams('webdavs://u:$token@h/p?oidc_client=dms'));
 		$this->assertSame('webdavs://u:p@h/p', Base::withoutTokenParams('webdavs://u:p@h/p'));
+	}
+
+	/* ---------------------------- ?oidc_source=idp: the provider's own token of the SSO login */
+
+	public function testIdpTokenGoesToTheProvider()
+	{
+		$lid = $GLOBALS['egw_info']['user']['account_lid'];
+		$this->setServer('oic_provider', 'https://idp.example.invalid');
+		$this->idpTokens();
+		$this->mount('webdavs://$user:$token@idp.example.invalid/egroupware/webdav.php/home/Team1?oidc_source=idp');
+
+		$this->assertSame('webdavs://'.rawurlencode($lid).':eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.idp-signature@idp.example.invalid/egroupware/webdav.php/home/Team1/x.txt',
+			$this->resolve('/x.txt'));
+		$this->assertSame([['idp']], $this->calls);
+		$this->assertMatchesRegularExpression('/^token minted, valid \d+ minutes$/',
+			Base::accessTokenStatus('webdavs://$user:$token@idp.example.invalid/dav?oidc_source=idp'));
+	}
+
+	/**
+	 * The provider's token is the user's credential ON the provider: another host, port or
+	 * scheme than the configured provider gets nothing - the provider is not even asked
+	 */
+	public function testIdpTokenNeverLeavesForAnotherHost()
+	{
+		$lid = rawurlencode($GLOBALS['egw_info']['user']['account_lid']);
+		$this->setServer('oic_provider', 'https://idp.example.invalid');
+		$this->idpTokens();
+
+		foreach ([
+			'webdavs://$user:$token@other.example.invalid/dav?oidc_source=idp' => "webdavs://$lid:@other.example.invalid/dav/x",
+			'webdavs://$user:$token@idp.example.invalid:8443/dav?oidc_source=idp' => "webdavs://$lid:@idp.example.invalid:8443/dav/x",
+			'webdavs://$user:$token@idp.example.invalid.evil.example/dav?oidc_source=idp' => "webdavs://$lid:@idp.example.invalid.evil.example/dav/x",
+			'webdav://$user:$token@idp.example.invalid/dav?oidc_source=idp' => "webdav://$lid:@idp.example.invalid/dav/x",
+		] as $mount => $expected)
+		{
+			$this->mount($mount);
+			$this->assertSame($expected, $this->resolve('/x'), $mount);
+		}
+		$this->assertSame([], $this->calls, 'the provider\'s token was never asked for');
+		$this->assertStringContainsString('not on the OpenID Connect provider',
+			Base::accessTokenStatus('webdavs://$user:$token@other.example.invalid/dav?oidc_source=idp'));
+
+		// a provider configured without https: no token at all
+		$this->setServer('oic_provider', 'http://idp.example.invalid');
+		$this->mount('webdavs://$user:$token@idp.example.invalid/dav?oidc_source=idp');
+		$this->assertSame("webdavs://$lid:@idp.example.invalid/dav/x", $this->resolve('/x'));
+		$this->assertSame([], $this->calls);
+	}
+
+	public function testNoIdpTokenIsAnEmptyPassword()
+	{
+		$lid = rawurlencode($GLOBALS['egw_info']['user']['account_lid']);
+		$this->setServer('oic_provider', 'https://idp.example.invalid');
+		Base::$idp_token_provider = function(&$why)
+		{
+			$why = 'no token of the OpenID Connect provider in this session (log in through the provider)';
+			return '';
+		};
+		$this->mount('webdavs://$user:$token@idp.example.invalid/dav?oidc_source=idp');
+		$this->assertSame("webdavs://$lid:@idp.example.invalid/dav/x", $this->resolve('/x'));
+		$this->assertStringContainsString('log in through the provider',
+			Base::accessTokenStatus('webdavs://$user:$token@idp.example.invalid/dav?oidc_source=idp'));
+	}
+
+	/* -------------------------------- the filled-in url keeps the token with the mount's host */
+
+	/**
+	 * An account name with "@", ":" or "/" must not move the host the token goes to: $user is
+	 * encoded for a token mount
+	 */
+	public function testAccountNameCannotMoveTheHost()
+	{
+		$this->lid_backup = $GLOBALS['egw_info']['user']['account_lid'];
+		$GLOBALS['egw_info']['user']['account_lid'] = 'x@evil.example.invalid:1/?';
+		$this->mount('webdavs://$user:$token@dav.example.invalid/dav?oidc_client=dms');
+
+		$url = $this->resolve('/x');
+		$this->assertSame('dav.example.invalid', parse_url($url, PHP_URL_HOST));
+		$this->assertStringStartsWith('webdavs://x%40evil.example.invalid%3A1%2F%3F:eyJhbGciOiJSUzI1NiJ9.', $url);
+	}
+
+	/**
+	 * A fallback-auth parameter in the path names the user of a $pass mount when the session
+	 * has no password (an SSO login) - never the user of a token mount
+	 */
+	public function testFallbackAuthDoesNotNameTheTokenUser()
+	{
+		$lid = rawurlencode($GLOBALS['egw_info']['user']['account_lid']);
+		$this->setServer('oic_provider', 'https://idp.example.invalid');
+		$this->idpTokens();
+		$this->mount('webdavs://$user:$token@idp.example.invalid/dav?oidc_source=idp');
+
+		$url = $this->resolve('/x?fallback-auth='.base64_encode('a@evil.example.invalid/:pw'));
+		$this->assertSame('idp.example.invalid', parse_url($url, PHP_URL_HOST));
+		$this->assertStringStartsWith("webdavs://$lid:eyJhbGciOiJSUzI1NiJ9.", $url);
+	}
+
+	/**
+	 * A placeholder in the host part ($host is the EGroupware domain) fills in another host than
+	 * the token was given for: the token is dropped
+	 */
+	public function testTokenIsDroppedWhenTheHostIsFilledIn()
+	{
+		$this->mount('webdavs://$user:$token@$host/dav?oidc_client=dms');
+		$url = $this->resolve('/x');
+		$this->assertStringNotContainsString('eyJhbGciOiJSUzI1NiJ9', $url);
+		$this->assertStringContainsString(':@', $url);
+	}
+
+	public function testSourceParameterIsStripped()
+	{
+		$this->assertSame('webdavs://u:$token@h/p?keep=1', Base::withoutTokenParams('webdavs://u:$token@h/p?oidc_source=idp&keep=1'));
 	}
 }

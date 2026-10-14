@@ -553,6 +553,11 @@
         </select>
       </td>
    </tr>
+   <tr class="row_on">
+      <td>{lang_Additional_scopes_requested_at_login}:<br/>
+        {lang_e.g._app-filemanager:_lets_this_installation_mount_the_IdP's_WebDAV_as_each_user}</td>
+      <td><input name="newsettings[oic_login_scopes]" value="{value_oic_login_scopes}" size="40" placeholder="app-filemanager"/></td>
+   </tr>
 
    <tr class="row_off">
     <td colspan="2">&nbsp;</td>

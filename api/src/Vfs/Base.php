@@ -360,18 +360,32 @@ class Base
 					// client the mount names, see accessTokenFor() - minted only now, per request.
 					// %24token is the same placeholder url-encoded, as a mount form may store it
 					$url = str_replace('%24token', '$token', $url);
+					$user = $parts['user'];
 					if (strpos($url, '$token') !== false)
 					{
+						$token_template = $url;
 						$parts['token'] = self::accessTokenFor($url);
 						$url = self::withoutTokenParams($url);
+						// the token names the user: the account itself, never a name from a
+						// fallback-auth parameter of the path, and encoded - an "@", ":" or "/" in
+						// it must not move the host the token is sent to
+						$user = rawurlencode($GLOBALS['egw_info']['user']['account_lid'] ?? '');
 					}
 					$url = strtr($url, [
-						'$user' => $parts['user'],
+						'$user' => $user,
 						'$pass' => $parts['pass'],
 						'$host' => $parts['host'],
 						'$home' => $parts['home'],
 						'$token' => $parts['token'] ?? '',
 					]);
+					// the token goes where the mount says and nowhere else: same scheme, host and
+					// port as the mount url before the placeholders were filled in, and in the
+					// password part of the url, where the WebDAV client takes it from
+					if (!empty($parts['token']) && !self::tokenStaysWithHost($token_template, $url, $parts['token']))
+					{
+						self::tokenLog('the url would send the token elsewhere, no token for '.self::maskUrl($url));
+						$url = str_replace($parts['token'], '', $url);
+					}
 				}
 				if (isset($parts['query']))
 				{
@@ -532,6 +546,20 @@ class Base
 	/** query parameters of a mount url with $token: the client to mint for and the app scopes */
 	const TOKEN_PARAM_CLIENT = 'oidc_client';
 	const TOKEN_PARAM_SCOPE = 'oidc_scope';
+	/**
+	 * query parameter "?oidc_source=idp": the mount is on our OpenID Connect PROVIDER, the token
+	 * is the provider's own of the user's SSO login (Auth\Openidconnect::idpAccessToken())
+	 */
+	const TOKEN_PARAM_SOURCE = 'oidc_source';
+	const TOKEN_SOURCE_IDP = 'idp';
+
+	/**
+	 * Gives the provider's token of the login: function(?string &$why): string - null =
+	 * Auth\Openidconnect::idpAccessToken(); set by tests
+	 *
+	 * @var ?callable
+	 */
+	public static $idp_token_provider = null;
 	/** scopes minted when the mount names none */
 	const TOKEN_DEFAULT_SCOPES = ['app-filemanager'];
 	/** a token is reused while it lives at least this long (seconds) */
@@ -598,6 +626,10 @@ class Base
 		parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
 		// a trailing slash after the query ("...?oidc_scope=app-filemanager/") is a habit from
 		// urls that end in one, not part of the value
+		if (trim((string)($query[self::TOKEN_PARAM_SOURCE] ?? ''), " /") === self::TOKEN_SOURCE_IDP)
+		{
+			return self::idpTokenFor($url);
+		}
 		$client = trim((string)($query[self::TOKEN_PARAM_CLIENT] ?? ''), " /");
 		if ($client === '')
 		{
@@ -629,6 +661,69 @@ class Base
 		$tokens[$cache_key] = ['jwt' => $jwt, 'exp' => (int)($payload['exp'] ?? 0)];
 		Api\Cache::setSession(__CLASS__, self::TOKEN_CACHE, $tokens);
 		return $jwt;
+	}
+
+	/**
+	 * The token of a mount on our OpenID Connect provider ("?oidc_source=idp")
+	 *
+	 * The other way round than the minted tokens: this installation logs its users in through
+	 * the provider, and the provider's openid app accepts its own access tokens as Bearer token.
+	 * The token is the user's credential ON the provider, so it goes to the provider only: the
+	 * mount's scheme, host and port must be the configured provider's (https), whatever else
+	 * the url says.
+	 *
+	 * @param string $url the mount url (encrypted scheme and user session checked already)
+	 * @return string the access token, '' if none
+	 */
+	protected static function idpTokenFor(string $url): string
+	{
+		$provider = (string)($GLOBALS['egw_info']['server']['oic_provider'] ?? '');
+		if ($provider === '' || strtolower((string)parse_url($provider, PHP_URL_SCHEME)) !== 'https' ||
+			self::origin($url) !== self::origin($provider))
+		{
+			self::tokenLog("the mount is not on the OpenID Connect provider".($provider !== '' ? " ($provider)" : '').", no token for ".self::maskUrl($url));
+			return '';
+		}
+		$why = null;
+		$token = (string)(self::$idp_token_provider ?? [Api\Auth\Openidconnect::class, 'idpAccessToken'])($why);
+		if ($token === '')
+		{
+			self::tokenLog($why ?: 'no token of the OpenID Connect provider');
+		}
+		return $token;
+	}
+
+	/**
+	 * Host and port a url talks to, https and webdavs counted as the same: "host:port"
+	 *
+	 * @return string '' for a url without host
+	 */
+	protected static function origin(string $url): string
+	{
+		if (!($host = parse_url($url, PHP_URL_HOST)))
+		{
+			return '';
+		}
+		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+		$port = parse_url($url, PHP_URL_PORT) ?: (in_array($scheme, ['https', 'webdavs'], true) ? 443 : 80);
+		return rtrim(strtolower($host), '.').':'.$port;
+	}
+
+	/**
+	 * Does the filled-in url still send the token to the mount's host, as its password?
+	 *
+	 * The placeholders ($user, $home, the query of the path) are filled in after the token was
+	 * given for the mount url; any of them could move the host, and with it the token.
+	 *
+	 * @param string $template the mount url with the placeholders
+	 * @param string $url the filled-in url
+	 * @param string $token
+	 */
+	protected static function tokenStaysWithHost(string $template, string $url, string $token): bool
+	{
+		return ($origin = self::origin($template)) !== '' && $origin === self::origin($url) &&
+			strtolower((string)parse_url($template, PHP_URL_SCHEME)) === strtolower((string)parse_url($url, PHP_URL_SCHEME)) &&
+			parse_url($url, PHP_URL_PASS) === $token && substr_count($url, $token) === 1;
 	}
 
 	/**
@@ -709,7 +804,7 @@ class Base
 			return $url;
 		}
 		parse_str($query, $params);
-		unset($params[self::TOKEN_PARAM_CLIENT], $params[self::TOKEN_PARAM_SCOPE]);
+		unset($params[self::TOKEN_PARAM_CLIENT], $params[self::TOKEN_PARAM_SCOPE], $params[self::TOKEN_PARAM_SOURCE]);
 		$rest = http_build_query($params);
 		return str_replace('?'.$query, $rest !== '' ? '?'.$rest : '', $url);
 	}

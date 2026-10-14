@@ -859,3 +859,5 @@ webdav accepts an access token the idp issued for this client as bearer token - 
 access tokens open	setup	de	Access-Tokens öffnen
 webdav only	setup	de	Nur WebDAV
 webdav, caldav, carddav and the rest api (a token still opens only the apps of its scopes)	setup	de	WebDAV, CalDAV, CardDAV und die REST-API (ein Token öffnet weiterhin nur die Apps seiner Scopes)
+additional scopes requested at login	setup	de	Zusätzlich bei der Anmeldung angeforderte Scopes
+e.g. app-filemanager: lets this installation mount the idp's webdav as each user	setup	de	z.B. app-filemanager: erlaubt dieser Installation, das WebDAV des IdP als jeweiliger Benutzer einzubinden

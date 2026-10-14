@@ -101,6 +101,57 @@ bypasses it; the trust is the same.
 3. Every user logs into the other side through the browser once (that is the refresh token the
    minting requires); from then on the mounted folder shows them their own files over there.
 
+## The other direction: mounting the provider (`?oidc_source=idp`)
+
+The installation that logs its users in THROUGH the provider mounts the provider's WebDAV, each
+user as themselves. Nothing is minted here: the provider's `openid` app already accepts its own
+access tokens as Bearer token (stock, `Header\Authenticate`, the `Token::validate()` branch),
+so the token of the user's SSO login is kept and sent.
+
+```
+webdavs://$user:$token@idp.example.org/egroupware/webdav.php/home/Team1/Upload?oidc_source=idp
+```
+
+- **Login** (`Auth\Openidconnect::login()` → `keepIdpTokens()`): setup > OpenID Connect >
+  "Additional scopes requested at login" (`oic_login_scopes`, e.g. `app-filemanager`) is added to
+  the login's scopes; only when it is set, the provider's access and refresh token are kept in
+  the session (`IDP_TOKENS`), the refresh token encrypted like the session password
+  (`Mail\Credentials`, system key). A scope the provider does not allow the client is silently
+  not granted (`ScopeRepository::finalizeScopes()`), the login never fails over it.
+- **Mount** (`Vfs\Base::idpTokenFor()` → `Openidconnect::idpAccessToken()`): the access token,
+  refreshed when it lives less than 6 minutes (the provider wants 5 left, `PT5M`); the provider
+  rotates the refresh token, the new one is kept. A refused refresh, or an expired token without
+  a refresh token, drops the tokens: the user logs in through the provider again.
+
+| rule | where | why |
+|---|---|---|
+| the mount's host and port are the configured `oic_provider`'s, which must be https | `idpTokenFor()` | the token is the user's credential ON the provider, it must never reach another host |
+| kept tokens are bound to the account AND a hash of the session id | `idpAccessToken()` | `needSession()` keeps the app-session through a logout, and the next login in the browser keeps `$_SESSION` (`session_regenerate_id()`): without the binding the next user's mount would act as the previous user |
+| `logout()` drops them; a binding mismatch drops them | same | |
+| only kept when `oic_login_scopes` is set | `keepIdpTokens()` | no lasting credential stored that nothing uses |
+
+**Both directions - the filled-in url** (`resolve_url()`, `tokenStaysWithHost()`): `$user` of a
+token mount is the account name, url-encoded, and never a name from a `fallback-auth=` parameter
+of the path (which names the user of a `$pass` mount when the session has no password, i.e.
+every SSO login); after the placeholders are filled in, the scheme, host and port must still be
+the mount url's and the token the url's password - else the token is dropped. An `@`, `:` or `/`
+in a filled-in value would otherwise move the host the token is sent to. A placeholder in the
+host part (`$host`) therefore gets no token.
+
+**On the provider** (no code there): its client for this installation lists exactly
+`openid, email, profile, app-filemanager` as scopes - the provider limits a session to ALL
+`app-*` scopes of the client, not the token's (`Authenticate.php`), and a non-empty list filters
+every other scope - and allows the `refresh_token` grant (or no grant list). Short lifetimes on
+that client: access 15 minutes, refresh at most the session lifetime here. There is no
+revocation endpoint; a user or admin revokes on the provider in the openid app's token list
+(access and refresh token together). Users see the provider's approval page for the new scope
+once.
+
+Tests: `api/tests/Vfs/TokenPlaceholderTest.php` (provider only, other host/port/scheme, no token,
+account name and fallback-auth cannot move the host, `$host` drops the token),
+`api/tests/Auth/OpenidconnectIdpTokenTest.php` (binding to session and account, logout, refresh
+and rotation, refused refresh, encrypted refresh token, scope parsing).
+
 Not covered: a third installation that only logs in via the provider cannot mount the other side this way -
 its login token has its own client id as audience, and the `openid` app has no token exchange.
 The accepting path is tested end to end with a locally signed token and the vendor client

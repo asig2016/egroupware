@@ -38,8 +38,9 @@ class Openidconnect implements BackendSSO
 				$GLOBALS['egw_info']['server']['oic_client_id'],
 				$GLOBALS['egw_info']['server']['oic_client_secret']);
 
-		// add scopes we are processing ('openid' is added automatic)
-		$this->client->addScope(['email', 'profile']);
+		// add scopes we are processing ('openid' is added automatic), plus the ones setup asks
+		// for additionally, e.g. app-filemanager for $token mounts on the provider (idpAccessToken())
+		$this->client->addScope(array_merge(['email', 'profile'], self::loginScopes()));
 	}
 
 	/**
@@ -130,6 +131,10 @@ class Openidconnect implements BackendSSO
 					($GLOBALS['egw']->session->reason ?? $reason));
 				$_GET['cd'] = is_numeric($reason) ? (int)$reason : lang('Login rejected, please contact your administrator');
 			}
+			else
+			{
+				$this->keepIdpTokens();
+			}
 			return $sessionid;
 		}
 		catch(\Exception $e) {
@@ -180,6 +185,154 @@ class Openidconnect implements BackendSSO
 			$account_lid = preg_replace($GLOBALS['egw_info']['server']['oic_username_preg'], '$1', $account_lid);
 		}
 		return $account_lid;
+	}
+
+	/* ------------------------------- the provider's tokens of the SSO login, for $token mounts on it */
+
+	/** setup: scopes requested additionally at the login, comma- or space-separated (e.g. app-filemanager) */
+	const CONFIG_LOGIN_SCOPES = 'oic_login_scopes';
+	/** session cache location of the provider's tokens of the login */
+	const IDP_TOKENS = 'idp-tokens';
+	/** an access token is refreshed when it lives less than this (seconds): the provider's
+	 * openid app wants 5 minutes left (Token::validate($jwt, "PT5M")) */
+	const IDP_TOKEN_MIN_LIFETIME = 360;
+
+	/**
+	 * The scopes setup asks for additionally at the login
+	 *
+	 * Scope names only: whatever else is in the setting is dropped. A scope the provider does
+	 * not allow its client is silently not granted - the login itself never fails over it.
+	 *
+	 * @return string[]
+	 */
+	public static function loginScopes(): array
+	{
+		return array_values(array_filter(preg_split('/[\s,]+/', (string)($GLOBALS['egw_info']['server'][self::CONFIG_LOGIN_SCOPES] ?? ''), -1, PREG_SPLIT_NO_EMPTY),
+			fn($scope) => (bool)preg_match('/^[a-z0-9_:.-]+$/i', $scope)));
+	}
+
+	/**
+	 * Keep the provider's access and refresh token of a successful login for the session
+	 *
+	 * Only when setup asks for additional scopes: without them the tokens open nothing on the
+	 * provider and are not kept. Bound to the account AND the session id: the session data
+	 * outlives a logout here (needSession() keeps the app-session) and a new login keeps it too
+	 * (session_regenerate_id()), but with a new id - so the next user of the browser can never
+	 * use them (idpAccessToken()). The refresh token is a lasting credential on the provider:
+	 * encrypted like the session password.
+	 */
+	protected function keepIdpTokens(): void
+	{
+		self::forgetIdpTokens();
+		if (!self::loginScopes() || !($access = (string)$this->client->getAccessToken()))
+		{
+			return;
+		}
+		self::storeIdpTokens($access, (string)$this->client->getRefreshToken(), (string)$this->client->getVerifiedClaims('sub'));
+	}
+
+	/**
+	 * Store the provider's tokens for the current session and account
+	 *
+	 * @param string $access access token (a JWT for an EGroupware provider)
+	 * @param string $refresh refresh token, '' if none
+	 * @param string $sub the provider's name of the user
+	 */
+	protected static function storeIdpTokens(string $access, string $refresh, string $sub): void
+	{
+		$pw_enc = null;
+		$encrypted = $refresh !== '' ? Api\Mail\Credentials::encrypt($refresh, $GLOBALS['egw_info']['user']['account_id'], $pw_enc, true) : '';
+		Api\Cache::setSession(__CLASS__, self::IDP_TOKENS, [
+			'access'     => $access,
+			'exp'        => self::tokenExpiry($access),
+			'refresh'    => $encrypted,
+			'pw_enc'     => $pw_enc,
+			'sub'        => $sub,
+			'account_id' => (int)$GLOBALS['egw_info']['user']['account_id'],
+			'session'    => self::sessionBinding(),
+		]);
+	}
+
+	/**
+	 * Drop the provider's tokens of this session (logout, a binding mismatch, a refused refresh)
+	 */
+	public static function forgetIdpTokens(): void
+	{
+		Api\Cache::unsetSession(__CLASS__, self::IDP_TOKENS);
+	}
+
+	/**
+	 * What binds the kept tokens to this session: a hash of the session id
+	 */
+	protected static function sessionBinding(): string
+	{
+		return sha1('idp-tokens:'.($GLOBALS['egw']->session->sessionid ?? ''));
+	}
+
+	/**
+	 * Expiry of a JWT access token, 0 if it is none
+	 */
+	protected static function tokenExpiry(string $jwt): int
+	{
+		$payload = json_decode(base64_decode(strtr(explode('.', $jwt)[1] ?? '', '-_', '+/')) ?: '', true);
+		return (int)($payload['exp'] ?? 0);
+	}
+
+	/**
+	 * The provider's access token of the current user's SSO login, refreshed when needed
+	 *
+	 * For a $token mount on the provider itself (Vfs\Base, "?oidc_source=idp"): the provider's
+	 * openid app accepts its own access tokens as Bearer token. Nothing unless the user logged in
+	 * through the provider in THIS session, as THIS account. The refresh token rotates: the new
+	 * one is kept. A refused refresh drops the tokens - the user logs in through the provider
+	 * again.
+	 *
+	 * @param ?string &$why on '': the reason
+	 * @return string the access token, '' if there is none
+	 */
+	public static function idpAccessToken(?string &$why=null): string
+	{
+		$why = null;
+		$tokens = Api\Cache::getSession(__CLASS__, self::IDP_TOKENS);
+		if (empty($tokens['access']))
+		{
+			$why = 'no token of the OpenID Connect provider in this session (log in through the provider)';
+			return '';
+		}
+		if ((int)$tokens['account_id'] !== (int)($GLOBALS['egw_info']['user']['account_id'] ?? 0) ||
+			!hash_equals((string)$tokens['session'], self::sessionBinding()))
+		{
+			self::forgetIdpTokens();
+			$why = 'the token of the OpenID Connect provider belongs to another login, dropped';
+			return '';
+		}
+		if ((int)$tokens['exp'] - time() >= self::IDP_TOKEN_MIN_LIFETIME)
+		{
+			return $tokens['access'];
+		}
+		if (empty($tokens['refresh']) ||
+			($refresh = Api\Mail\Credentials::decrypt(['cred_password' => $tokens['refresh'], 'cred_pw_enc' => $tokens['pw_enc'],
+				'account_id' => $tokens['account_id']])) === '' || $refresh === Api\Mail\Credentials::UNAVAILABLE)
+		{
+			self::forgetIdpTokens();
+			$why = 'the token of the OpenID Connect provider expired and there is no refresh token (log in through the provider again)';
+			return '';
+		}
+		try {
+			$response = (new static())->client->refreshToken($refresh);
+		}
+		catch (\Throwable $e) {
+			$response = (object)['error' => $e->getMessage()];
+		}
+		if (empty($response->access_token))
+		{
+			self::forgetIdpTokens();
+			$why = 'the OpenID Connect provider refused to refresh the token ('.substr((string)($response->error ?? 'no access token'), 0, 100).')';
+			Api\Auth::log(__METHOD__."() account #$tokens[account_id]: $why");
+			return '';
+		}
+		self::storeIdpTokens($response->access_token, (string)($response->refresh_token ?? $refresh), (string)$tokens['sub']);
+		return $response->access_token;
 	}
 
 	/* -------------------------------------------- access tokens of the provider as Bearer token */
@@ -539,6 +692,7 @@ class Openidconnect implements BackendSSO
 	 */
 	function logout()
 	{
+		self::forgetIdpTokens();
 		$this->client->signOut($this->client->getIdToken(), null);
 	}
 

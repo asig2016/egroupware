@@ -1156,11 +1156,10 @@ export class filemanagerAPP extends EgwApp
 	 */
 	change_dir(_dir, widget?)
 	{
-		let etemplate_name;
-		for(etemplate_name in this.path_widget) break;
-		// no widget (a link opening the app): the app's own list, not the first other list that registered
-		if(!widget && this.path_widget['filemanager-index']) etemplate_name = 'filemanager-index';
-		if (widget) etemplate_name = widget.getInstanceManager().uniqueId;
+		// no widget (a link opening the app): only the app's own list. Before the filemanager tab has
+		// loaded, the only lists are those of other apps (an entry's Files tab): changing one of them
+		// made linkHandler() report the link as handled and the new tab never loaded anything
+		let etemplate_name = widget ? widget.getInstanceManager().uniqueId : 'filemanager-index';
 
 		// Make sure everything is in place for changing directory
 		if(!this.et2 || typeof etemplate_name !== 'string' ||

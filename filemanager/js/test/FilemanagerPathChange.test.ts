@@ -100,4 +100,16 @@ describe('filemanagerAPP: a new folder goes to the list of its own path widget',
 		assert.equal(own.path.getValue(), '/apps/acilog/1/IC');
 		assert.equal(other.path.getValue(), '/old');
 	});
+
+	it('linkHandler() leaves the link to the tab while the filemanager list is not loaded yet', () =>
+	{
+		const other = template('acilog-edit_appbox');
+		const app = Object.create(filemanagerAppClass.prototype);
+		app.et2 = other.container;
+		app.path_widget = {'acilog-edit_appbox': other.path};
+
+		assert.notOk(app.linkHandler('/egroupware/index.php?menuaction=filemanager.filemanager_ui.index&ajax=true&path=/apps/acilog/1/IC'),
+			'not handled, so the tab loads the filemanager');
+		assert.equal(other.path.getValue(), '/old', 'the Files tab keeps its folder');
+	});
 });

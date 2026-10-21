@@ -334,7 +334,8 @@ switch($GLOBALS['egw_info']['setup']['stage']['db'])
 								move_uploaded_file($_FILES['uploaded']['tmp_name'],$_FILES['uploaded']['tmp_name'].$ext);
 								$_FILES['uploaded']['tmp_name'] .= $ext;
 							}
-							if (is_resource($f = $db_backup->fopen_backup($_FILES['uploaded']['tmp_name'],true)))
+							// the uploaded file itself: an empty database has no backup-dir to look into
+							if (is_resource($f = $db_backup->fopen_backup_path($_FILES['uploaded']['tmp_name'],true)))
 							{
 								echo '<p align="center">'.lang('restore started, this might take a few minutes ...')."</p>\n".str_repeat(' ',4096);
 								$db_backup->restore($f,$_POST['convert_charset'],$_FILES['uploaded']['tmp_name'],false);

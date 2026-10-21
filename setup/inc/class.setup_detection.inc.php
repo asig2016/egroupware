@@ -190,6 +190,16 @@ class setup_detection
 						{
 							$currentver = '0.9.14.508';
 						}
+						// a version of four parts ("0.0.0.134") is the least version needed: the major below is only three
+						// parts, and an app numbering its versions 0.0.0.N could not ask for a later one of another
+						if (substr_count($depsvalue, '.') >= 3)
+						{
+							if ($currentver !== '' && version_compare($currentver, $depsvalue, '>='))
+							{
+								$setup_info['depends'][$depkey]['status'] = True;
+							}
+							continue;
+						}
 						$major = $GLOBALS['egw_setup']->get_major($currentver);
 						if ($major >= $depsvalue || $major == $depsvalue && substr($major,0,strlen($depsvalue)+1) == $depsvalue.'.')
 						{

@@ -80,7 +80,7 @@ class setup_cmd_install extends setup_cmd
 		{
 			$db_backup = new Api\Db\Backup();
 
-			if (!is_resource($f = $db_backup->fopen_backup($this->backup,true)))
+			if (!is_resource($f = $db_backup->fopen_backup_path($this->backup,true)))	// a path given to setup-cli.php
 			{
 				throw new Api\Exception\WrongUserinput(lang('Restore failed').' ('.$f.')',31);
 			}

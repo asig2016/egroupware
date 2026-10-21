@@ -185,6 +185,37 @@ class Backup
 	}
 
 	/**
+	 * fopen_backup_path() is opening a full path: fopen_backup() uses an absolute name as it is
+	 *
+	 * @var bool
+	 */
+	private $full_path = false;
+
+	/**
+	 * Opens a backup by a full path the caller vouches for, outside the backup-dir
+	 *
+	 * The uploaded file of setup's install from a backup (an empty database has no backup-dir), a path given to
+	 * setup-cli.php. A relative name stays in the backup-dir, as with fopen_backup(). Its own method, not a parameter of
+	 * fopen_backup(): subclasses (Stylite's S3 backup) override that one with its signature.
+	 *
+	 * @param ?string $path full path, or null/'' for the default name in the backup-dir
+	 * @param bool $reading =false opening for reading ('rb') or writing ('wb')
+	 * @param bool $un_compress true: opening file with (un)compression wrapper, false: opening as it is
+	 * @return resource file-handle
+	 * @throws \Exception on error
+	 */
+	public function fopen_backup_path(?string $path, bool $reading=false, bool $un_compress=true)
+	{
+		$this->full_path = true;
+		try {
+			return $this->fopen_backup($path ?: null, $reading, $un_compress);
+		}
+		finally {
+			$this->full_path = false;
+		}
+	}
+
+	/**
 	 * Opens the backup-file using the highest available compression
 	 *
 	 * @param ?string $name =null filename relative to backup-dir to use, or null for the default one
@@ -195,7 +226,7 @@ class Backup
 	 */
 	public function fopen_backup(?string $name=null, bool $reading=false, bool $un_compress=true)
 	{
-		if ($name)
+		if ($name && !($this->full_path && $name[0] === '/'))
 		{
 			$name = $this->backup_dir.'/'.basename($name);
 		}

@@ -254,7 +254,7 @@ function do_backup($arg,$quite_check=false)
 		else
 		{
 			$db_backup = new Api\Db\Backup();
-			if (is_resource($f = $db_backup->fopen_backup($backup)))
+			if (is_resource($f = $db_backup->fopen_backup_path($backup)))	// a path given on the command line
 			{
 				echo lang('Backup started, this might take a few minutes ...')."\n";
 				$db_backup->backup($f, null, true);  // true: skip (configured) files backup

@@ -2211,7 +2211,8 @@ class Db
 		$sql = "SELECT $cols FROM $table $join";
 
 		// if we have a where clause, we need to add it together with the WHERE statement, if thats not in the join
-		if ($where) $sql .= (strpos($join,"WHERE")!==false) ? ' AND ('.$where.')' : ' WHERE '.$where;
+		// (an empty array imploded is an empty Db\SqlFragment: an object, so true, but no condition)
+		if ((string)$where !== '') $sql .= (strpos($join,"WHERE")!==false) ? ' AND ('.$where.')' : ' WHERE '.$where;
 
 		if ($append) $sql .= ' '.$append;
 

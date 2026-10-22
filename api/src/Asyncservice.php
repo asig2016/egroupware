@@ -429,6 +429,9 @@ class Asyncservice
 
 		if (($jobs = $this->read()))
 		{
+			// the fallback runs inside a visitor's request: the jobs must neither see nor change its session-cache
+			$session = $_SESSION ?? null;
+
 			foreach($jobs as $job)
 			{
 				// checking / setting up egw_info/user
@@ -441,6 +444,12 @@ class Asyncservice
 					foreach($GLOBALS as $name => $value)
 					{
 						if ($name !== 'egw' && is_object($value)) unset($GLOBALS[$name]);
+					}
+					// same for the session-cache and the sub-objects created on demand by $GLOBALS['egw'] (eg. categories)
+					$_SESSION = [];
+					foreach(array_diff_key(get_object_vars($GLOBALS['egw']), get_class_vars(get_class($GLOBALS['egw']))) as $name => $value)
+					{
+						if (is_object($value)) unset($GLOBALS['egw']->$name);
 					}
 					$domain = $GLOBALS['egw_info']['user']['domain'];
 					$lang   = $GLOBALS['egw_info']['user']['preferences']['common']['lang'];
@@ -471,6 +480,8 @@ class Asyncservice
 					{
 						$GLOBALS['egw_info']['user']['domain'] = $domain;
 					}
+					// Link's title- and file-access-caches and its bo-objects belong to the previous user
+					Link::init_static(true);
 				}
 				list($app) = strpos($job['method'],'::') !== false ? explode('_',$job['method']) :
 					explode('.',$job['method']);
@@ -528,6 +539,7 @@ class Asyncservice
 					_egw_log_exception($e);
 				}
 			}
+			$_SESSION = $session ?? [];
 		}
 		$this->last_check_run(True,True,$run_by);	// release semaphore
 

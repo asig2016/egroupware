@@ -39,6 +39,10 @@ class Asyncservice
 	 * Line in crontab set by constructor with absolute path
 	 */
 	var $cronline = '/api/asyncservices.php default';
+	/**
+	 * Where installed() reads the crontab of the webserver's user, if it may not run a shell (disable_functions)
+	 */
+	public $crontab_dirs = ['/etc/crontabs/', '/var/spool/cron/crontabs/'];
 
 	/**
 	 * Time to keep expired jobs marked as  "keep", until they got finally deleted
@@ -763,7 +767,19 @@ class Asyncservice
 		}
 		$times = False;
 		$other_cronlines = array();
-		if (function_exists('popen') && ($crontab = popen('/bin/sh -c "'.$this->crontab.' -l" 2>&1','r')) !== False)
+		if (function_exists('popen'))
+		{
+			$crontab = popen('/bin/sh -c "'.$this->crontab.' -l" 2>&1','r');
+		}
+		// the webserver may not run a shell (disable_functions): read the crontab of its user, if it may
+		elseif (function_exists('posix_geteuid') && ($user = posix_getpwuid(posix_geteuid())['name'] ?? null))
+		{
+			foreach($this->crontab_dirs as $dir)
+			{
+				if (is_readable($dir.$user) && ($crontab = fopen($dir.$user, 'r'))) break;
+			}
+		}
+		if (!empty($crontab))
 		{
 			$n = 0;
 			while ($line = fgets($crontab,256))
@@ -795,7 +811,7 @@ class Asyncservice
 					$other_cronlines[] = $line;
 				}
 			}
-			@pclose($crontab);
+			function_exists('popen') ? @pclose($crontab) : fclose($crontab);
 		}
 		return $times;
 	}

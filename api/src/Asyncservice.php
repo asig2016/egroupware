@@ -362,6 +362,25 @@ class Asyncservice
 	}
 
 	/**
+	 * Lift PHP's execution time limit for the jobs about to run - in a way that works when it is already 0
+	 *
+	 * A plain set_time_limit(0) is NOT enough in a FastCGI pool whose max_execution_time is already 0
+	 * (the usual configuration of a pool dedicated to the async service): PHP arms a CPU timer of
+	 * max_input_time (60 s by default) when the request starts, and with max_execution_time=0 nothing
+	 * ever disarms it - zend_set_timeout(0) skips setitimer(), and zend_unset_timeout() only disarms
+	 * when the recorded limit is non-zero. So after 60 CPU seconds every long job died with
+	 * "Maximum execution time of 0 seconds exceeded" (seen 2026-10-23 with a 10 000-document import,
+	 * on PHP 8.5 NTS/Linux; the plain CLI is not affected, it arms no input timer). Arming a real
+	 * limit first makes the following set_time_limit(0) disarm whatever timer is pending. Harmless
+	 * where the limit was non-zero to begin with, and in the CLI.
+	 */
+	public static function liftTimeLimit() : void
+	{
+		@set_time_limit(86400);
+		@set_time_limit(0);
+	}
+
+	/**
 	 * checks when the last check_run was run or set the run-semaphore (async_next != 0) if $semaphore == True
 	 *
 	 * @param boolean $semaphore if False only check, if true try to set/release the semaphore
@@ -391,7 +410,7 @@ class Asyncservice
 		}
 		else
 		{
-			@set_time_limit(0);		// dont stop for an execution-time-limit
+			self::liftTimeLimit();	// dont stop for an execution-time-limit
 			ignore_user_abort(True);
 
 			$last_run = array(

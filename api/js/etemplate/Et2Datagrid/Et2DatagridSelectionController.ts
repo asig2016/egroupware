@@ -581,6 +581,7 @@ export class Et2DatagridSelectionController
 	 * Focus is on a control that is neither the grid nor the page background.
 	 *
 	 * Looks through shadow roots, as document.activeElement only reports the outermost host.
+	 * Page background also covers focus that is between two controls, see focusIsOnOtherControl().
 	 */
 	protected focusIsOutsideGrid() : boolean
 	{
@@ -591,9 +592,60 @@ export class Et2DatagridSelectionController
 		}
 		if(!active || active === document.body || active.tagName.toLowerCase() === "egw-app")
 		{
-			return false;
+			return this.focusIsOnOtherControl();
 		}
 		return active !== this.host && !this.host.shadowRoot?.contains(active) && !this.host.contains(active);
+	}
+
+	/**
+	 * The user put focus on a control outside the grid, and that control is still on the page.
+	 *
+	 * Taking focus back to the active row is for focus the grid lost itself: a re-render
+	 * replaces the focused row element, and focus falls to <body>.  But <body> is also what
+	 * document.activeElement reports while the browser moves focus from one control to the
+	 * next (Tab, a click): the blur handlers of the control being left run before the next
+	 * one is focused.  A blur handler that changes a filter - an input that commits its
+	 * value when it is left, like et2-date's flatpickr - makes the nextmatch reload right
+	 * there, the guard sees <body>, focuses the row, and the browser drops the move to the
+	 * next control.  In a filter panel, Tab from one date field to the next landed on the
+	 * list whenever the list had an active row.
+	 *
+	 * So the grid remembers the last control outside itself that received focus.  While
+	 * that control is still connected, focus counts as the user's, wherever it is right
+	 * now.  Once it is gone (a closed dialog) focus has nowhere else to be and the grid
+	 * takes it back as before.  Focus landing on the page background or the application
+	 * frame forgets it: that is the user leaving the control, as before.
+	 */
+	focusIsOnOtherControl() : boolean
+	{
+		return !!this._otherControl?.isConnected;
+	}
+
+	/** The control outside the grid that last received focus, see focusIsOnOtherControl() */
+	private _otherControl : Element | null = null;
+
+	private _trackOtherControl = (event : FocusEvent) =>
+	{
+		const path = event.composedPath();
+		const target = path[0];
+		this._otherControl = target instanceof Element && !path.includes(this.host) &&
+		                     target !== document.body && target !== document.documentElement &&
+		                     target.localName !== "egw-app" ? target : null;
+	};
+
+	/**
+	 * Start following where focus goes, for focusIsOnOtherControl() - while the grid is connected
+	 */
+	trackFocus()
+	{
+		// capture: focusin of a control that stops its events must still be seen
+		document.addEventListener("focusin", this._trackOtherControl, true);
+	}
+
+	untrackFocus()
+	{
+		document.removeEventListener("focusin", this._trackOtherControl, true);
+		this._otherControl = null;
 	}
 
 	/**

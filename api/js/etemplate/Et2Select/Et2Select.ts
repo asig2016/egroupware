@@ -1279,7 +1279,10 @@ protected stopEdit(abort = false)
 		const isEditable = this.editModeEnabled && !readonly;
 		const image = this._iconTemplate(option.option ?? option);
 		const tagName = this.tagTag;
-		const title = option.title || nothing;
+		// The option's own title, as _optionTemplate() shows it.  `option` is the <sl-option>, which
+		// carries it only as aria-label - its own title property is the element's (empty) attribute.
+		const optionTitle = (option.option ?? option).title;
+		const title = optionTitle ? (this.noLang ? optionTitle : this.egw().lang(optionTitle)) : nothing;
 		const size = this.size && this.size !== "medium" ? this.size : nothing;
 		return html`
             <${tagName}

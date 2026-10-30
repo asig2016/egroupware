@@ -1156,6 +1156,12 @@ export class Et2DatagridRowRenderer
 			{
 				return;
 			}
+			// <body> may only be focus on its way from one control to the next, with this
+			// mutation coming from a blur handler of the first - see focusIsOnOtherControl()
+			if(this.host._focusIsOnOtherControl())
+			{
+				return;
+			}
 		}
 		// Go straight back to the row when its replacement is already mounted. Parking on
 		// the grid first keeps keyboard navigation alive but visibly drops the row's focus

@@ -973,6 +973,7 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 		this._syncTemplateRowHeightHint();
 		this._syncTemplateHandlerListeners();
 		this.addEventListener("et2-embedded-height", this._handleEmbeddedHeightEvent as EventListener);
+		this._selection.trackFocus();
 		this._reconnectStuckVirtualizer();
 	}
 
@@ -1237,6 +1238,7 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	{
 		this._abandonDeleteRefillRetry();
 		this._selection.stopPrefetch();
+		this._selection.untrackFocus();
 		this._syncTemplateHandlerListeners(new Set());
 		this.removeEventListener("et2-embedded-height", this._handleEmbeddedHeightEvent as EventListener);
 		this._rowRenderer.dispose();
@@ -5912,6 +5914,11 @@ export class Et2Datagrid extends Et2Widget(LitElement)
 	_focusRowByIndex(index : number, retries : number = 0, allowScroll : boolean = true)
 	{
 		this._selection.focusRowByIndex(index, retries, allowScroll);
+	}
+
+	_focusIsOnOtherControl() : boolean
+	{
+		return this._selection.focusIsOnOtherControl();
 	}
 
 	focusFirstRow()

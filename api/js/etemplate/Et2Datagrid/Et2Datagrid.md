@@ -824,6 +824,13 @@ performs the post-render structure sync (column sizes,
 visibility), re-adopts `rowStylesheets`, re-runs the row-upgrade observer/scan, and restores focus
 to the active row after a render if needed.
 
+Restoring focus - here, and after row DOM churn in `Et2DatagridRowRenderer.guardFocusAfterVirtualMutation()` -
+is for focus the grid lost itself, which falls to `<body>`. `<body>` is also where focus is while the browser
+moves it between two other controls, so the grid follows `focusin` while it is connected and leaves focus alone
+while the last control outside it that got focus is still on the page
+(`Et2DatagridSelectionController.focusIsOnOtherControl()`). Otherwise a filter that a control commits on blur
+reloads the rows mid-move and Tab lands on the list instead of the next control.
+
 ### Data-load trigger
 
 There are two ways rows start loading:
@@ -1044,6 +1051,7 @@ host keeps a same-named thin wrapper so external call sites and tests are unaffe
 | `clearActiveRow()`                   | public     | focus     | Et2Datagrid.ts                       | Clear active-row focus state.                                                           |
 | `handleTableKeydown()`               | private    | focus     | Et2DatagridSelectionController.ts    | Arrow/page/home/end navigation, space-toggle, ctrl+A select-all.                        |
 | `moveActiveRow()` / `focusRowByIndex()` | private | focus   | Et2DatagridSelectionController.ts    | Move/focus the active row, dispatching `et2-active-row-changed`.                        |
+| `focusIsOnOtherControl()`            | private    | focus     | Et2DatagridSelectionController.ts    | The last control outside the grid that got focus is still on the page: do not take focus. |
 | `updateSelectionFromPointer()`       | private    | selection | Et2DatagridSelectionController.ts    | Click/ctrl/shift pointer selection semantics.                                           |
 | `openColumnSelection(event?)`        | public     | columns   | Et2Datagrid.ts                       | Open the column chooser from an owner-level control.                                    |
 | `render()`                           | Lit        | render    | Et2Datagrid.ts                       | Builds the virtualizer config, headers, state template, and CSS vars.                   |

@@ -717,8 +717,11 @@ class preferences_settings
 	 */
 	protected static function get_default_label($default, array $values, $lang=true)
 	{
-		// explode comma-separated multiple default values
-		if(!is_array($default) && !isset($values[$default]) && strpos($default, ',') > 0)
+		// explode comma-separated multiple default values - unless the whole value is an option itself
+		// (a value with commas, e.g. a JSON filter, was split and shown raw instead of its label)
+		$is_option = !is_array($default) && (isset($values[$default]) || in_array((string)$default, array_map(
+			static fn($v) => is_array($v) && isset($v['value']) ? (string)$v['value'] : null, $values), true));
+		if(!is_array($default) && !$is_option && strpos($default, ',') > 0)
 		{
 			$labels = explode(',', $default);
 		}

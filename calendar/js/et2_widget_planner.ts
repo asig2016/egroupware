@@ -1677,7 +1677,9 @@ export class et2_calendar_planner extends et2_calendar_view implements et2_IDeta
 				if(links.length && dropped && dropped.iface.getWidget() && dropped.iface.getWidget().instanceOf(et2_calendar_event))
 				{
 					// Link the entries
-					egw.json(self.egw().getAppName()+".etemplate_widget_link.ajax_link.etemplate",
+					// the namespaced class: the pre-namespace etemplate_widget_link is no class of the app any more,
+					// the server refused "<app>.etemplate_widget_link.ajax_link" (Bad Request)
+					egw.json("EGroupware\\Api\\Etemplate\\Widget\\Link::ajax_link",
 						dropped.id.split('::').concat([links, self.getInstanceManager().etemplate_exec_id]),
 						function(result) {
 							if(result)

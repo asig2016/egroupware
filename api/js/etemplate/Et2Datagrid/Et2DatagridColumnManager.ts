@@ -110,6 +110,14 @@ export class Et2DatagridColumnManager
 		{
 			return `${parsed.value}fr`;
 		}
+		if(parsed.unit === "em")
+		{
+			// Keep the length, do not relabel it as px: api/etemplate.php turns a numeric <column width>
+			// into em (1em = 16px), and "25em" written out as "25px" collapsed the column to its minimum.
+			// rem, not em: columnLengthToPx() resolves em widths with the root font size, so the track
+			// renders at the width the resize math assumes, whatever font size the grid inherits.
+			return `${parsed.value}rem`;
+		}
 		return `${parsed.value}px`;
 	}
 

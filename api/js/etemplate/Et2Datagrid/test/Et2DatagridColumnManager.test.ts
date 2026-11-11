@@ -52,6 +52,30 @@ describe("Et2DatagridColumnManager", () =>
 
 	/**
 	 * Contract under test:
+	 * - `em` widths keep their length instead of being relabelled as `px`.
+	 *
+	 * Setup strategy:
+	 * - Normalize the em widths api/etemplate.php makes of numeric <column width>s
+	 *   (width="25" -> "1.56em", width="400" -> "25em"), and build a track list with one.
+	 *
+	 * Pass criteria:
+	 * - The track is the same number of rem (root font size, as columnLengthToPx() resolves em),
+	 *   so a 400px template column is a 25rem track, not a 25px one squeezed to its minimum.
+	 */
+	it("keeps em widths as root-relative lengths instead of pixels", () =>
+	{
+		const manager = new Et2DatagridColumnManager();
+		assert.equal(manager.normalizeColumnWidth("25em"), "25rem", "an em width should not become px");
+		assert.equal(manager.normalizeColumnWidth("1.56em"), "1.56rem", "decimal em widths should keep their value");
+		const trackString = manager.columnWidths([
+			{key: "id", width: "1.56em"},
+			{key: "name", width: "25em", minWidth: "3em"},
+		] as any);
+		assert.equal(trackString, "1.56rem minmax(3em, 25rem)", "em widths should reach the grid track list as rem");
+	});
+
+	/**
+	 * Contract under test:
 	 * - Unset column widths normalize to a content-independent track, not `auto`.
 	 *
 	 * Setup strategy:

@@ -371,3 +371,57 @@ describe("EgwFrameworkApp header is rendered in place", () =>
 		assert.strictEqual(menu(), dropdown, "only the menu's entries change");
 	});
 });
+
+/**
+ * Below 600px the left area takes the whole width of the app, so a favorite picked from it changes
+ * a list or view that stays covered: it looks as if the favorite did nothing (seen in the calendar
+ * on a phone).
+ *
+ * Pass criteria:
+ * - a favorite applied from the left area hides the left area when the app is narrower than 600px
+ * - it stays open when the app is wide enough to show both
+ */
+describe("EgwFrameworkApp favorites in the left area", () =>
+{
+	let element : EgwFrameworkApp;
+
+	const favoritesMenu = () => element.shadowRoot.querySelector("et2-favorites-menu");
+	const applyFavorite = async() =>
+	{
+		favoritesMenu().dispatchEvent(new CustomEvent("et2-favorite-apply", {bubbles: true, composed: true, detail: {name: "A"}}));
+		await element.updateComplete;
+	};
+
+	beforeEach(async() =>
+	{
+		stubEgw();
+
+		const framework = await fixture(frameworkStandIn());
+		framework.innerHTML = `<egw-app name="test-app" style="display: block"></egw-app>`;
+		element = <EgwFrameworkApp>framework.querySelector("egw-app");
+		element.features = {...element.features, favorites: true};
+		element.requestUpdate();
+		await element.updateComplete;
+		await element.showLeft();
+		assert.exists(favoritesMenu(), "favorites are shown in the left area");
+	});
+
+	it("puts the left area away after a favorite was applied on a narrow screen", async() =>
+	{
+		element.style.width = "400px";
+		assert.isFalse(element.leftCollapsed);
+
+		await applyFavorite();
+
+		assert.isTrue(element.leftCollapsed);
+	});
+
+	it("leaves the left area open when there is room for it", async() =>
+	{
+		element.style.width = "800px";
+
+		await applyFavorite();
+
+		assert.isFalse(element.leftCollapsed);
+	});
+});

@@ -147,6 +147,48 @@ describe("Favorites menu", () =>
 			assert.equal(setState.firstCall.args[0].name, "A");
 		});
 
+		it("tells whoever shows the menu that a favorite was applied, so it can get out of the way", async() =>
+		{
+			prefs = {favorite_A: own("A")};
+			const element = await create();
+			const applied = sinon.spy();
+			// outside of the menu, it has to get there from the shadow DOM
+			document.body.addEventListener("et2-favorite-apply", applied);
+			try
+			{
+				item(element, "A").click();
+				await waitUntil(() => setState.called, "favorite was not applied");
+				assert.equal(applied.callCount, 1);
+				assert.equal(applied.firstCall.args[0].detail.name, "A");
+
+				item(element, "~add~").click();
+				await new Promise(resolve => setTimeout(resolve, 50));
+				assert.equal(applied.callCount, 1, "adding a favorite applies none");
+			}
+			finally
+			{
+				document.body.removeEventListener("et2-favorite-apply", applied);
+			}
+		});
+
+		it("only tells so once the favorite is applied, and not when there is no application to apply it to", async() =>
+		{
+			prefs = {favorite_A: own("A")};
+			const element = await create();
+			const applied = sinon.spy(() => assert.isTrue(setState.called, "told before the favorite was applied"));
+			element.addEventListener("et2-favorite-apply", applied);
+
+			item(element, "A").click();
+			await waitUntil(() => applied.called, "nobody was told");
+			assert.isEmpty(applied.exceptions.filter(e => e), "told before the favorite was applied");
+
+			applied.resetHistory();
+			(<any>window).app = {};
+			item(element, "A").click();
+			await new Promise(resolve => setTimeout(resolve, 50));
+			assert.isFalse(applied.called);
+		});
+
 		it("does not apply anything when a folder is clicked", async() =>
 		{
 			prefs = {favorite_A: own("A", "Work")};

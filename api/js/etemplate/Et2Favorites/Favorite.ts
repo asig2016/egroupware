@@ -272,7 +272,12 @@ export class Favorite
 		}
 	}
 
-	static async applyFavorite(egw, app : string, favoriteName : string)
+	/**
+	 * Set the state of a favorite on its application
+	 *
+	 * @return {Promise<boolean>} if there was an application to apply it to
+	 */
+	static async applyFavorite(egw, app : string, favoriteName : string) : Promise<boolean>
 	{
 		const favorites = await Favorite.load(egw, app);
 		let fav = favoriteName == "blank" ? {} : favorites[favoriteName] ?? {};
@@ -282,7 +287,9 @@ export class Favorite
 		{
 			//@ts-ignore TS doesn't know about window.app
 			window.app[app].setState(egw.deepExtend({},fav));
+			return true;
 		}
+		return false;
 	}
 
 	static async remove(egw, app, favoriteName)

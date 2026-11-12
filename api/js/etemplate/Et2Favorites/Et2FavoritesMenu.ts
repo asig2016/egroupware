@@ -33,6 +33,8 @@ type ListEntry = { key : string, favorite : Favorite } | { folder : string, item
  * @dependency sl-menu-item
  * @dependency et2-button-icon
  *
+ * @event et2-favorite-apply - Emitted after a favorite picked here was applied to the application.  Its name is in event.detail.name.
+ *
  * @csspart menu - The tree
  *
  * @slot - Add additional tree items
@@ -680,7 +682,13 @@ export class Et2FavoritesMenu extends Et2Widget(LitElement)
 		}
 		else
 		{
-			Favorite.applyFavorite(this.egw(), this.application, name);
+			Favorite.applyFavorite(this.egw(), this.application, name).then(applied =>
+			{
+				// Whoever shows the menu may want to get out of the way, eg. the framework's left area covering the list on a phone
+				applied && this.dispatchEvent(new CustomEvent("et2-favorite-apply", {
+					bubbles: true, composed: true, detail: {name: name}
+				}));
+			});
 		}
 		// The tree selects what was clicked, show what really matches the state
 		this.requestUpdate();

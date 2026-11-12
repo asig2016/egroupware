@@ -785,6 +785,20 @@ export class EgwFrameworkApp extends LitElement
 		this.framework.classList.remove("print");
 	}
 
+	/**
+	 * A favorite from the left area was applied
+	 *
+	 * When we're too small the left area covers the content (same limit as it starting hidden), so the result
+	 * would not be seen: put it away.
+	 */
+	protected handleFavoriteApply()
+	{
+		if(this.clientWidth < 600 && !this.leftCollapsed)
+		{
+			this.hideLeft();
+		}
+	}
+
 	protected showSide(side : "left" | "right", size = null)
 	{
 		const attribute = `${side}Collapsed`;
@@ -1347,7 +1361,9 @@ export class EgwFrameworkApp extends LitElement
                         @sl-show=${() => {this.egw.set_preference(this.name, 'jdots_sidebox_' + favSidebox.menu_name, true);}}
                         @sl-hide=${() => {this.egw.set_preference(this.name, 'jdots_sidebox_' + favSidebox.menu_name, false);}}
                 >
-                    <et2-favorites-menu application=${this.name} sortable></et2-favorites-menu>
+                    <et2-favorites-menu application=${this.name} sortable
+                                        @et2-favorite-apply=${this.handleFavoriteApply}
+                    ></et2-favorites-menu>
                 </et2-details>
 			`;
 		}

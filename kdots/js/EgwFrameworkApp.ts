@@ -11,6 +11,7 @@ import {etemplate2} from "../../api/js/etemplate/etemplate2";
 import {et2_IPrint} from "../../api/js/etemplate/et2_core_interfaces";
 import {repeat} from "lit/directives/repeat.js";
 import {until} from "lit/directives/until.js";
+import {ref} from "lit/directives/ref.js";
 import {Favorite} from "../../api/js/etemplate/Et2Favorites/Favorite";
 import type {Et2Template} from "../../api/js/etemplate/Et2Template/Et2Template";
 import type {et2_nextmatch} from "../../api/js/etemplate/et2_extension_nextmatch";
@@ -1653,7 +1654,7 @@ export class EgwFrameworkApp extends LitElement
 			}
 		}
 		return html`
-            <sl-menu-item exportparts="popup" title=${menu["hint"] || menu["title"] || nothing}>
+            <sl-menu-item exportparts="popup" title=${menu["hint"] || menu["title"] || nothing} ${ref(this._shiftSubmenu)}>
                 ${menu["title"]}
                 ${menu["icon"] ? html`
                     <sl-icon slot="prefix" name="${menu["icon"]}"></sl-icon>` : nothing}
@@ -1665,6 +1666,28 @@ export class EgwFrameworkApp extends LitElement
                 </sl-menu>
             </sl-menu-item>`;
 	}
+
+	/**
+	 * Keep a submenu of the application menu on the screen
+	 *
+	 * Shoelace places a submenu right of its entry and only flips it to the left, so on a phone, where
+	 * the menu already takes most of the width, the flipped submenu ran off the left edge. When neither
+	 * side has room it goes below (or above) its entry instead, and a shift keeps it in the viewport:
+	 * left or right of the entry a shift only moves it up or down.
+	 */
+	protected _shiftSubmenu = (item? : Element) =>
+	{
+		(item as LitElement | undefined)?.updateComplete?.then(() =>
+		{
+			const popup = item.shadowRoot?.querySelector("sl-popup") as (HTMLElement & {shift : boolean, shiftPadding : number}) | null;
+			if(popup && !popup.shift)
+			{
+				popup.setAttribute("flip-fallback-placements", "left-start bottom-end bottom-start top-end top-start");
+				popup.shift = true;
+				popup.shiftPadding = 8;
+			}
+		});
+	};
 
 	/**
 	 * An individual sub-item in the application menu
@@ -1693,7 +1716,7 @@ export class EgwFrameworkApp extends LitElement
 		if(Array.isArray(item["entries"]) && item["entries"].length > 0)
 		{
 			return html`
-                <sl-menu-item exportparts="popup" title=${item["hint"] || item["lang_item"] || nothing}>
+                <sl-menu-item exportparts="popup" title=${item["hint"] || item["lang_item"] || nothing} ${ref(this._shiftSubmenu)}>
                     ${icon}
                     ${item["lang_item"]}
                     <sl-menu slot="submenu">

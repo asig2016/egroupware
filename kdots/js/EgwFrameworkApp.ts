@@ -1656,8 +1656,7 @@ export class EgwFrameworkApp extends LitElement
 		return html`
             <sl-menu-item exportparts="popup" title=${menu["hint"] || menu["title"] || nothing} ${ref(this._shiftSubmenu)}>
                 ${menu["title"]}
-                ${menu["icon"] ? html`
-                    <sl-icon slot="prefix" name="${menu["icon"]}"></sl-icon>` : nothing}
+                ${menu["icon"] ? this._menuIconTemplate(menu["icon"]) : nothing}
                 <sl-menu slot="submenu">
                     ${repeat(menu["entries"], (entry) =>
                     {
@@ -1690,6 +1689,21 @@ export class EgwFrameworkApp extends LitElement
 	};
 
 	/**
+	 * Icon of an application menu entry or heading, resolved for this app
+	 *
+	 * The sidebox gives a bare image name ("navbar", "edit"). `<sl-icon name=...>` resolves it with the
+	 * global egw, i.e. against whichever app was loaded last, so a menu showed another app's icon.
+	 * The url the server resolved for the entry (Api\Framework\Ajax::sidebox_menu_entry() 'icon_or_star',
+	 * which also honours an entry's own 'app') wins; otherwise the name is resolved for this app.
+	 */
+	protected _menuIconTemplate(name : string, url? : string | false) : TemplateResult<1> | symbol
+	{
+		const src = typeof url == "string" && url ? url : (name ? this.egw.image(name, this.name) : "");
+		return src ? html`
+            <sl-icon src=${src} slot="prefix"></sl-icon>` : nothing;
+	}
+
+	/**
 	 * An individual sub-item in the application menu
 	 *
 	 * The tooltip is the entry's own 'hint' (Api\Framework\Ajax::sidebox_menu_entry() passes one
@@ -1709,8 +1723,7 @@ export class EgwFrameworkApp extends LitElement
 		let icon : symbol | TemplateResult<1> = nothing;
 		if(typeof item["icon"] == "string")
 		{
-			icon = html`
-                <sl-icon name=${item["icon"] ?? nothing} slot="prefix"></sl-icon>`;
+			icon = this._menuIconTemplate(item["icon"], item["icon_or_star"]);
 		}
 		// An entry with its own entries: a nested submenu
 		if(Array.isArray(item["entries"]) && item["entries"].length > 0)

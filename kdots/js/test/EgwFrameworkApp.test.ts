@@ -370,6 +370,39 @@ describe("EgwFrameworkApp header is rendered in place", () =>
 		assert.notInclude(labels(), "Two");
 		assert.strictEqual(menu(), dropdown, "only the menu's entries change");
 	});
+
+	/**
+	 * A bare icon name went to <sl-icon name=...>, which resolves it with the global egw, i.e. for
+	 * whichever app was loaded last: achelper's "navbar" entries showed acclients' icon.
+	 *
+	 * Pass criteria:
+	 * - an entry uses the url the server resolved for it (icon_or_star)
+	 * - an entry or heading without one resolves its name for the app owning the menu
+	 * - no icon is drawn by name any more
+	 */
+	it("resolves menu icons for its own app, not the last loaded one", async() =>
+	{
+		const egwStub = stubEgw();
+		egwStub.image = sinon.stub().callsFake((name, app) => `/${app}/${name}.svg`);
+
+		(<any>element)._sideboxData = [{
+			menu_name: "jobs",
+			title: "Jobs",
+			icon: "navbar",
+			entries: [
+				{lang_item: "Server", item_link: "/a", icon: "navbar", icon_or_star: "/egw/achelper/navbar.svg"},
+				{lang_item: "Client", item_link: "/b", icon: "edit"},
+				{lang_item: "None", item_link: "/c", icon: "", icon_or_star: false}
+			]
+		}];
+		element.requestUpdate();
+		await settled();
+
+		const icons = Array.from(element.shadowRoot.querySelectorAll("sl-menu-item > sl-icon[slot='prefix']"));
+		assert.sameMembers(icons.map(icon => icon.getAttribute("src")),
+			["/test-app/navbar.svg", "/egw/achelper/navbar.svg", "/test-app/edit.svg"]);
+		assert.isTrue(icons.every(icon => !icon.hasAttribute("name")), "no icon resolved by name");
+	});
 });
 
 /**

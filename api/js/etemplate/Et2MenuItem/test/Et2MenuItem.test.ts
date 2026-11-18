@@ -78,4 +78,54 @@ describe("Menu item widget", () =>
 
 		assert.notEqual(getComputedStyle(element).display, "none");
 	});
+
+	/**
+	 * A submenu (eg. the context menu's "Filter by") ran off a phone's screen: Shoelace only flips
+	 * it from right to left of its entry, and on a phone neither side has room.  The popup has to
+	 * fall back to below/above its entry and shift into the viewport.
+	 */
+	it("lets a submenu fall back below or above its entry and shift into the screen", async() =>
+	{
+		element = await fixture<Et2MenuItem>(html`
+            <et2-menu-item>Filter by
+                <sl-menu slot="submenu">
+                    <et2-menu-item>Sub item</et2-menu-item>
+                </sl-menu>
+            </et2-menu-item>
+		`);
+		await element.updateComplete;
+		element.requestUpdate();
+		await element.updateComplete;
+
+		const popup = element.shadowRoot.querySelector("sl-popup") as any;
+		assert.exists(popup, "a menu item with a submenu renders an sl-popup");
+		assert.include(popup.getAttribute("flip-fallback-placements") ?? "", "bottom-start",
+			"a submenu must be allowed below its entry when neither side has room");
+		assert.isTrue(popup.shift, "a submenu must shift into the viewport");
+	});
+
+	it("opens a submenu inside the screen when the menu is as wide as the screen", async() =>
+	{
+		const menu = await fixture<HTMLElement>(html`
+            <sl-menu style="width: 100vw; box-sizing: border-box">
+                <et2-menu-item>Filter by
+                    <sl-menu slot="submenu" style="width: 60vw">
+                        <et2-menu-item>Sub item</et2-menu-item>
+                    </sl-menu>
+                </et2-menu-item>
+            </sl-menu>
+		`);
+		const item = menu.querySelector("et2-menu-item") as Et2MenuItem;
+		await item.updateComplete;
+		item.requestUpdate();
+		await item.updateComplete;
+		const popup = item.shadowRoot.querySelector("sl-popup") as any;
+		popup.active = true;
+		await popup.updateComplete;
+		await new Promise(r => setTimeout(r, 100));
+
+		const rect = (item.querySelector("sl-menu[slot=submenu]") as HTMLElement).getBoundingClientRect();
+		assert.isAtLeast(Math.round(rect.left), 0, "submenu ran off the left edge");
+		assert.isAtMost(Math.round(rect.right), window.innerWidth, "submenu ran off the right edge");
+	});
 });

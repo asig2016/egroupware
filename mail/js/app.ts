@@ -1801,6 +1801,30 @@ export class MailApp extends EgwApp
 	}
 
 	/**
+	 * PATCH CORE: compose with mail_compose_prepare hook params, where compose.php would show the desktop
+	 * compose in a narrow window: the phone's inline compose dialog (openComposeDialog()), with the hook run
+	 * for these params. For an app whose own dialog starts a compose (achelper's "Create email from
+	 * template": mode, template, language, infolog_id, ...).
+	 *
+	 * Same condition as openComposePopupUrl(): a narrow top-level window only. Elsewhere it does nothing
+	 * and returns false - the caller opens /mail/compose.php with the same params, as before.
+	 *
+	 * @param hookParams the params the hook reads from $_GET (acc_id too, if the caller has one)
+	 * @param accId the account, default the hookParams' acc_id or the active profile
+	 * @return true when the dialog is being opened
+	 */
+	public composeFromHookParams(hookParams : { [key : string] : any }, accId? : string) : boolean
+	{
+		if(!window.matchMedia('(max-width: 800px)').matches || window.opener)
+		{
+			return false;
+		}
+		const acc = String(accId || hookParams?.acc_id || this.egw.preference('ActiveProfileID', 'mail') || '');
+		void this.openComposeDialog({id: '', from: ''}, acc, hookParams || {});
+		return true;
+	}
+
+	/**
 	 * Inline-dialog equivalent of openComposePopupUrl()'s real popup window, for mobile/narrow
 	 * viewport (or the "open_popups_in: same_window" preference) - see openComposePopupUrl()'s own
 	 * comment for why this exists instead of relying on EgwFramework.openPopup()'s generic
@@ -1819,17 +1843,25 @@ export class MailApp extends EgwApp
 	 * page's own `this.et2`) - the handful of calls that case makes are replicated here directly
 	 * instead, same reasoning mobileView()'s own docblock already documents for 'mail.view'.
 	 */
-	private async openComposeDialog(settings : { id : string, from : string, smime_type? : string, mode? : string, pgp_encrypted? : string, part? : string }, accId : string) : Promise<void>
+	private async openComposeDialog(settings : { id : string, from : string, smime_type? : string, mode? : string, pgp_encrypted? : string, part? : string }, accId : string,
+		hookParams? : { [key : string] : any }) : Promise<void>
 	{
 		const [bootstrap, {actions, sel_options, content}] = await Promise.all([
 			this.egw.request('mail.EGroupware\\Mail\\Compose.ajax_composeDialogBootstrap', []),
 			this.getComposeToolbarData(accId),
 		]);
 
+		// PATCH CORE: the mail_compose_prepare hook, as bootstrapComposePopup() runs it for compose.php -
+		// with the params a caller hands in (composeFromHookParams(), eg. achelper's "Create email from
+		// template" on a phone) instead of a popup url's leftover ones; the dialog's own etemplate_exec_id
+		// takes the hook's $preserv (its attachments). Without hookParams nothing changes.
+		const prepared : any = hookParams && await this.jmap.hasComposePrepareHook(accId) ?
+			await this.egw.request('mail.EGroupware\\Mail\\Compose.ajax_prepareCompose', [hookParams, bootstrap.etemplate_exec_id]) : null;
+
 		// Same cloning reasoning bootstrapComposePopup() already documents - content/sel_options/
 		// actions are shared, cached objects getComposeToolbarData() reuses per account.
-		const contentCopy : any = {...content};
-		const selOptionsCopy : any = {...sel_options};
+		const contentCopy : any = {...content, ...(prepared?.content || {})};
+		const selOptionsCopy : any = {...sel_options, ...(prepared?.sel_options || {})};
 		const actionsCopy : any = {...actions};
 
 		// Pre-construct MailCompose with the explicit bootstrap params BEFORE anything touches the
@@ -1844,6 +1876,7 @@ export class MailApp extends EgwApp
 			value: {
 				content: contentCopy,
 				sel_options: selOptionsCopy,
+				readonlys: prepared?.readonlys ?? {},
 				modifications: {composeToolbar: {actions: actionsCopy}},
 				currentapp: 'mail',
 				etemplate_exec_id: bootstrap.etemplate_exec_id,

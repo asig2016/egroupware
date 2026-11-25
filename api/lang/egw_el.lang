@@ -1041,3 +1041,5 @@ zoom	common	el	Εστίαση
 show these toolbar items helptext	common	el	Εμφάνιση αυτών των στοιχείων στη γραμμή εργαλείων (όσα χωράνε). Τα υπόλοιπα βρίσκονται στη λίστα [⋮].
 reset all to default	common	el	Επαναφορά όλων στην προεπιλογή
 this will reset toolbar preferences for all users and set them to configured default prefs.	common	el	Επαναφέρει τις ρυθμίσεις της γραμμής εργαλείων όλων των χρηστών στις ορισμένες προεπιλογές.
+reset to default	common	el	Επαναφορά προεπιλογής
+show the columns of this list as by default again? your own column selection, order and widths get lost.	common	el	Να εμφανίζονται ξανά οι στήλες αυτής της λίστας όπως στην προεπιλογή; Η δική σας επιλογή, σειρά και πλάτος στηλών θα χαθούν.

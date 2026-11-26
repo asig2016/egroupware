@@ -286,7 +286,8 @@ class Nextmatch extends Etemplate\Widget
 		}
 
 		// If column selection preference is forced, set a flag to turn off UI
-		$pref_name = 'nextmatch-' . ($value['columnselection_pref'] ?? $this->attrs['template'] ?? '');
+		// an empty columnselection_pref (eg. set to '' by an app) means the template too, not a preference named 'nextmatch-'
+		$pref_name = 'nextmatch-' . (($value['columnselection_pref'] ?? '') ?: ($this->attrs['template'] ?? ''));
 		$value['no_columnselection'] = !empty($value['no_columnselection']) || (
 			!empty($GLOBALS['egw']->preferences->forced[$app][$pref_name]) &&
 			// Need to check admin too, or it will be impossible to turn off
@@ -1751,7 +1752,7 @@ class Nextmatch extends Etemplate\Widget
 		// Save current column settings as default, clear, or force (admins only)
 		if($GLOBALS['egw_info']['user']['apps']['admin'] && $app && $value['selectcols'])
 		{
-			$pref_name = 'nextmatch-' . (isset($content_value['columnselection_pref']) ? $content_value['columnselection_pref'] : $this->attrs['template']);
+			$pref_name = 'nextmatch-' . (($content_value['columnselection_pref'] ?? '') ?: $this->attrs['template']);
 			$refresh_pref_name = $pref_name.'-autorefresh';
 			switch($value['nm_col_preference']) {
 				case 'force':

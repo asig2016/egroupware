@@ -808,6 +808,30 @@ describe("Et2Nextmatch header event handling", () =>
 
 	/**
 	 * Contract under test:
+	 * - The letter search preference is named like the PHP Nextmatch widget names it:
+	 *   `nextmatch-<columnselection_pref, or else the template>-lettersearch`.
+	 *   It used to fall back to `columnPreferenceName`, empty for most lists: "nextmatch--lettersearch".
+	 */
+	it("keeps the letter search preference under the template, or columnselection_pref", () =>
+	{
+		const el = new Et2Nextmatch();
+		el.template = "addressbook.index.rows";
+		const key = () => (el as any)._lettersearchPreferenceKey;
+
+		assert.equal(key(), "nextmatch-addressbook.index.rows-lettersearch", "no columnselection_pref: the template");
+
+		el.columnPreferenceName = "nextmatch-addressbook.index.rows-details";
+		assert.equal(key(), "nextmatch-addressbook.index.rows-lettersearch", "a client-side column key does not count");
+
+		el.settings = {columnselection_pref: ""};
+		assert.equal(key(), "nextmatch-addressbook.index.rows-lettersearch", "an empty columnselection_pref: the template");
+
+		el.settings = {columnselection_pref: "acerp.index.rows.cp"};
+		assert.equal(key(), "nextmatch-acerp.index.rows.cp-lettersearch");
+	});
+
+	/**
+	 * Contract under test:
 	 * - Settings-provided `searchletter` is stored as an active filter, not as a
 	 *   retained setting.
 	 *

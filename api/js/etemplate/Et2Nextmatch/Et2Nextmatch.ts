@@ -1306,7 +1306,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 	willUpdate(changedProperties : PropertyValues)
 	{
 		super.willUpdate(changedProperties);
-		if(changedProperties.has("settings") || changedProperties.has("lettersearch"))
+		if(changedProperties.has("settings") || changedProperties.has("lettersearch") || changedProperties.has("template"))
 		{
 			this._lettersearchVisible = !this.lettersearch ||
 				!!this.egw().preference(this._lettersearchPreferenceKey, this.egw().app_name());
@@ -3984,9 +3984,14 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 	 */
 	private _resettingColumns : boolean = false;
 
+	/**
+	 * Same base as the PHP Nextmatch widget and Et2NextmatchAutoRefresh: `columnselection_pref`, or else
+	 * the template. Not `columnPreferenceName`: that is empty for most lists, which gave everyone of them
+	 * one shared "nextmatch--lettersearch" and never read the admin's default.
+	 */
 	private get _lettersearchPreferenceKey() : string
 	{
-		return `nextmatch-${this.settings.columnselection_pref || this.columnPreferenceName}-lettersearch`;
+		return `nextmatch-${this.settings.columnselection_pref || this.template}-lettersearch`;
 	}
 
 	/**

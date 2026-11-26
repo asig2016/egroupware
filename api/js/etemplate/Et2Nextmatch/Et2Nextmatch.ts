@@ -1306,10 +1306,11 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 	willUpdate(changedProperties : PropertyValues)
 	{
 		super.willUpdate(changedProperties);
-		if(changedProperties.has("settings") || changedProperties.has("lettersearch") || changedProperties.has("template"))
+		if(changedProperties.has("settings") || changedProperties.has("lettersearch") || changedProperties.has("template") ||
+			changedProperties.has("appName"))
 		{
 			this._lettersearchVisible = !this.lettersearch ||
-				!!this.egw().preference(this._lettersearchPreferenceKey, this.egw().app_name());
+				!!this.egw().preference(this._lettersearchPreferenceKey, this._getAppName());
 		}
 		if(this.lettersearch && !this._lettersearchVisible && this._filters.searchletter)
 		{
@@ -3917,7 +3918,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 			selectedOrder.splice(letterIndex, 1);
 		}
 		this._lettersearchVisible = nextVisible;
-		this.egw().set_preference(this.egw().app_name(), this._lettersearchPreferenceKey, nextVisible);
+		this.egw().set_preference(this._getAppName(), this._lettersearchPreferenceKey, nextVisible);
 		if(event.detail?.adminPrefs)
 		{
 			event.detail.adminPrefs[this._lettersearchPreferenceKey] = nextVisible;
@@ -3960,7 +3961,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 		this._autoRefresh.resetPreference(event.detail);
 		if(this.lettersearch)
 		{
-			event.detail.prefs.push({app: this.egw().app_name(), name: this._lettersearchPreferenceKey});
+			event.detail.prefs.push({app: this._getAppName(), name: this._lettersearchPreferenceKey});
 		}
 		event.detail.reloaded.then(() =>
 		{
@@ -3969,7 +3970,7 @@ export class Et2Nextmatch extends Et2Widget(LitElement) implements et2_IInput, N
 			{
 				return;
 			}
-			this._lettersearchVisible = !!this.egw().preference(this._lettersearchPreferenceKey, this.egw().app_name());
+			this._lettersearchVisible = !!this.egw().preference(this._lettersearchPreferenceKey, this._getAppName());
 			if(!this._lettersearchVisible && this._filters.searchletter)
 			{
 				this.applyFilters({searchletter: false});

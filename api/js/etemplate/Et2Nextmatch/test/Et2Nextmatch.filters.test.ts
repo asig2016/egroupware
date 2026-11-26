@@ -832,6 +832,49 @@ describe("Et2Nextmatch header event handling", () =>
 
 	/**
 	 * Contract under test:
+	 * - A list of one app shown in another app's page (eg. InfoLog's CRM view inside addressbook) reads,
+	 *   stores and resets its letter search preference under the app owning the list, where PHP's admin
+	 *   default puts it too - not under the page's app.
+	 */
+	it("keeps the letter search preference under the app owning the list", async() =>
+	{
+		const el = new Et2Nextmatch();
+		const read : string[] = [];
+		const setPreference = sinon.stub();
+		sinon.stub(el, "egw" as any).returns({
+			...egwStub,
+			app_name: () => "addressbook",
+			preference: (key : string, app : string) => { read.push(app + ":" + key); return egwStub.preference(key); },
+			set_preference: setPreference
+		});
+		el.appName = "infolog";
+		el.lettersearch = true;
+		document.body.append(el);
+		await el.updateComplete;
+		const datagrid = el.shadowRoot?.querySelector("et2-datagrid") as HTMLElement;
+		const key = (el as any)._lettersearchPreferenceKey;
+
+		assert.include(read, "infolog:" + key, "read under the owning app");
+
+		datagrid.dispatchEvent(new CustomEvent("et2-column-selection-apply", {
+			detail: {selectedOrder: ["name"]},
+			bubbles: true,
+			composed: true
+		}));
+		assert.deepEqual(setPreference.firstCall?.args, ["infolog", key, false], "stored under the owning app");
+
+		const prefs : {app : string, name : string}[] = [];
+		datagrid.dispatchEvent(new CustomEvent("et2-column-selection-reset", {
+			detail: {prefs, reloaded: new Promise(() => {})},
+			bubbles: true,
+			composed: true
+		}));
+		assert.deepInclude(prefs, {app: "infolog", name: key}, "reset under the owning app");
+		el.remove();
+	});
+
+	/**
+	 * Contract under test:
 	 * - Settings-provided `searchletter` is stored as an active filter, not as a
 	 *   retained setting.
 	 *

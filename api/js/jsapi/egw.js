@@ -551,6 +551,9 @@ window.egw_import = (function()
 
 		var resize_attempt = 0;
 		var remember_size_timeout;
+		// the size is remembered once, after the form's first autosize: a re-render (Apply) of a window the user
+		// had resized or maximized stored that size and every later popup opened at it
+		var size_remembered = false;
 		var popup_had_skeleton = false;
 		var resize_popup = function()
 		{
@@ -639,6 +642,8 @@ window.egw_import = (function()
 				window.clearTimeout(remember_size_timeout);
 				remember_size_timeout = window.setTimeout(function()
 				{
+					if (size_remembered) return;
+					size_remembered = true;
 					// egw is the opener's in a popup, so ask for the instance of this window
 					const own = egw(window);
 					if (typeof own.rememberPopupSize === 'function') own.rememberPopupSize(popup_had_skeleton);

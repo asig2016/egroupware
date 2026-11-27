@@ -29,16 +29,22 @@ function popupSizeKey(_url : string) : string | null
 /**
  * Size (outer, px) the popup for the given url had when it settled the last time, clamped to the screen
  *
+ * Only when it was opened with the size asked for now: what is remembered is how that size grew to fit the form.
+ * A size remembered for another request, or before the requested size was stored with it, is not used - such an
+ * entry had kept a form popup at 1520px for good, after a user had once resized it and pressed Apply.
+ *
  * @param {string} _url
+ * @param {number} _width the width asked for
+ * @param {number} _height the height asked for
  * @returns {{width : number, height : number} | null} null if there is none
  */
-function rememberedPopupSize(_url : string) : {width : number, height : number} | null
+function rememberedPopupSize(_url : string, _width : number, _height : number) : {width : number, height : number} | null
 {
 	try
 	{
 		const key = popupSizeKey(_url);
 		const size = key ? JSON.parse(window.localStorage.getItem(key) || "null") : null;
-		if (!size || !(size.width >= 300) || !(size.height >= 200))
+		if (!size || !(size.width >= 300) || !(size.height >= 200) || !samePopupRequest(size.requested, _width, _height))
 		{
 			return null;
 		}
@@ -50,6 +56,43 @@ function rememberedPopupSize(_url : string) : {width : number, height : number} 
 	catch (e)
 	{
 		return null;
+	}
+}
+
+/**
+ * Was the remembered size got with this requested size?
+ */
+function samePopupRequest(_requested : any, _width : number, _height : number) : boolean
+{
+	return !!_requested && Number(_requested.width) === Number(_width) && Number(_requested.height) === Number(_height);
+}
+
+/**
+ * Store the size the popup for the given url is opened with, the popup adds the size it settles at to it
+ * (rememberPopupSize()).  A request of another size drops what was remembered for the old one.
+ *
+ * @param {string} _url
+ * @param {number} _width
+ * @param {number} _height
+ */
+function notePopupRequest(_url : string, _width : number, _height : number) : void
+{
+	try
+	{
+		const key = popupSizeKey(_url);
+		if (!key)
+		{
+			return;
+		}
+		const size = JSON.parse(window.localStorage.getItem(key) || "null");
+		if (!samePopupRequest(size?.requested, _width, _height))
+		{
+			window.localStorage.setItem(key, JSON.stringify({requested: {width: Number(_width), height: Number(_height)}}));
+		}
+	}
+	catch (e)
+	{
+		// storage is not available
 	}
 }
 
@@ -158,9 +201,10 @@ export interface OpenModule
 	/**
 	 * Remember the size this popup window has now as the size to open the next popup of the same form with
 	 *
-	 * Called once a form popup has fitted itself to its content.  It is stored per menuaction and replaces what was
-	 * stored before, so a form that changed size is opened at its new size the next time.  Does nothing in a
-	 * window that was not opened by another one, or without a menuaction.
+	 * Called once a form popup has fitted itself to its content the first time (egw.js, not again after an Apply).
+	 * It is stored per menuaction beside the size the opener asked for (openPopup()) and replaces what was stored
+	 * before, so a form that changed size is opened at its new size the next time.  Does nothing in a window that
+	 * was not opened by another one, or without a menuaction.
 	 *
 	 * @param _skeleton the popup showed a skeleton while it loaded: the next one gets it drawn by the opener right
 	 *	away, before the server has answered (see openPopup())
@@ -517,7 +561,18 @@ class Open implements OpenModule
 			const key = this.#wnd.opener ? popupSizeKey(this.#wnd.location.search) : null;
 			if (key)
 			{
-				this.#wnd.localStorage.setItem(key, JSON.stringify({width: this.#wnd.outerWidth, height: this.#wnd.outerHeight}));
+				// keep the size the opener asked for: the remembered size is only used for the same request again
+				let requested;
+				try
+				{
+					requested = JSON.parse(this.#wnd.localStorage.getItem(key) || "null")?.requested;
+				}
+				catch (e)
+				{
+					// not what we stored
+				}
+				this.#wnd.localStorage.setItem(key, JSON.stringify({width: this.#wnd.outerWidth, height: this.#wnd.outerHeight,
+					...(requested ? {requested} : {})}));
 				const flag = POPUP_SKELETON_KEY + key.substring(POPUP_SIZE_KEY.length);
 				if (_skeleton)
 				{
@@ -970,7 +1025,11 @@ class Open implements OpenModule
 
 		// A form popup grows to fit its content once it is loaded (egw.js resize_popup()): give it the size it ended
 		// up with last time right away, so it does not resize and reflow in front of the user
-		const settled = windowID ? rememberedPopupSize(_url) : null;
+		const settled = windowID ? rememberedPopupSize(_url, _width, _height) : null;
+		if (windowID)
+		{
+			notePopupRequest(_url, _width, _height);
+		}
 		if (settled)
 		{
 			try

@@ -394,8 +394,8 @@ describe('egw_open.js (open)', () =>
 
 			it('gives a form popup the size it ended up with last time, so it does not grow after it is shown', () =>
 			{
-				window.localStorage.setItem(KEY, JSON.stringify({width: 600, height: 450}));
-				const fakeWindow : any = {resizeTo: sinon.stub()};
+				window.localStorage.setItem(KEY, JSON.stringify({width: 600, height: 450, requested: {width: 500, height: 400}}));
+				const fakeWindow : any = {resizeTo: sinon.stub(), moveTo: sinon.stub()};
 				(env.window.open as sinon.SinonStub).returns(fakeWindow);
 
 				env.egw().openPopup(URL, 500, 400, 'name', false, true, 'no');
@@ -403,9 +403,39 @@ describe('egw_open.js (open)', () =>
 				assert.isTrue(fakeWindow.resizeTo.calledOnceWith(600, 450));
 			});
 
+			it('uses it only for the size it was got with: not for another one, and not without one (an old entry)', () =>
+			{
+				const fakeWindow : any = {resizeTo: sinon.stub(), moveTo: sinon.stub()};
+				(env.window.open as sinon.SinonStub).returns(fakeWindow);
+
+				window.localStorage.setItem(KEY, JSON.stringify({width: 1520, height: 520, requested: {width: 850, height: 900}}));
+				env.egw().openPopup(URL, 500, 400, 'name', false, true, 'no');
+				// an entry without the requested size, as stored before: a size a user once dragged the window to
+				window.localStorage.setItem(KEY, JSON.stringify({width: 1520, height: 520}));
+				env.egw().openPopup(URL, 500, 400, 'name', false, true, 'no');
+
+				assert.isFalse(fakeWindow.resizeTo.called);
+			});
+
+			it('notes the size it asks for, and drops what was remembered for another one', () =>
+			{
+				(env.window.open as sinon.SinonStub).returns({resizeTo: sinon.stub(), moveTo: sinon.stub()});
+
+				env.egw().openPopup(URL, 500, 400, 'name', false, true, 'no');
+				assert.deepEqual(JSON.parse(window.localStorage.getItem(KEY)), {requested: {width: 500, height: 400}});
+
+				window.localStorage.setItem(KEY, JSON.stringify({width: 600, height: 450, requested: {width: 500, height: 400}}));
+				env.egw().openPopup(URL, '500', 400, 'name', false, true, 'no');
+				assert.deepEqual(JSON.parse(window.localStorage.getItem(KEY)), {width: 600, height: 450, requested: {width: 500, height: 400}},
+					'the same request (a "WxH" registry size gives strings) keeps it');
+
+				env.egw().openPopup(URL, 850, 400, 'name', false, true, 'no');
+				assert.deepEqual(JSON.parse(window.localStorage.getItem(KEY)), {requested: {width: 850, height: 400}});
+			});
+
 			it('clamps it to the screen', () =>
 			{
-				window.localStorage.setItem(KEY, JSON.stringify({width: 99999, height: 99999}));
+				window.localStorage.setItem(KEY, JSON.stringify({width: 99999, height: 99999, requested: {width: 500, height: 400}}));
 				const fakeWindow : any = {resizeTo: sinon.stub()};
 				(env.window.open as sinon.SinonStub).returns(fakeWindow);
 
@@ -424,7 +454,7 @@ describe('egw_open.js (open)', () =>
 				env.egw().openPopup(URL, 500, 400, 'name', false, true, 'no');
 				assert.isFalse(unseen.resizeTo.called);
 
-				window.localStorage.setItem(KEY, JSON.stringify({width: 600, height: 450}));
+				window.localStorage.setItem(KEY, JSON.stringify({width: 600, height: 450, requested: {width: 500, height: 400}}));
 				const plain : any = {resizeTo: sinon.stub()};
 				(env.window.open as sinon.SinonStub).returns(plain);
 				env.egw().openPopup('/egroupware/webdav.php/home/x.pdf', 500, 400, 'name', false, true, 'no');
@@ -589,6 +619,16 @@ describe('egw_open.js (open)', () =>
 
 				assert.deepEqual(JSON.parse(window.localStorage.getItem(KEY('infolog.infolog_ui.edit'))),
 					{width: popup.window.outerWidth, height: popup.window.outerHeight});
+			});
+
+			it('keeps the size the opener asked for beside it', async() =>
+			{
+				window.localStorage.setItem(KEY('infolog.infolog_ui.edit'), JSON.stringify({requested: {width: 500, height: 400}}));
+
+				(await popupOf('?menuaction=infolog.infolog_ui.edit')).rememberPopupSize();
+
+				assert.deepEqual(JSON.parse(window.localStorage.getItem(KEY('infolog.infolog_ui.edit'))),
+					{width: popup.window.outerWidth, height: popup.window.outerHeight, requested: {width: 500, height: 400}});
 			});
 
 			it('does nothing in a window nobody opened, or without a menuaction', async() =>
